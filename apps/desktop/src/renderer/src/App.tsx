@@ -1,52 +1,57 @@
 import { QueryClientProvider } from '@tanstack/react-query'
+import { Terminal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type { SetupPreferences } from '@shared/setupPreferences'
 
-import './features' // side-effect: cada feature se auto-registra al importarse (Fase 6)
-import { LogConsole } from './core/components/LogConsole'
+import './features' // side-effect: cada feature se auto-registra al importarse
+import { AppSidebar } from './core/components/AppSidebar'
+import { ConsoleSheet } from './core/components/ConsoleSheet'
+import { SectionWorkspace } from './core/components/SectionWorkspace'
 import { SetupWizard } from './core/components/SetupWizard'
-import { TabPane } from './core/components/TabPane'
-import { featureRegistry } from './core/registry/featureRegistry'
 import { useNavigationStore } from './core/state/navigationStore'
 import { queryClient } from './core/state/queryClient'
 
 function AppShell() {
-  const tabs = featureRegistry.list()
-  const activeId = useNavigationStore((state) => state.activeTabId)
-  const setActiveId = useNavigationStore((state) => state.setActiveTab)
+  const activeSectionId = useNavigationStore((state) => state.activeSectionId)
+  const activeTabId = useNavigationStore((state) => state.activeTabId)
+  const setActiveSection = useNavigationStore((state) => state.setActiveSection)
+  const setActiveTab = useNavigationStore((state) => state.setActiveTab)
+  const ensureDefaults = useNavigationStore((state) => state.ensureDefaults)
+
   // Visible por defecto: en el primer arranque de una build empaquetada, el
   // setup del entorno Python (torch/diffusers) puede tardar varios minutos y
   // requiere internet — mostrar la consola de entrada ayuda a notar el
   // progreso. El usuario puede colapsarla después.
   const [showLogs, setShowLogs] = useState(true)
 
-  // Selecciona la primera tab por defecto una vez que el registro de features
-  // terminó de poblarse (import de `./features` de arriba, side-effect).
   useEffect(() => {
-    if (activeId === null && tabs[0]) setActiveId(tabs[0].id)
-  }, [activeId, tabs, setActiveId])
-
-  const activeTab = tabs.find((tab) => tab.id === activeId)
-  const ActivePanel = activeTab?.Panel
+    ensureDefaults()
+  }, [ensureDefaults])
 
   return (
     <div className="app">
-      <header className="app__header">
-        <h1 className="app__brand">DesignFabric</h1>
-        <button
-          type="button"
-          className="logs-toggle"
-          onClick={() => setShowLogs((value) => !value)}
-        >
-          {showLogs ? 'Ocultar registro' : 'Mostrar registro'}
-        </button>
-      </header>
-      <div className="app__tabs">
-        <TabPane tabs={tabs} activeId={activeId ?? ''} onChange={setActiveId} />
+      <AppSidebar activeSectionId={activeSectionId} onSelect={setActiveSection} />
+      <div className="app__main">
+        <header className="app__header">
+          <button
+            type="button"
+            className="logs-toggle"
+            aria-expanded={showLogs}
+            aria-controls="console-sheet"
+            onClick={() => setShowLogs((value) => !value)}
+          >
+            <Terminal size={16} strokeWidth={1.75} aria-hidden />
+            {showLogs ? 'Ocultar registro' : 'Mostrar registro'}
+          </button>
+        </header>
+        <SectionWorkspace
+          sectionId={activeSectionId}
+          activeTabId={activeTabId}
+          onTabChange={setActiveTab}
+        />
       </div>
-      <main className="page">{ActivePanel ? <ActivePanel /> : null}</main>
-      {showLogs ? <LogConsole /> : null}
+      <ConsoleSheet open={showLogs} onClose={() => setShowLogs(false)} />
     </div>
   )
 }

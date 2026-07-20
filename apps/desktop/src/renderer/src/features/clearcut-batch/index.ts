@@ -4,6 +4,7 @@ import { BatchPanel } from './BatchPanel'
 featureRegistry.register({
   id: 'clearcut-batch',
   label: 'Lote',
-  order: 2,
+  order: 0,
+  sectionId: 'batches',
   Panel: BatchPanel
 })

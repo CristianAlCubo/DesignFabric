@@ -4,6 +4,7 @@ import { SingleImageView } from './SingleImageView'
 featureRegistry.register({
   id: 'designfabric-single',
   label: 'Imagen única (prompt libre)',
-  order: 4,
+  order: 0,
+  sectionId: 'generation',
   Panel: SingleImageView
 })

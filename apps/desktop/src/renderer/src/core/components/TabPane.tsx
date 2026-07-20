@@ -4,13 +4,19 @@ interface TabPaneProps {
   tabs: TabDescriptor[]
   activeId: string
   onChange: (id: string) => void
+  ariaLabel?: string
 }
 
-export function TabPane({ tabs, activeId, onChange }: TabPaneProps) {
+export function TabPane({
+  tabs,
+  activeId,
+  onChange,
+  ariaLabel = 'Subfunciones'
+}: TabPaneProps) {
   const orderedTabs = [...tabs].sort((a, b) => a.order - b.order)
 
   return (
-    <div className="tabpane" role="tablist" aria-label="Funciones de DesignFabric">
+    <div className="tabpane" role="tablist" aria-label={ariaLabel}>
       {orderedTabs.map((tab) => {
         const selected = tab.id === activeId
         return (
