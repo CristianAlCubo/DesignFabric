@@ -1,5 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Textarea } from '@/components/ui/textarea'
+
 import { ProviderSelector } from '../../core/components/ProviderSelector'
 import { useGenerationProviders } from '../../core/hooks/useGenerationProviders'
 import type { ImageProviderId } from '../../core/api/types'
@@ -38,33 +43,38 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
 
   return (
     <form className="single-image-form" onSubmit={handleSubmit}>
-      <label className="field">
-        <span>Prompt</span>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="a grumpy owl perched on a stack of old books, wearing tiny reading glasses"
-          rows={4}
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="single-prompt">Prompt</FieldLabel>
+          <Textarea
+            id="single-prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="a grumpy owl perched on a stack of old books, wearing tiny reading glasses"
+            rows={4}
+          />
+        </Field>
+        <ProviderSelector
+          label="Provider de imagen"
+          value={imageProvider}
+          providers={catalog?.image ?? []}
+          onChange={(v) => setImageProvider(v as ImageProviderId)}
+          disabled={!catalog || isSubmitting}
         />
-      </label>
-      <ProviderSelector
-        label="Provider de imagen"
-        value={imageProvider}
-        providers={catalog?.image ?? []}
-        onChange={(v) => setImageProvider(v as ImageProviderId)}
-        disabled={!catalog || isSubmitting}
-      />
-      <label className="field field--checkbox">
-        <input
-          type="checkbox"
-          checked={applyStyleSuffix}
-          onChange={(e) => setApplyStyleSuffix(e.target.checked)}
-        />
-        <span>Aplicar estilo sticker (bordes gruesos, colores planos, fondo blanco)</span>
-      </label>
-      <button type="submit" disabled={isSubmitting || !prompt.trim() || !catalog}>
-        {isSubmitting ? 'Generando…' : 'Generar'}
-      </button>
+        <Field orientation="horizontal">
+          <Checkbox
+            id="apply-style-suffix"
+            checked={applyStyleSuffix}
+            onCheckedChange={(checked) => setApplyStyleSuffix(checked === true)}
+          />
+          <FieldLabel htmlFor="apply-style-suffix">
+            Aplicar estilo sticker (bordes gruesos, colores planos, fondo blanco)
+          </FieldLabel>
+        </Field>
+        <Button type="submit" disabled={isSubmitting || !prompt.trim() || !catalog}>
+          {isSubmitting ? 'Generando…' : 'Generar'}
+        </Button>
+      </FieldGroup>
     </form>
   )
 }

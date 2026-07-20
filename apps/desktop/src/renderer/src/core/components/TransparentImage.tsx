@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react'
 
+import { Button } from '@/components/ui/button'
+
 import { useImageViewport } from '../hooks/useImageViewport'
 
 interface TransparentImageProps {
@@ -104,21 +106,37 @@ export function TransparentImage({
             onPointerDown={(event) => event.stopPropagation()}
             onDoubleClick={(event) => event.stopPropagation()}
           >
-            <button type="button" className="image-frame__tool-btn" onClick={zoomOut} aria-label="Alejar" title="Alejar">
-              −
-            </button>
-            <button
+            <Button
               type="button"
-              className="image-frame__tool-btn image-frame__zoom-label"
+              variant="secondary"
+              size="icon-xs"
+              onClick={zoomOut}
+              aria-label="Alejar"
+              title="Alejar"
+            >
+              −
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="xs"
+              className="min-w-12 tabular-nums"
               onClick={resetView}
               aria-label="Ajustar a la vista"
               title="Ajustar a la vista"
             >
               {zoomPercent}%
-            </button>
-            <button type="button" className="image-frame__tool-btn" onClick={zoomIn} aria-label="Acercar" title="Acercar">
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon-xs"
+              onClick={zoomIn}
+              aria-label="Acercar"
+              title="Acercar"
+            >
               +
-            </button>
+            </Button>
           </div>
         ) : null}
       </div>

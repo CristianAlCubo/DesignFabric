@@ -41,7 +41,7 @@ export function JobProgressPanel({ jobId }: JobProgressPanelProps) {
               }`}
             />
             {warnings.map((warning, index) => (
-              <p key={index} className="job-progress-panel__warning">
+              <p key={index} className="text-sm text-warning">
                 ⚠ {warning.message}
               </p>
             ))}

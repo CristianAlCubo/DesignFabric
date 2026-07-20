@@ -1,3 +1,5 @@
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
 import type { TabDescriptor } from '../registry/types'
 
 interface TabPaneProps {
@@ -16,24 +18,24 @@ export function TabPane({
   const orderedTabs = [...tabs].sort((a, b) => a.order - b.order)
 
   return (
-    <div className="tabpane" role="tablist" aria-label={ariaLabel}>
-      {orderedTabs.map((tab) => {
-        const selected = tab.id === activeId
-        return (
-          <button
+    <Tabs
+      value={activeId}
+      onValueChange={onChange}
+      className="w-full"
+      aria-label={ariaLabel}
+    >
+      <TabsList variant="line" className="h-auto w-full justify-start rounded-none p-0">
+        {orderedTabs.map((tab) => (
+          <TabsTrigger
             key={tab.id}
-            type="button"
-            role="tab"
+            value={tab.id}
             id={`tab-${tab.id}`}
-            aria-selected={selected}
-            aria-controls={`panel-${tab.id}`}
-            className={selected ? 'tabpane__tab tabpane__tab--active' : 'tabpane__tab'}
-            onClick={() => onChange(tab.id)}
+            className="rounded-none px-4 py-2.5"
           >
             {tab.label}
-          </button>
-        )
-      })}
-    </div>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   )
 }

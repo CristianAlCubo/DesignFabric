@@ -1,3 +1,13 @@
+import { Field, FieldLabel } from '@/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+
 import type { ProviderInfo } from '../api/types'
 
 interface ProviderSelectorProps {
@@ -11,21 +21,23 @@ interface ProviderSelectorProps {
 /** Selector de provider primitivo (LLM o imagen) según el catálogo del backend. */
 export function ProviderSelector({ label, value, providers, onChange, disabled }: ProviderSelectorProps) {
   return (
-    <label className="field">
-      <span>{label}</span>
-      <select
-        className="field__input"
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {providers.map((provider) => (
-          <option key={provider.id} value={provider.id} disabled={!provider.available}>
-            {provider.label}
-            {!provider.available ? ' (no disponible)' : ''}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Field>
+      <FieldLabel>{label}</FieldLabel>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {providers.map((provider) => (
+              <SelectItem key={provider.id} value={provider.id} disabled={!provider.available}>
+                {provider.label}
+                {!provider.available ? ' (no disponible)' : ''}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </Field>
   )
 }

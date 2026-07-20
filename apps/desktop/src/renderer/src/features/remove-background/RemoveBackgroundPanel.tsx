@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 
+import { Button } from '@/components/ui/button'
+
 import { TransparentImage } from '../../core/components/TransparentImage'
 import { StrategyList } from './StrategyList'
 import { useRemoveBackgroundStore } from './store'
@@ -32,14 +34,14 @@ export function RemoveBackgroundPanel() {
     <div className="columns" role="tabpanel" id="panel-remove" aria-labelledby="tab-remove">
       <section className="column panel">
         <h2 className="column__title">Entrada</h2>
-        <button
+        <Button
           type="button"
-          className="btn"
+          variant="outline"
           onClick={() => void selectInputImage()}
           disabled={isProcessing}
         >
           Seleccionar imagen
-        </button>
+        </Button>
         {inputPath ? <p className="path-hint">{inputPath}</p> : null}
         <TransparentImage
           src={inputPreview}
@@ -56,14 +58,13 @@ export function RemoveBackgroundPanel() {
           onSelect={setSelectedStrategyId}
           disabled={isProcessing}
         />
-        <button
+        <Button
           type="button"
-          className="btn btn--primary"
           onClick={() => void processRemoval()}
           disabled={!canProcess}
         >
           {isProcessing ? 'Procesando…' : 'Procesar'}
-        </button>
+        </Button>
         {error ? (
           <p className="error" role="alert">
             {error}
@@ -80,17 +81,17 @@ export function RemoveBackgroundPanel() {
           durationSeconds={outputDurationSeconds}
           actions={
             <>
-              <button
+              <Button
                 type="button"
-                className="btn"
+                variant="outline"
                 onClick={() => void exportOutput()}
                 disabled={isExporting}
               >
                 {isExporting ? 'Exportando…' : 'Exportar'}
-              </button>
-              <button type="button" className="btn" onClick={sendToScale}>
+              </Button>
+              <Button type="button" variant="outline" onClick={sendToScale}>
                 Enviar a escalado
-              </button>
+              </Button>
             </>
           }
         />

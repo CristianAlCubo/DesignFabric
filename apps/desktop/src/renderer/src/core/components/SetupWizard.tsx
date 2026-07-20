@@ -11,6 +11,8 @@ import { useState } from 'react'
 
 import type { SetupPreferences } from '@shared/setupPreferences'
 
+import { Button } from '@/components/ui/button'
+
 import { LogConsole } from './LogConsole'
 
 interface SetupWizardProps {
@@ -42,23 +44,22 @@ export function SetupWizard({ onCompleted }: SetupWizardProps) {
           varios GB y requiere descarga desde internet.
         </p>
         <p>¿Querés instalarlo ahora, o preferís hacerlo más adelante?</p>
-        <div className="btn-row">
-          <button
+        <div className="flex flex-wrap gap-3">
+          <Button
             type="button"
-            className="btn btn--primary"
             disabled={busy}
             onClick={() => void handleChoice('installed')}
           >
             Instalar ahora
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn btn--ghost"
+            variant="ghost"
             disabled={busy}
             onClick={() => void handleChoice('deferred')}
           >
             Más tarde
-          </button>
+          </Button>
         </div>
         {error ? (
           <p className="error" role="alert">

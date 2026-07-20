@@ -1,5 +1,7 @@
 import { CircleCheckBig, CircleX, FolderOpen, SkipForward } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
+
 import type { BatchItemResult, BatchReport } from './store'
 
 interface BatchQueueProps {
@@ -69,10 +71,10 @@ export function BatchQueue({ items, report, outputDir, onOpenOutput }: BatchQueu
       </ul>
 
       {outputDir && report ? (
-        <button type="button" className="btn" onClick={onOpenOutput}>
-          <FolderOpen size={14} aria-hidden />
+        <Button type="button" variant="outline" onClick={onOpenOutput}>
+          <FolderOpen data-icon="inline-start" aria-hidden />
           Abrir carpeta de salida
-        </button>
+        </Button>
       ) : null}
     </section>
   )

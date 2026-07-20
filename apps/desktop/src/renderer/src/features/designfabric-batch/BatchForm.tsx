@@ -1,5 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
+import { Button } from '@/components/ui/button'
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+
 import { ModelSelector } from '../../core/components/ModelSelector'
 import { ProviderSelector } from '../../core/components/ProviderSelector'
 import { useGenerationProviders } from '../../core/hooks/useGenerationProviders'
@@ -48,34 +52,37 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
 
   return (
     <form className="batch-form" onSubmit={handleSubmit}>
-      <label className="field">
-        <span>Número de stickers</span>
-        <input
-          type="number"
-          min={1}
-          max={50}
-          value={numImages}
-          onChange={(e) => setNumImages(Number(e.target.value))}
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="batch-num-images">Número de stickers</FieldLabel>
+          <Input
+            id="batch-num-images"
+            type="number"
+            min={1}
+            max={50}
+            value={numImages}
+            onChange={(e) => setNumImages(Number(e.target.value))}
+          />
+        </Field>
+        <ProviderSelector
+          label="Provider LLM"
+          value={llmProvider}
+          providers={llmProviders}
+          onChange={(v) => setLlmProvider(v as LlmProviderId)}
+          disabled={!catalog || isSubmitting}
         />
-      </label>
-      <ProviderSelector
-        label="Provider LLM"
-        value={llmProvider}
-        providers={llmProviders}
-        onChange={(v) => setLlmProvider(v as LlmProviderId)}
-        disabled={!catalog || isSubmitting}
-      />
-      {llmProvider === 'ollama' && <ModelSelector value={ollamaModel} onChange={setOllamaModel} />}
-      <ProviderSelector
-        label="Provider de imagen"
-        value={imageProvider}
-        providers={imageProviders}
-        onChange={(v) => setImageProvider(v as ImageProviderId)}
-        disabled={!catalog || isSubmitting}
-      />
-      <button type="submit" disabled={isSubmitting || !catalog}>
-        {isSubmitting ? 'Generando…' : 'Generar'}
-      </button>
+        {llmProvider === 'ollama' && <ModelSelector value={ollamaModel} onChange={setOllamaModel} />}
+        <ProviderSelector
+          label="Provider de imagen"
+          value={imageProvider}
+          providers={imageProviders}
+          onChange={(v) => setImageProvider(v as ImageProviderId)}
+          disabled={!catalog || isSubmitting}
+        />
+        <Button type="submit" disabled={isSubmitting || !catalog}>
+          {isSubmitting ? 'Generando…' : 'Generar'}
+        </Button>
+      </FieldGroup>
     </form>
   )
 }

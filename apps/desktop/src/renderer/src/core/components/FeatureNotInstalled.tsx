@@ -8,6 +8,8 @@
 
 import { useState } from 'react'
 
+import { Button } from '@/components/ui/button'
+
 import { LogConsole } from './LogConsole'
 
 interface FeatureNotInstalledProps {
@@ -37,9 +39,9 @@ export function FeatureNotInstalled({ onInstalled }: FeatureNotInstalledProps) {
         Este módulo requiere instalar el entorno de generación por IA local (varios GB, requiere
         internet).
       </p>
-      <button type="button" className="btn btn--primary" disabled={installing} onClick={() => void handleInstall()}>
+      <Button type="button" disabled={installing} onClick={() => void handleInstall()}>
         {installing ? 'Instalando…' : 'Instalar ahora'}
-      </button>
+      </Button>
       {installing ? <LogConsole /> : null}
       {error ? (
         <p className="error" role="alert">

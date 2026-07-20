@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: "Segoe UI", "Helvetica Neue", sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-checker-a: var(--checker-a);
+  --color-checker-b: var(--checker-b);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --sidebar-width: 15.5rem;
+}
+
+/*
+ * DesignFabric workbench theme (siempre dark).
+ * Valores alineados a la paleta histórica de styles.css.
+ */
+:root,
+.dark {
+  --background: #202225;
+  --foreground: #e6e6e6;
+  --card: #292b2f;
+  --card-foreground: #e6e6e6;
+  --popover: #292b2f;
+  --popover-foreground: #e6e6e6;
+  --primary: #3a6df0;
+  --primary-foreground: #ffffff;
+  --secondary: #2f3136;
+  --secondary-foreground: #e6e6e6;
+  --muted: #2f3136;
+  --muted-foreground: #838383;
+  --accent: #40444b;
+  --accent-foreground: #e6e6e6;
+  --destructive: #ffb4b4;
+  --border: #40444b;
+  --input: #40444b;
+  --ring: #5883f2;
+  --chart-1: #3a6df0;
+  --chart-2: #22c55e;
+  --chart-3: #f0c95a;
+  --chart-4: #38bdf8;
+  --chart-5: #b6b6b6;
+  --radius: 0.375rem;
+  --sidebar: #202225;
+  --sidebar-foreground: #e6e6e6;
+  --sidebar-primary: #3a6df0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(58, 109, 240, 0.12);
+  --sidebar-accent-foreground: #e6e6e6;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-ring: #5883f2;
+  --success: #22c55e;
+  --success-foreground: #e6e6e6;
+  --warning: #f0c95a;
+  --warning-foreground: #e6e6e6;
+  --info: #38bdf8;
+  --info-foreground: #e6e6e6;
+  --checker-a: #2f3136;
+  --checker-b: #292b2f;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* shadcn/Tailwind v4 usan cursor por defecto en botones; restaurar pointer. */
+  button:not(:disabled):not([aria-disabled='true']),
+  [role='button']:not(:disabled):not([aria-disabled='true']),
+  [role='tab']:not(:disabled):not([aria-disabled='true']),
+  [role='menuitem']:not(:disabled):not([aria-disabled='true']),
+  [role='option']:not(:disabled):not([aria-disabled='true']),
+  [role='checkbox']:not(:disabled):not([aria-disabled='true']),
+  [role='radio']:not(:disabled):not([aria-disabled='true']),
+  [role='switch']:not(:disabled):not([aria-disabled='true']),
+  [role='slider']:not(:disabled):not([aria-disabled='true']),
+  [role='combobox']:not(:disabled):not([aria-disabled='true']),
+  a[href],
+  label[for],
+  select:not(:disabled),
+  summary,
+  input[type='button']:not(:disabled),
+  input[type='submit']:not(:disabled),
+  input[type='reset']:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  input[type='file']:not(:disabled),
+  input[type='range']:not(:disabled),
+  [data-slot='button']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='checkbox']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='radio-group-item']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='switch']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='tabs-trigger']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='toggle']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='toggle-group-item']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='select-trigger']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='slider-thumb']:not(:disabled):not([aria-disabled='true']),
+  [data-slot='sidebar-menu-button']:not(:disabled):not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  :disabled,
+  [aria-disabled='true'],
+  [data-disabled] {
+    cursor: not-allowed;
+  }
+}

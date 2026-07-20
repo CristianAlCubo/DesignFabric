@@ -1,4 +1,4 @@
-/** Barra de progreso simple, reutilizada por las vistas batch y de imagen única. */
+import { Progress } from '@/components/ui/progress'
 
 interface ProgressBarProps {
   current: number
@@ -6,16 +6,15 @@ interface ProgressBarProps {
   label?: string
 }
 
+/** Barra de progreso simple, reutilizada por las vistas batch y de imagen única. */
 export function ProgressBar({ current, total, label }: ProgressBarProps) {
   const percent = total > 0 ? Math.round((current / total) * 100) : 0
 
   return (
-    <div className="progress-bar">
-      {label && <div className="progress-bar__label">{label}</div>}
-      <div className="progress-bar__track">
-        <div className="progress-bar__fill" style={{ width: `${percent}%` }} />
-      </div>
-      <div className="progress-bar__count">
+    <div className="flex flex-col gap-1.5">
+      {label ? <div className="text-sm text-muted-foreground">{label}</div> : null}
+      <Progress value={percent} />
+      <div className="text-sm text-muted-foreground tabular-nums">
         {current} / {total}
       </div>
     </div>

@@ -1,5 +1,19 @@
 import { useEffect } from 'react'
 
+import { Button } from '@/components/ui/button'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+
 import { TransparentImage } from '../../core/components/TransparentImage'
 import type { ScaleFactor, SizeInputMode } from './store'
 import { useScaleStore } from './store'
@@ -75,14 +89,14 @@ export function ScalePanel() {
     <div className="columns columns--scale" role="tabpanel" id="panel-scale" aria-labelledby="tab-scale">
       <section className="column panel">
         <h2 className="column__title">Entrada PNG</h2>
-        <button
+        <Button
           type="button"
-          className="btn"
+          variant="outline"
           onClick={() => void selectInputImage()}
           disabled={isScaling}
         >
           Seleccionar PNG
-        </button>
+        </Button>
         {inputPath ? <p className="path-hint">{inputPath}</p> : null}
         <TransparentImage
           src={inputPreview}
@@ -108,43 +122,43 @@ export function ScalePanel() {
 
         <h2 className="column__title">Resolución</h2>
 
-        <div className="segmented" role="group" aria-label="Modo de tamaño">
-          {SIZE_MODE_OPTIONS.map((option) => {
-            const selected = sizeInputMode === option.id
-            return (
-              <button
-                key={option.id}
-                type="button"
-                className={selected ? 'segmented__btn segmented__btn--active' : 'segmented__btn'}
-                aria-pressed={selected}
-                onClick={() => setSizeInputMode(option.id)}
-                disabled={isScaling}
-              >
-                {option.label}
-              </button>
-            )
-          })}
-        </div>
+        <ToggleGroup
+          type="single"
+          value={sizeInputMode}
+          onValueChange={(value) => {
+            if (value === 'factor' || value === 'manual') {
+              setSizeInputMode(value)
+            }
+          }}
+          disabled={isScaling}
+          aria-label="Modo de tamaño"
+        >
+          {SIZE_MODE_OPTIONS.map((option) => (
+            <ToggleGroupItem key={option.id} value={option.id}>
+              {option.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
 
         {sizeInputMode === 'factor' ? (
           <>
-            <div className="segmented" role="group" aria-label="Factor de escala">
-              {FACTOR_OPTIONS.map((factor) => {
-                const selected = scaleFactor === factor
-                return (
-                  <button
-                    key={factor}
-                    type="button"
-                    className={selected ? 'segmented__btn segmented__btn--active' : 'segmented__btn'}
-                    aria-pressed={selected}
-                    onClick={() => setScaleFactor(factor)}
-                    disabled={isScaling}
-                  >
-                    {factor}x
-                  </button>
-                )
-              })}
-            </div>
+            <ToggleGroup
+              type="single"
+              value={String(scaleFactor)}
+              onValueChange={(value) => {
+                if (value === '2' || value === '4') {
+                  setScaleFactor(Number(value) as ScaleFactor)
+                }
+              }}
+              disabled={isScaling}
+              aria-label="Factor de escala"
+            >
+              {FACTOR_OPTIONS.map((factor) => (
+                <ToggleGroupItem key={factor} value={String(factor)}>
+                  {factor}x
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
             <p className="muted field-hint">
               {targetWidth !== null && targetHeight !== null
                 ? `Tamaño final: ${targetWidth} × ${targetHeight}`
@@ -153,10 +167,10 @@ export function ScalePanel() {
           </>
         ) : (
           <>
-            <label className="field">
-              <span className="field__label">Ancho (px)</span>
-              <input
-                className="field__input"
+            <Field>
+              <FieldLabel htmlFor="scale-width">Ancho (px)</FieldLabel>
+              <Input
+                id="scale-width"
                 type="number"
                 min={1}
                 placeholder="Requerido"
@@ -164,11 +178,11 @@ export function ScalePanel() {
                 onChange={(event) => setWidth(event.target.value)}
                 disabled={isScaling}
               />
-            </label>
-            <label className="field">
-              <span className="field__label">Alto (px)</span>
-              <input
-                className="field__input"
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="scale-height">Alto (px)</FieldLabel>
+              <Input
+                id="scale-height"
                 type="number"
                 min={1}
                 placeholder="Requerido"
@@ -176,15 +190,15 @@ export function ScalePanel() {
                 onChange={(event) => setHeight(event.target.value)}
                 disabled={isScaling}
               />
-            </label>
+            </Field>
             <p className="muted field-hint">Indica al menos ancho o alto en píxeles.</p>
           </>
         )}
 
-        <label className="field">
-          <span className="field__label">DPI</span>
-          <input
-            className="field__input"
+        <Field>
+          <FieldLabel htmlFor="scale-dpi">DPI</FieldLabel>
+          <Input
+            id="scale-dpi"
             type="number"
             min={1}
             step={1}
@@ -192,7 +206,7 @@ export function ScalePanel() {
             onChange={(event) => setDpi(event.target.value)}
             disabled={isScaling}
           />
-        </label>
+        </Field>
         <p className="muted field-hint">
           DPI de rasterización
           {defaults ? ` (default: ${defaults.dpi}).` : '.'}
@@ -201,111 +215,109 @@ export function ScalePanel() {
         {showVectorKnobs ? (
           <>
             <h2 className="column__title">Calidad del trazado</h2>
-            <label className="field">
-              <span className="field__label">Corner threshold ({cornerThreshold})</span>
-              <input
-                className="field__range"
-                type="range"
+            <Field>
+              <FieldLabel>Corner threshold ({cornerThreshold})</FieldLabel>
+              <Slider
                 min={0}
                 max={180}
-                value={cornerThreshold}
-                onChange={(event) => setCornerThreshold(Number(event.target.value))}
+                value={[cornerThreshold]}
+                onValueChange={(vals) => setCornerThreshold(vals[0])}
                 disabled={isScaling}
               />
-            </label>
-            <label className="field">
-              <span className="field__label">Color precision ({colorPrecision})</span>
-              <input
-                className="field__range"
-                type="range"
+            </Field>
+            <Field>
+              <FieldLabel>Color precision ({colorPrecision})</FieldLabel>
+              <Slider
                 min={1}
                 max={8}
-                value={colorPrecision}
-                onChange={(event) => setColorPrecision(Number(event.target.value))}
+                value={[colorPrecision]}
+                onValueChange={(vals) => setColorPrecision(vals[0])}
                 disabled={isScaling}
               />
-            </label>
+            </Field>
 
-            <button
+            <Button
               type="button"
-              className="btn btn--ghost"
+              variant="ghost"
               onClick={() => setShowAdvanced(!showAdvanced)}
               disabled={isScaling}
             >
               {showAdvanced ? 'Ocultar avanzado' : 'Mostrar avanzado'}
-            </button>
+            </Button>
 
             {showAdvanced ? (
               <div className="advanced-fields">
-                <label className="field">
-                  <span className="field__label">Filter speckle ({filterSpeckle})</span>
-                  <input
-                    className="field__range"
-                    type="range"
+                <Field>
+                  <FieldLabel>Filter speckle ({filterSpeckle})</FieldLabel>
+                  <Slider
                     min={0}
                     max={20}
-                    value={filterSpeckle}
-                    onChange={(event) => setFilterSpeckle(Number(event.target.value))}
+                    value={[filterSpeckle]}
+                    onValueChange={(vals) => setFilterSpeckle(vals[0])}
                     disabled={isScaling}
                   />
-                </label>
-                <label className="field">
-                  <span className="field__label">Layer difference ({layerDifference})</span>
-                  <input
-                    className="field__range"
-                    type="range"
+                </Field>
+                <Field>
+                  <FieldLabel>Layer difference ({layerDifference})</FieldLabel>
+                  <Slider
                     min={1}
                     max={64}
-                    value={layerDifference}
-                    onChange={(event) => setLayerDifference(Number(event.target.value))}
+                    value={[layerDifference]}
+                    onValueChange={(vals) => setLayerDifference(vals[0])}
                     disabled={isScaling}
                   />
-                </label>
-                <label className="field">
-                  <span className="field__label">Color mode</span>
-                  <select
-                    className="field__input"
+                </Field>
+                <Field>
+                  <FieldLabel>Color mode</FieldLabel>
+                  <Select
                     value={colormode}
-                    onChange={(event) =>
-                      setColormode(event.target.value === 'binary' ? 'binary' : 'color')
+                    onValueChange={(value) =>
+                      setColormode(value === 'binary' ? 'binary' : 'color')
                     }
                     disabled={isScaling}
                   >
-                    <option value="color">color</option>
-                    <option value="binary">binary</option>
-                  </select>
-                </label>
-                <label className="field">
-                  <span className="field__label">Mode</span>
-                  <select
-                    className="field__input"
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="color">color</SelectItem>
+                        <SelectItem value="binary">binary</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel>Mode</FieldLabel>
+                  <Select
                     value={mode}
-                    onChange={(event) => {
-                      const value = event.target.value
+                    onValueChange={(value) => {
                       if (value === 'polygon' || value === 'none' || value === 'spline') {
                         setMode(value)
                       }
                     }}
                     disabled={isScaling}
                   >
-                    <option value="spline">spline</option>
-                    <option value="polygon">polygon</option>
-                    <option value="none">none</option>
-                  </select>
-                </label>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="spline">spline</SelectItem>
+                        <SelectItem value="polygon">polygon</SelectItem>
+                        <SelectItem value="none">none</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
             ) : null}
           </>
         ) : null}
 
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={() => void runScale()}
-          disabled={!canScale}
-        >
+        <Button type="button" onClick={() => void runScale()} disabled={!canScale}>
           {isScaling ? 'Escalando…' : 'Escalar'}
-        </button>
+        </Button>
         {error ? (
           <p className="error" role="alert">
             {error}
@@ -326,14 +338,14 @@ export function ScalePanel() {
           emptyLabel="El PNG a alta resolución aparecerá aquí"
           durationSeconds={outputDurationSeconds}
           actions={
-            <button
+            <Button
               type="button"
-              className="btn"
+              variant="outline"
               onClick={() => void exportOutput()}
               disabled={isExporting}
             >
               {isExporting ? 'Exportando…' : 'Exportar'}
-            </button>
+            </Button>
           }
         />
         {outputPath ? <p className="path-hint">{outputPath}</p> : null}

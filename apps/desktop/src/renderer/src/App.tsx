@@ -1,8 +1,12 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Terminal } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 
 import type { SetupPreferences } from '@shared/setupPreferences'
+
+import { Button } from '@/components/ui/button'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 import './features' // side-effect: cada feature se auto-registra al importarse
 import { AppSidebar } from './core/components/AppSidebar'
@@ -30,28 +34,41 @@ function AppShell() {
   }, [ensureDefaults])
 
   return (
-    <div className="app">
-      <AppSidebar activeSectionId={activeSectionId} onSelect={setActiveSection} />
-      <div className="app__main">
-        <header className="app__header">
-          <button
-            type="button"
-            className="logs-toggle"
-            aria-expanded={showLogs}
-            aria-controls="console-sheet"
-            onClick={() => setShowLogs((value) => !value)}
-          >
-            <Terminal size={16} strokeWidth={1.75} aria-hidden />
-            {showLogs ? 'Ocultar registro' : 'Mostrar registro'}
-          </button>
-        </header>
-        <SectionWorkspace
-          sectionId={activeSectionId}
-          activeTabId={activeTabId}
-          onTabChange={setActiveTab}
-        />
-      </div>
-      <ConsoleSheet open={showLogs} onClose={() => setShowLogs(false)} />
+    <div className="h-full">
+      <TooltipProvider>
+        <SidebarProvider
+          defaultOpen
+          className="h-full! min-h-0!"
+          style={
+            {
+              '--sidebar-width': '15.5rem'
+            } as CSSProperties
+          }
+        >
+          <AppSidebar activeSectionId={activeSectionId} onSelect={setActiveSection} />
+          <SidebarInset className="min-h-0 overflow-hidden">
+            <header className="flex shrink-0 items-center justify-end gap-3 border-b border-border px-5 py-2.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-expanded={showLogs}
+                aria-controls="console-sheet"
+                onClick={() => setShowLogs((value) => !value)}
+              >
+                <Terminal data-icon="inline-start" aria-hidden />
+                {showLogs ? 'Ocultar registro' : 'Mostrar registro'}
+              </Button>
+            </header>
+            <SectionWorkspace
+              sectionId={activeSectionId}
+              activeTabId={activeTabId}
+              onTabChange={setActiveTab}
+            />
+          </SidebarInset>
+          <ConsoleSheet open={showLogs} onClose={() => setShowLogs(false)} />
+        </SidebarProvider>
+      </TooltipProvider>
     </div>
   )
 }

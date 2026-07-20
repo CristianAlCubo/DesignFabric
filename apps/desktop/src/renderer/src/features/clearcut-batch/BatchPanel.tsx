@@ -1,6 +1,9 @@
 import { Files, Folder, FolderOutput } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+
 import { useJobProgress } from '../../core/hooks/useJobProgress'
 import { BatchJobStrip, type BatchProgressDisplay } from './BatchJobStrip'
 import { BatchQueue } from './BatchQueue'
@@ -118,37 +121,39 @@ export function BatchPanel() {
       <aside className="batch-setup panel panel--form">
         <h2 className="column__title">Entrada</h2>
 
-        <div className="segmented" role="group" aria-label="Estrategia de entrada">
+        <ToggleGroup
+          type="single"
+          value={batchInputMode}
+          onValueChange={(value) => {
+            if (value === 'folder' || value === 'files') {
+              setBatchInputMode(value)
+            }
+          }}
+          disabled={isBatchRunning}
+          aria-label="Estrategia de entrada"
+        >
           {INPUT_MODE_OPTIONS.map((option) => {
-            const selected = batchInputMode === option.id
             const Icon = option.icon
             return (
-              <button
-                key={option.id}
-                type="button"
-                className={selected ? 'segmented__btn segmented__btn--active' : 'segmented__btn'}
-                aria-pressed={selected}
-                onClick={() => setBatchInputMode(option.id)}
-                disabled={isBatchRunning}
-              >
-                <Icon size={14} aria-hidden />
+              <ToggleGroupItem key={option.id} value={option.id}>
+                <Icon data-icon="inline-start" aria-hidden />
                 {option.label}
-              </button>
+              </ToggleGroupItem>
             )
           })}
-        </div>
+        </ToggleGroup>
 
         {batchInputMode === 'folder' ? (
           <>
-            <button
+            <Button
               type="button"
-              className="btn"
+              variant="outline"
               onClick={() => void selectBatchFolder()}
               disabled={isBatchRunning}
             >
-              <Folder size={14} aria-hidden />
+              <Folder data-icon="inline-start" aria-hidden />
               Seleccionar carpeta
-            </button>
+            </Button>
             {batchInputDir ? (
               <p className="path-hint" title={batchInputDir}>
                 {batchInputDir}
@@ -158,15 +163,15 @@ export function BatchPanel() {
           </>
         ) : (
           <>
-            <button
+            <Button
               type="button"
-              className="btn"
+              variant="outline"
               onClick={() => void selectBatchFiles()}
               disabled={isBatchRunning}
             >
-              <Files size={14} aria-hidden />
+              <Files data-icon="inline-start" aria-hidden />
               Seleccionar archivos
-            </button>
+            </Button>
             {batchInputFiles.length > 0 ? (
               <ul className="batch-file-list">
                 {batchInputFiles.map((filePath) => (
@@ -181,15 +186,15 @@ export function BatchPanel() {
         )}
 
         <h2 className="column__title">Salida</h2>
-        <button
+        <Button
           type="button"
-          className="btn"
+          variant="outline"
           onClick={() => void selectBatchOutputDir()}
           disabled={isBatchRunning}
         >
-          <FolderOutput size={14} aria-hidden />
+          <FolderOutput data-icon="inline-start" aria-hidden />
           Elegir carpeta de salida
-        </button>
+        </Button>
         {batchOutputDir ? (
           <p className="path-hint" title={batchOutputDir}>
             {batchOutputDir}
@@ -221,23 +226,23 @@ export function BatchPanel() {
         />
 
         <h2 className="column__title">Factor</h2>
-        <div className="segmented" role="group" aria-label="Factor de escala">
-          {FACTOR_OPTIONS.map((factor) => {
-            const selected = batchFactor === factor
-            return (
-              <button
-                key={factor}
-                type="button"
-                className={selected ? 'segmented__btn segmented__btn--active' : 'segmented__btn'}
-                aria-pressed={selected}
-                onClick={() => setBatchFactor(factor)}
-                disabled={isBatchRunning}
-              >
-                {factor}x
-              </button>
-            )
-          })}
-        </div>
+        <ToggleGroup
+          type="single"
+          value={String(batchFactor)}
+          onValueChange={(value) => {
+            if (value === '2' || value === '4') {
+              setBatchFactor(Number(value) as ScaleFactor)
+            }
+          }}
+          disabled={isBatchRunning}
+          aria-label="Factor de escala"
+        >
+          {FACTOR_OPTIONS.map((factor) => (
+            <ToggleGroupItem key={factor} value={String(factor)}>
+              {factor}x
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
 
         {batchError ? (
           <p className="error" role="alert">

@@ -9,6 +9,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LogEntry } from '@shared/logEntry'
 
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+
 import { useAppLogs } from '../hooks/useAppLogs'
 
 function severityClass(entry: LogEntry): string {
@@ -30,14 +34,20 @@ export function LogConsole() {
     <div className="log-console">
       <div className="log-console__toolbar">
         <span>{entries.length} líneas</span>
-        <label className="log-console__autoscroll">
-          <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} />
-          Auto-scroll
-        </label>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="log-autoscroll"
+            checked={autoScroll}
+            onCheckedChange={(checked) => setAutoScroll(checked === true)}
+          />
+          <Label htmlFor="log-autoscroll" className="font-normal">
+            Auto-scroll
+          </Label>
+        </div>
       </div>
       <div className="log-console__body">
         {entries.map((entry, index) => (
-          <div key={index} className={`log-console__line ${severityClass(entry)}`}>
+          <div key={index} className={cn('log-console__line', severityClass(entry))}>
             <span className="log-console__timestamp">{entry.timestamp.slice(11, 19)}</span>
             <span className="log-console__source">[{entry.source}]</span>
             <span className="log-console__text">{entry.line}</span>

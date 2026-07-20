@@ -20,14 +20,16 @@ export function SectionWorkspace({
   const ActivePanel = activeTab?.Panel
 
   return (
-    <div className="section-workspace">
+    <div className="flex min-h-0 flex-1 flex-col">
       {section ? (
-        <header className="section-workspace__header">
-          <h2 className="section-workspace__title">{section.label}</h2>
+        <header className="px-6 pt-3.5 pb-1">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground text-balance">
+            {section.label}
+          </h2>
         </header>
       ) : null}
       {tabs.length > 0 ? (
-        <div className="section-workspace__tabs">
+        <div className="border-b border-border px-6">
           <TabPane
             tabs={tabs}
             activeId={activeTab?.id ?? ''}
