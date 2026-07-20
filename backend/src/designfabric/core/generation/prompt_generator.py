@@ -6,6 +6,8 @@ No importa SDKs de Ollama/LangChain directamente.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from designfabric.core.generation.constants import OLLAMA_MODEL_DEFAULT
 from designfabric.core.generation.llm_providers import ChatMessage, LlmProvider, create_llm_provider
 from designfabric.core.progress import (
@@ -18,6 +20,7 @@ from designfabric.core.progress import (
     emit_phase_started,
     emit_warning,
 )
+from designfabric.jobs.errors import JobCancelled
 
 STYLE_SUFFIX = (
     "vector graphic style, sticker asset for t-shirt design, "
@@ -61,6 +64,7 @@ def generate_concepts(
     model: str = OLLAMA_MODEL_DEFAULT,
     reporter: ProgressReporter = NullProgressReporter(),
     ollama_host: str | None = None,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> list[str]:
     """Genera sujetos/escenas vía el LlmProvider inyectado (Ollama por defecto).
 
@@ -77,6 +81,11 @@ def generate_concepts(
     try:
         concepts: list[str] = []
         for i in range(num_images):
+            if should_cancel is not None and should_cancel():
+                raise JobCancelled(
+                    "Generación de conceptos cancelada",
+                    partial_result=[apply_style_suffix(c) for c in concepts],
+                )
             concept = None
             for intento in range(1, 3):
                 try:
@@ -100,6 +109,8 @@ def generate_concepts(
 
         if not concepts:
             raise RuntimeError("No se generó ningún concepto válido")
+    except JobCancelled:
+        raise
     except Exception as e:
         emit_phase_failed(reporter, Phase.PROMPT_GENERATION, str(e))
         raise

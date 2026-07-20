@@ -79,6 +79,78 @@ def test_list_models_parses_and_uses_modality_query():
     }
 
 
+def test_list_image_models_merges_dedicated_catalog_with_capabilities():
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        seen.append(path)
+        if path.endswith("/images/models"):
+            return httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": "openai/gpt-image-1.5",
+                            "name": "GPT Image 1.5",
+                            "architecture": {"output_modalities": ["image"]},
+                            "supported_parameters": {
+                                "background": {
+                                    "type": "enum",
+                                    "values": ["auto", "transparent", "opaque"],
+                                },
+                                "output_format": {
+                                    "type": "enum",
+                                    "values": ["png", "jpeg", "webp"],
+                                },
+                            },
+                        }
+                    ]
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "data": [
+                    {
+                        "id": "google/gemini-image",
+                        "name": "Gemini Image",
+                        "architecture": {"output_modalities": ["image", "text"]},
+                    },
+                    {
+                        "id": "openai/gpt-image-1.5",
+                        "name": "GPT Image 1.5 (general)",
+                        "architecture": {"output_modalities": ["image"]},
+                    },
+                ]
+            },
+        )
+
+    client = OpenRouterClient("sk-test", transport=_MockTransport(handler))
+    models = client.list_models("image")
+    assert any(p.endswith("/models") for p in seen)
+    assert any(p.endswith("/images/models") for p in seen)
+    by_id = {m.id: m for m in models}
+    assert set(by_id) == {"google/gemini-image", "openai/gpt-image-1.5"}
+    assert "transparent" in by_id["openai/gpt-image-1.5"].supported_parameters["background"]["values"]
+    assert by_id["google/gemini-image"].supported_parameters == {}
+
+
+def test_openrouter_model_parses_supported_parameters():
+    model = OpenRouterModel.from_api(
+        {
+            "id": "openai/gpt-image-1.5",
+            "name": "GPT Image 1.5",
+            "architecture": {"output_modalities": ["image"]},
+            "supported_parameters": {
+                "background": {"type": "enum", "values": ["transparent"]},
+            },
+        }
+    )
+    assert model is not None
+    assert model.supported_parameters["background"]["values"] == ["transparent"]
+
+
 def test_list_models_401_raises_auth_error():
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, text="unauthorized")
@@ -111,14 +183,66 @@ def test_chat_completion_extracts_text():
     assert text == "hello fox"
 
 
-def test_generate_image_from_data_url():
+def test_generate_image_uses_images_api_for_image_only():
+    png_b64 = (
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/images")
+        body = json.loads(request.content)
+        assert body["model"] == "openai/gpt-image-2"
+        assert body["prompt"] == "a fox"
+        assert body["output_format"] == "png"
+        assert "background" not in body
+        assert "modalities" not in body
+        assert "messages" not in body
+        return httpx.Response(
+            200,
+            json={"created": 1, "data": [{"b64_json": png_b64, "media_type": "image/png"}]},
+        )
+
+    client = OpenRouterClient("sk-test", transport=_MockTransport(handler))
+    data = client.generate_image(
+        "a fox",
+        model="openai/gpt-image-2",
+        modalities=["image"],
+    )
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_generate_image_sends_transparent_when_options_say_so():
     png_b64 = (
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
     )
 
     def handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
-        assert body["modalities"] == ["image"]
+        assert body["background"] == "transparent"
+        assert body["output_format"] == "png"
+        return httpx.Response(
+            200,
+            json={"created": 1, "data": [{"b64_json": png_b64}]},
+        )
+
+    client = OpenRouterClient("sk-test", transport=_MockTransport(handler))
+    client.generate_image(
+        "a fox",
+        model="openai/gpt-image-1.5",
+        modalities=["image"],
+        image_options={"output_format": "png", "background": "transparent"},
+    )
+
+
+def test_generate_image_uses_chat_for_image_plus_text():
+    png_b64 = (
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/chat/completions")
+        body = json.loads(request.content)
+        assert body["modalities"] == ["image", "text"]
         return httpx.Response(
             200,
             json={
@@ -138,40 +262,9 @@ def test_generate_image_from_data_url():
     data = client.generate_image(
         "a fox",
         model="google/gemini-image",
-        modalities=["image"],
-    )
-    assert data[:8] == b"\x89PNG\r\n\x1a\n"
-
-
-def test_generate_image_sends_passed_modalities():
-    png_b64 = (
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-    )
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        body = json.loads(request.content)
-        assert body["modalities"] == ["image", "text"]
-        return httpx.Response(
-            200,
-            json={
-                "choices": [
-                    {
-                        "message": {
-                            "images": [
-                                {"image_url": {"url": f"data:image/png;base64,{png_b64}"}}
-                            ]
-                        }
-                    }
-                ]
-            },
-        )
-
-    client = OpenRouterClient("sk-test", transport=_MockTransport(handler))
-    client.generate_image(
-        "a fox",
-        model="google/gemini-image",
         modalities=["image", "text"],
     )
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
 
 
 def test_generate_image_rejects_empty_modalities():

@@ -5,7 +5,7 @@ import { GenerationWorkspace } from '../../core/components/GenerationWorkspace'
 import { JobProgressPanel } from '../../core/components/JobProgressPanel'
 import { StickerStage } from '../../core/components/StickerStage'
 import type { StickerResult } from '../../core/api/types'
-import { useCreateSingleImageJob, useJob } from './api'
+import { useCancelJob, useCreateSingleImageJob, useJob } from './api'
 import { SingleImageForm } from './SingleImageForm'
 import { SingleImageResult } from './SingleImageResult'
 import { useGenerationSingleStore } from './store'
@@ -18,9 +18,11 @@ export function SingleImageView() {
   const setSubmitError = useGenerationSingleStore((s) => s.setSubmitError)
   const prompt = useGenerationSingleStore((s) => s.prompt)
   const applyStyleSuffix = useGenerationSingleStore((s) => s.applyStyleSuffix)
+  const transparentBackground = useGenerationSingleStore((s) => s.transparentBackground)
   const imageProvider = useGenerationSingleStore((s) => s.imageProvider)
 
   const createJob = useCreateSingleImageJob()
+  const cancelJob = useCancelJob()
   const { data: job } = useJob(jobId)
   const backendBaseUrl = useBackendBaseUrl()
 
@@ -30,13 +32,21 @@ export function SingleImageView() {
       {
         prompt: prompt.trim(),
         apply_style_suffix: applyStyleSuffix,
-        image_provider: imageProvider
+        image_provider: imageProvider,
+        transparent_background: transparentBackground
       },
       {
         onSuccess: (response) => setJobId(response.job_id),
         onError: (error) => setSubmitError(error.message || 'Error al encolar el job')
       }
     )
+  }
+
+  function handleCancel(): void {
+    if (!jobId) return
+    cancelJob.mutate(jobId, {
+      onError: (error) => setSubmitError(error.message || 'No se pudo cancelar el job')
+    })
   }
 
   const isSubmitting = createJob.isPending || job?.status === 'queued' || job?.status === 'running'
@@ -54,6 +64,9 @@ export function SingleImageView() {
           {job?.status === 'failed' && (
             <ErrorBanner message={job.error ?? 'Error desconocido'} />
           )}
+          {job?.status === 'cancelled' && (
+            <p className="text-sm text-muted-foreground">Generación cancelada.</p>
+          )}
         </div>
       }
       stage={
@@ -68,7 +81,12 @@ export function SingleImageView() {
               <SingleImageResult result={result} backendBaseUrl={backendBaseUrl} />
             ) : undefined}
           </StickerStage>
-          <JobProgressPanel jobId={jobId} />
+          <JobProgressPanel
+            jobId={jobId}
+            cancellable={isSubmitting}
+            cancelling={cancelJob.isPending}
+            onCancel={handleCancel}
+          />
         </div>
       }
     />

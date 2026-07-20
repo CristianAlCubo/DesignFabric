@@ -1,6 +1,7 @@
-import { useEffect, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Sparkles } from 'lucide-react'
 
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Field,
   FieldDescription,
@@ -37,6 +38,26 @@ function pickDefault(
   return available?.id ?? fallback
 }
 
+function useSupportsTransparency(enabled: boolean, imageModelId: string | null): boolean {
+  const [supports, setSupports] = useState(false)
+
+  useEffect(() => {
+    if (!enabled) {
+      setSupports(false)
+      return
+    }
+    let cancelled = false
+    void window.designfabric.getGenerationPreferences().then((prefs) => {
+      if (!cancelled) setSupports(prefs.openrouter.imageModelSupportsTransparency)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, imageModelId])
+
+  return supports
+}
+
 /** Formulario batch: estado en Zustand (sobrevive a la navegación). */
 export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
   const { readiness, catalog, canUseOllama, hasOllamaModel, isLlmExecutable, isImageExecutable } =
@@ -46,10 +67,12 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
   const ollamaModel = useGenerationBatchStore((s) => s.ollamaModel)
   const llmProvider = useGenerationBatchStore((s) => s.llmProvider)
   const imageProvider = useGenerationBatchStore((s) => s.imageProvider)
+  const transparentBackground = useGenerationBatchStore((s) => s.transparentBackground)
   const setNumImages = useGenerationBatchStore((s) => s.setNumImages)
   const setOllamaModel = useGenerationBatchStore((s) => s.setOllamaModel)
   const setLlmProvider = useGenerationBatchStore((s) => s.setLlmProvider)
   const setImageProvider = useGenerationBatchStore((s) => s.setImageProvider)
+  const setTransparentBackground = useGenerationBatchStore((s) => s.setTransparentBackground)
   const ensureProviderDefaults = useGenerationBatchStore((s) => s.ensureProviderDefaults)
   const ensureOllamaModel = useGenerationBatchStore((s) => s.ensureOllamaModel)
 
@@ -64,6 +87,13 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
   useEffect(() => {
     ensureOllamaModel(readiness?.ollama.models ?? [])
   }, [readiness, ensureOllamaModel])
+
+  const showTransparentOption =
+    imageProvider === 'openrouter' && Boolean(readiness?.openrouter?.image_model_id)
+  const supportsTransparency = useSupportsTransparency(
+    showTransparentOption,
+    readiness?.openrouter?.image_model_id ?? null
+  )
 
   const modelOk = llmProvider !== 'ollama' || hasOllamaModel(ollamaModel)
   const comboOk =
@@ -121,6 +151,22 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
             <FieldDescription className="m-0">Hasta 50 por lote.</FieldDescription>
           </div>
         </Field>
+
+        {showTransparentOption && supportsTransparency ? (
+          <Field orientation="horizontal">
+            <Checkbox
+              id="batch-transparent-background"
+              checked={transparentBackground}
+              onCheckedChange={(checked) => setTransparentBackground(checked === true)}
+            />
+            <div className="flex flex-col gap-0.5">
+              <FieldLabel htmlFor="batch-transparent-background">Fondo transparente</FieldLabel>
+              <FieldDescription>
+                Pide transparencia nativa al modelo (PNG con alpha).
+              </FieldDescription>
+            </div>
+          </Field>
+        ) : null}
 
         <FieldSeparator>Configuración</FieldSeparator>
 

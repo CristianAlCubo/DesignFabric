@@ -39,10 +39,10 @@ def get_job(
 
 @router.delete("/{job_id}", status_code=204)
 def cancel_job(job_id: str, store: JobStore = Depends(get_job_store)) -> None:
-    """Cancela un job solo si todavía está en cola; 409 si ya empezó a correr o ya terminó."""
+    """Cancela un job en cola o solicita cancel cooperativa si ya está running."""
     job = store.get(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job no encontrado")
-    if not store.mark_cancelled(job_id):
-        raise HTTPException(status_code=409, detail="El job ya está en ejecución o finalizado")
-    logger.info("Job %s cancelado", job_id)
+    if not store.request_cancel(job_id):
+        raise HTTPException(status_code=409, detail="El job ya está finalizado")
+    logger.info("Job %s: cancelación solicitada (status=%s)", job_id, job.status.value)

@@ -19,6 +19,11 @@ const FALLBACK_READINESS: GenerationReadiness = {
   openrouter: { configured: false, text_model_id: null, image_model_id: null }
 }
 
+function openRouterImageLabel(ready: GenerationReadiness): string {
+  const modelId = ready.openrouter?.image_model_id?.trim()
+  return modelId ? `OpenRouter (${modelId})` : 'OpenRouter'
+}
+
 function providersFromReadiness(ready: GenerationReadiness): GenerationProvidersResponse {
   const llm: ProviderInfo[] = [
     {
@@ -49,7 +54,7 @@ function providersFromReadiness(ready: GenerationReadiness): GenerationProviders
     },
     {
       id: 'openrouter',
-      label: 'OpenRouter',
+      label: openRouterImageLabel(ready),
       available: ready.providers.openrouter_image ?? false,
       requires_local_ai: false
     },

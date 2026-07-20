@@ -9,6 +9,7 @@ import type { ImageProviderId } from '../../core/api/types'
 interface GenerationSingleState {
   prompt: string
   applyStyleSuffix: boolean
+  transparentBackground: boolean
   imageProvider: ImageProviderId
   /** Evita pisar la selección del usuario al rehidratar el catálogo. */
   providerInitialized: boolean
@@ -18,6 +19,7 @@ interface GenerationSingleState {
 
   setPrompt: (prompt: string) => void
   setApplyStyleSuffix: (value: boolean) => void
+  setTransparentBackground: (value: boolean) => void
   setImageProvider: (id: ImageProviderId) => void
   ensureImageProviderDefault: (id: ImageProviderId) => void
   setJobId: (jobId: string | null) => void
@@ -27,6 +29,7 @@ interface GenerationSingleState {
 export const useGenerationSingleStore = create<GenerationSingleState>((set, get) => ({
   prompt: '',
   applyStyleSuffix: true,
+  transparentBackground: true,
   imageProvider: 'test',
   providerInitialized: false,
 
@@ -35,6 +38,7 @@ export const useGenerationSingleStore = create<GenerationSingleState>((set, get)
 
   setPrompt: (prompt) => set({ prompt }),
   setApplyStyleSuffix: (applyStyleSuffix) => set({ applyStyleSuffix }),
+  setTransparentBackground: (transparentBackground) => set({ transparentBackground }),
   setImageProvider: (imageProvider) => set({ imageProvider }),
 
   ensureImageProviderDefault: (id) => {

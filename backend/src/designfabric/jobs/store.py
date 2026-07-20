@@ -67,5 +67,41 @@ class JobStore:
             if job is None or job.status is not JobStatus.QUEUED:
                 return False
             job.status = JobStatus.CANCELLED
+            job.cancel_requested = True
             job.finished_at = datetime.now(timezone.utc)
             return True
+
+    def request_cancel(self, job_id: str) -> bool:
+        """Solicita cancelación: QUEUED → CANCELLED; RUNNING → flag cooperativa.
+
+        Devuelve False si el job no existe o ya terminó.
+        """
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return False
+            if job.status is JobStatus.QUEUED:
+                job.status = JobStatus.CANCELLED
+                job.cancel_requested = True
+                job.finished_at = datetime.now(timezone.utc)
+                return True
+            if job.status is JobStatus.RUNNING:
+                job.cancel_requested = True
+                return True
+            return False
+
+    def is_cancel_requested(self, job_id: str) -> bool:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return False
+            return job.cancel_requested or job.status is JobStatus.CANCELLED
+
+    def mark_cancelled_running(self, job_id: str, result: Any | None = None) -> None:
+        """Marca un job RUNNING como CANCELLED (salida cooperativa del handler)."""
+        with self._lock:
+            job = self._jobs[job_id]
+            job.status = JobStatus.CANCELLED
+            job.cancel_requested = True
+            job.result = result
+            job.finished_at = datetime.now(timezone.utc)

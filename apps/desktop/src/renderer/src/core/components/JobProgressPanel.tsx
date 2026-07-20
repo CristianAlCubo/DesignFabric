@@ -5,14 +5,19 @@
  * features `designfabric-batch` y `designfabric-single`.
  */
 
-import { Images, MessageSquareText } from 'lucide-react'
+import { Images, MessageSquareText, Square } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
+import { AppButton } from './AppButton'
 import { useJobProgress } from '../hooks/useJobProgress'
 import { ProgressBar } from './ProgressBar'
 
 interface JobProgressPanelProps {
   jobId: string | null
+  /** Si true, muestra el botón Cancelar. */
+  cancellable?: boolean
+  cancelling?: boolean
+  onCancel?: () => void
 }
 
 const PHASE_META: Record<string, { label: string; icon: LucideIcon }> = {
@@ -20,10 +25,15 @@ const PHASE_META: Record<string, { label: string; icon: LucideIcon }> = {
   image_generation: { label: 'Generación de imágenes', icon: Images }
 }
 
-export function JobProgressPanel({ jobId }: JobProgressPanelProps) {
+export function JobProgressPanel({
+  jobId,
+  cancellable = false,
+  cancelling = false,
+  onCancel
+}: JobProgressPanelProps) {
   const { events } = useJobProgress(jobId)
 
-  if (!jobId || events.length === 0) return null
+  if (!jobId || (events.length === 0 && !cancellable)) return null
 
   const phases = Array.from(new Set(events.map((event) => event.phase)))
 
@@ -60,6 +70,21 @@ export function JobProgressPanel({ jobId }: JobProgressPanelProps) {
           </div>
         )
       })}
+
+      {cancellable && onCancel && (
+        <div className="flex justify-end">
+          <AppButton
+            type="button"
+            variant="outline"
+            size="sm"
+            icon={Square}
+            disabled={cancelling}
+            onClick={onCancel}
+          >
+            {cancelling ? 'Cancelando…' : 'Cancelar'}
+          </AppButton>
+        </div>
+      )}
     </div>
   )
 }

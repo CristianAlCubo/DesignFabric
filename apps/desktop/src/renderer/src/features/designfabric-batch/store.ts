@@ -11,6 +11,7 @@ interface GenerationBatchState {
   ollamaModel: string
   llmProvider: LlmProviderId
   imageProvider: ImageProviderId
+  transparentBackground: boolean
   /** Evita pisar la selección del usuario al rehidratar el catálogo. */
   providersInitialized: boolean
 
@@ -21,6 +22,7 @@ interface GenerationBatchState {
   setOllamaModel: (model: string) => void
   setLlmProvider: (id: LlmProviderId) => void
   setImageProvider: (id: ImageProviderId) => void
+  setTransparentBackground: (value: boolean) => void
   ensureProviderDefaults: (llmId: LlmProviderId, imageId: ImageProviderId) => void
   ensureOllamaModel: (models: string[]) => void
   setJobId: (jobId: string | null) => void
@@ -32,6 +34,7 @@ export const useGenerationBatchStore = create<GenerationBatchState>((set, get) =
   ollamaModel: 'gemma3:4b',
   llmProvider: 'test',
   imageProvider: 'test',
+  transparentBackground: true,
   providersInitialized: false,
 
   jobId: null,
@@ -41,6 +44,7 @@ export const useGenerationBatchStore = create<GenerationBatchState>((set, get) =
   setOllamaModel: (ollamaModel) => set({ ollamaModel }),
   setLlmProvider: (llmProvider) => set({ llmProvider }),
   setImageProvider: (imageProvider) => set({ imageProvider }),
+  setTransparentBackground: (transparentBackground) => set({ transparentBackground }),
 
   ensureProviderDefaults: (llmId, imageId) => {
     if (get().providersInitialized) return

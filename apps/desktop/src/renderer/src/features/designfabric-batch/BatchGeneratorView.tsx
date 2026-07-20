@@ -5,7 +5,7 @@ import { GenerationWorkspace } from '../../core/components/GenerationWorkspace'
 import { JobProgressPanel } from '../../core/components/JobProgressPanel'
 import { StickerStage } from '../../core/components/StickerStage'
 import type { BatchJobResult } from '../../core/api/types'
-import { useCreateBatchJob, useJob } from './api'
+import { useCancelJob, useCreateBatchJob, useJob } from './api'
 import { BatchForm } from './BatchForm'
 import { ResultsGallery } from './ResultsGallery'
 import { useGenerationBatchStore } from './store'
@@ -20,8 +20,10 @@ export function BatchGeneratorView() {
   const ollamaModel = useGenerationBatchStore((s) => s.ollamaModel)
   const llmProvider = useGenerationBatchStore((s) => s.llmProvider)
   const imageProvider = useGenerationBatchStore((s) => s.imageProvider)
+  const transparentBackground = useGenerationBatchStore((s) => s.transparentBackground)
 
   const createJob = useCreateBatchJob()
+  const cancelJob = useCancelJob()
   const { data: job } = useJob(jobId)
   const backendBaseUrl = useBackendBaseUrl()
 
@@ -32,7 +34,8 @@ export function BatchGeneratorView() {
         num_images: numImages,
         ollama_model: ollamaModel,
         llm_provider: llmProvider,
-        image_provider: imageProvider
+        image_provider: imageProvider,
+        transparent_background: transparentBackground
       },
       {
         onSuccess: (response) => setJobId(response.job_id),
@@ -41,8 +44,18 @@ export function BatchGeneratorView() {
     )
   }
 
+  function handleCancel(): void {
+    if (!jobId) return
+    cancelJob.mutate(jobId, {
+      onError: (error) => setSubmitError(error.message || 'No se pudo cancelar el job')
+    })
+  }
+
   const isSubmitting = createJob.isPending || job?.status === 'queued' || job?.status === 'running'
-  const result = job?.status === 'succeeded' ? (job.result as BatchJobResult) : null
+  const result =
+    job?.status === 'succeeded' || job?.status === 'cancelled'
+      ? (job.result as BatchJobResult | null)
+      : null
   const enqueueError = submitError ?? (createJob.isError ? createJob.error?.message : null)
 
   return (
@@ -56,6 +69,9 @@ export function BatchGeneratorView() {
           {job?.status === 'failed' && (
             <ErrorBanner message={job.error ?? 'Error desconocido'} />
           )}
+          {job?.status === 'cancelled' && (
+            <p className="text-sm text-muted-foreground">Generación cancelada.</p>
+          )}
         </div>
       }
       stage={
@@ -63,14 +79,19 @@ export function BatchGeneratorView() {
           <StickerStage
             emptyLabel="La lámina aparecerá aquí"
             emptyHint="Elige cuántos stickers generar y pulsa Generar."
-            isBusy={isSubmitting && !result}
+            isBusy={isSubmitting && !result?.results?.length}
             busyLabel="Generando lámina…"
           >
-            {result && backendBaseUrl ? (
+            {result?.results?.length && backendBaseUrl ? (
               <ResultsGallery results={result.results} backendBaseUrl={backendBaseUrl} />
             ) : undefined}
           </StickerStage>
-          <JobProgressPanel jobId={jobId} />
+          <JobProgressPanel
+            jobId={jobId}
+            cancellable={isSubmitting}
+            cancelling={cancelJob.isPending}
+            onCancel={handleCancel}
+          />
         </div>
       }
     />

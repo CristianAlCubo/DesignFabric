@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import MappingProxyType
 from unittest.mock import MagicMock
 
 import pytest
@@ -42,6 +43,7 @@ def test_generate_images_uses_configured_modalities(tmp_path, mocker, fake_repor
     )
     fake = MagicMock()
     fake.generate_image.return_value = _PNG
+    fake.list_models.return_value = []
     mocker.patch(
         "designfabric.core.generation.openrouter.client.build_client_from_runtime",
         return_value=fake,
@@ -59,8 +61,10 @@ def test_generate_images_uses_configured_modalities(tmp_path, mocker, fake_repor
         "a fox",
         model="google/gemini-image",
         modalities=["image"],
+        image_options={"output_format": "png"},
+        should_cancel=None,
     )
-    fake.list_models.assert_not_called()
+    fake.list_models.assert_called_once_with("image")
     assert fake_reporter.events[0].type is ProgressEventType.STARTED
     assert fake_reporter.events[-1].type is ProgressEventType.COMPLETED
 
@@ -87,11 +91,99 @@ def test_generate_images_resolves_modalities_via_cache(tmp_path, mocker, fake_re
         reporter=fake_reporter,
     )
     assert results[0].success
-    fake.list_models.assert_called_once_with("image")
+    fake.list_models.assert_called_with("image")
     fake.generate_image.assert_called_once_with(
         "a fox",
         model="black-forest-labs/flux",
         modalities=["image"],
+        image_options={"output_format": "png"},
+        should_cancel=None,
+    )
+
+
+def test_generate_images_passes_transparent_when_model_supports_it(tmp_path, mocker):
+    get_openrouter_runtime().update(
+        api_key="sk-test",
+        image_model_id="openai/gpt-image-1.5",
+        image_model_output_modalities=["image"],
+    )
+    fake = MagicMock()
+    fake.generate_image.return_value = _PNG
+    fake.list_models.return_value = [
+        OpenRouterModel(
+            id="openai/gpt-image-1.5",
+            name="GPT Image 1.5",
+            output_modalities=("image",),
+            supported_parameters=MappingProxyType(
+                {
+                    "background": {
+                        "type": "enum",
+                        "values": ["auto", "transparent", "opaque"],
+                    },
+                    "output_format": {"type": "enum", "values": ["png", "webp"]},
+                }
+            ),
+        )
+    ]
+    mocker.patch(
+        "designfabric.core.generation.openrouter.client.build_client_from_runtime",
+        return_value=fake,
+    )
+
+    OpenRouterImageProvider().generate_images(
+        ["x"],
+        output_dir=str(tmp_path),
+        transparent_background=True,
+    )
+    fake.generate_image.assert_called_once_with(
+        "x",
+        model="openai/gpt-image-1.5",
+        modalities=["image"],
+        image_options={"output_format": "png", "background": "transparent"},
+        should_cancel=None,
+    )
+
+
+def test_generate_images_skips_transparent_when_preference_off(tmp_path, mocker):
+    get_openrouter_runtime().update(
+        api_key="sk-test",
+        image_model_id="openai/gpt-image-1.5",
+        image_model_output_modalities=["image"],
+    )
+    fake = MagicMock()
+    fake.generate_image.return_value = _PNG
+    fake.list_models.return_value = [
+        OpenRouterModel(
+            id="openai/gpt-image-1.5",
+            name="GPT Image 1.5",
+            output_modalities=("image",),
+            supported_parameters=MappingProxyType(
+                {
+                    "background": {
+                        "type": "enum",
+                        "values": ["auto", "transparent", "opaque"],
+                    },
+                    "output_format": {"type": "enum", "values": ["png", "webp"]},
+                }
+            ),
+        )
+    ]
+    mocker.patch(
+        "designfabric.core.generation.openrouter.client.build_client_from_runtime",
+        return_value=fake,
+    )
+
+    OpenRouterImageProvider().generate_images(
+        ["x"],
+        output_dir=str(tmp_path),
+        transparent_background=False,
+    )
+    fake.generate_image.assert_called_once_with(
+        "x",
+        model="openai/gpt-image-1.5",
+        modalities=["image"],
+        image_options={"output_format": "png"},
+        should_cancel=None,
     )
 
 
@@ -113,7 +205,10 @@ def test_generate_images_image_plus_text_modalities(tmp_path, mocker):
         "x",
         model="google/gemini-image",
         modalities=["image", "text"],
+        image_options=None,
+        should_cancel=None,
     )
+    fake.list_models.assert_not_called()
 
 
 def test_generate_images_requires_model(tmp_path):

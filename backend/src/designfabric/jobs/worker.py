@@ -25,6 +25,7 @@ import os
 import threading
 from typing import Any, Callable
 
+from designfabric.jobs.errors import JobCancelled
 from designfabric.jobs.models import Job, JobStatus, JobType
 from designfabric.jobs.queue import JobQueue
 from designfabric.jobs.store import JobStore
@@ -93,8 +94,15 @@ class JobWorker(abc.ABC):
 
         try:
             result = handler(job.payload, reporter)
+            if self._store.is_cancel_requested(job_id):
+                self._store.mark_cancelled_running(job_id, result)
+                logger.info("Job %s cancelado tras completar el handler", job_id)
+                return
             self._store.mark_succeeded(job_id, result)
             logger.info("Job %s completado", job_id)
+        except JobCancelled as exc:
+            self._store.mark_cancelled_running(job_id, exc.partial_result)
+            logger.info("Job %s cancelado (cooperativo)", job_id)
         except Exception as e:
             logger.exception("Job %s falló", job_id)
             self._store.mark_failed(job_id, str(e))

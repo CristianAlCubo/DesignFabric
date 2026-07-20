@@ -22,6 +22,10 @@ function normalizeModalities(value: unknown): string[] | null {
   return cleaned.length > 0 ? cleaned : null
 }
 
+function normalizeBool(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
+}
+
 export function readGenerationPreferences(): GenerationPreferences {
   try {
     const target = prefsPath()
@@ -32,6 +36,7 @@ export function readGenerationPreferences(): GenerationPreferences {
         textModelId?: string | null
         imageModelId?: string | null
         imageModelOutputModalities?: string[] | null
+        imageModelSupportsTransparency?: boolean
       }
     }
     return {
@@ -41,6 +46,10 @@ export function readGenerationPreferences(): GenerationPreferences {
         imageModelId: parsed.openrouter?.imageModelId ?? null,
         imageModelOutputModalities: normalizeModalities(
           parsed.openrouter?.imageModelOutputModalities
+        ),
+        imageModelSupportsTransparency: normalizeBool(
+          parsed.openrouter?.imageModelSupportsTransparency,
+          false
         )
       }
     }
@@ -59,7 +68,8 @@ export function writeGenerationPreferences(prefs: GenerationPreferences): void {
       imageModelId: prefs.openrouter.imageModelId,
       imageModelOutputModalities: normalizeModalities(
         prefs.openrouter.imageModelOutputModalities
-      )
+      ),
+      imageModelSupportsTransparency: Boolean(prefs.openrouter.imageModelSupportsTransparency)
     }
   }
   writeFileSync(tmp, JSON.stringify(payload, null, 2))

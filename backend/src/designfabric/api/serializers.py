@@ -75,6 +75,7 @@ def job_to_schema(job: Job, settings: Settings) -> JobStatusResponse:
             prompts=job.result.prompts,
             results=[sticker_result_to_schema(r, settings) for r in job.result.results],
             failure_count=job.result.failure_count,
+            cancelled=job.result.cancelled,
         )
     elif isinstance(job.result, StickerResult):
         result_schema = sticker_result_to_schema(job.result, settings)

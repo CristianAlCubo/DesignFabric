@@ -52,6 +52,10 @@ class BatchJobRequest(BaseModel):
     image_provider: Literal["flux", "openrouter", "test"] = Field(
         default="flux", description="Provider primitivo de imagen para renderizar prompts"
     )
+    transparent_background: bool = Field(
+        default=True,
+        description="Si el modelo OpenRouter lo soporta, pedir fondo transparente",
+    )
 
 
 class SingleImageJobRequest(BaseModel):
@@ -63,6 +67,10 @@ class SingleImageJobRequest(BaseModel):
     )
     image_provider: Literal["flux", "openrouter", "test"] = Field(
         default="flux", description="Provider primitivo de imagen para renderizar el prompt"
+    )
+    transparent_background: bool = Field(
+        default=True,
+        description="Si el modelo OpenRouter lo soporta, pedir fondo transparente",
     )
 
 
@@ -156,6 +164,7 @@ class OpenRouterModelSchema(BaseModel):
     id: str
     name: str
     output_modalities: list[str] = Field(default_factory=list)
+    supports_transparent_background: bool = False
 
 
 class OpenRouterModelsResponse(BaseModel):
@@ -185,6 +194,7 @@ class BatchJobResultSchema(BaseModel):
     prompts: list[str]
     results: list[StickerResultSchema]
     failure_count: int
+    cancelled: bool = False
 
 
 # ---------------------------------------------------------------------------

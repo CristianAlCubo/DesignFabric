@@ -87,3 +87,7 @@ class WebSocketProgressReporter:
             self._hub.publish(self._job_id, schema.model_dump(mode="json")),
             self._loop,
         )
+
+    @property
+    def job_id(self) -> str:
+        return self._job_id

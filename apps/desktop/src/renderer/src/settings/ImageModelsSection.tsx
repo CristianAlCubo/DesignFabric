@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+import { apiGet } from '@/core/api/httpClient'
 
 import { ModelSearchSelect, type OpenRouterModelSelection } from './ModelSearchSelect'
 import { ProviderAvailabilityWarning } from './ProviderAvailabilityWarning'
@@ -66,6 +68,38 @@ export function ImageModelsSection({ onNavigate }: ImageModelsSectionProps) {
 
   const ready = !hydrating && prefs !== null && status !== null && readiness !== null
 
+  useEffect(() => {
+    if (!ready || !prefs || !status?.configured || !prefs.openrouter.imageModelId) return
+    if (prefs.openrouter.imageModelSupportsTransparency) return
+
+    let cancelled = false
+    const modelId = prefs.openrouter.imageModelId
+    void apiGet<{
+      models: Array<{ id: string; supports_transparent_background?: boolean }>
+    }>(`/api/openrouter/models?modality=image&q=${encodeURIComponent(modelId)}`)
+      .then(async (res) => {
+        if (cancelled) return
+        const match = res.models.find((m) => m.id === modelId)
+        if (!match?.supports_transparent_background) return
+        const next = {
+          ...prefs,
+          openrouter: {
+            ...prefs.openrouter,
+            imageModelSupportsTransparency: true
+          }
+        }
+        const saved = await window.designfabric.setGenerationPreferences(next)
+        if (!cancelled) setPrefs(saved)
+      })
+      .catch(() => {
+        /* silencioso: se actualizará al re-seleccionar el modelo */
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [ready, prefs, status, setPrefs])
+
   async function updateImageModel(selection: OpenRouterModelSelection | null): Promise<void> {
     if (!prefs) return
     setSaving(true)
@@ -75,7 +109,8 @@ export function ImageModelsSection({ onNavigate }: ImageModelsSectionProps) {
         openrouter: {
           ...prefs.openrouter,
           imageModelId: selection?.id ?? null,
-          imageModelOutputModalities: selection?.output_modalities ?? null
+          imageModelOutputModalities: selection?.output_modalities ?? null,
+          imageModelSupportsTransparency: selection?.supports_transparent_background ?? false
         }
       }
       const saved = await window.designfabric.setGenerationPreferences(next)

@@ -59,13 +59,22 @@ def _providers_from_readiness(ready: GenerationReadiness) -> GenerationProviders
         image=[
             ProviderInfoSchema(
                 id=pid,
-                label=label,
+                label=_image_provider_label(pid, label, ready),
                 available=image_available(pid, requires),
                 requires_local_ai=requires,
             )
             for pid, label, requires in _IMAGE_CATALOG
         ],
     )
+
+
+def _image_provider_label(provider_id: str, base_label: str, ready: GenerationReadiness) -> str:
+    if provider_id != "openrouter":
+        return base_label
+    model_id = (ready.openrouter.image_model_id or "").strip()
+    if not model_id:
+        return base_label
+    return f"{base_label} ({model_id})"
 
 
 @router.get("/readiness", response_model=GenerationReadinessResponse)

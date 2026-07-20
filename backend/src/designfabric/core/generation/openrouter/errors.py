@@ -25,3 +25,7 @@ class OpenRouterApiError(OpenRouterError):
 
 class OpenRouterConfigError(OpenRouterError):
     """Configuración incompleta (key o modelo ausente)."""
+
+
+class OpenRouterRequestAborted(OpenRouterError):
+    """Request HTTP abortada por cancelación del caller."""

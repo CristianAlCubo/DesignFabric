@@ -87,12 +87,14 @@ export interface BatchJobRequest {
   ollama_model?: string
   llm_provider?: LlmProviderId
   image_provider?: ImageProviderId
+  transparent_background?: boolean
 }
 
 export interface SingleImageJobRequest {
   prompt: string
   apply_style_suffix?: boolean
   image_provider?: ImageProviderId
+  transparent_background?: boolean
 }
 
 export interface StickerResult {
@@ -107,6 +109,7 @@ export interface BatchJobResult {
   prompts: string[]
   results: StickerResult[]
   failure_count: number
+  cancelled?: boolean
 }
 
 export interface JobStatusResponse {

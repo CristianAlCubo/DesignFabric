@@ -8,6 +8,8 @@ export interface OpenRouterModelPreferences {
   imageModelId: string | null
   /** Capacidades de salida del modelo de imagen (catálogo OpenRouter). */
   imageModelOutputModalities: string[] | null
+  /** El modelo de imagen seleccionado declara background=transparent. */
+  imageModelSupportsTransparency: boolean
 }
 
 export interface GenerationPreferences {
@@ -20,7 +22,8 @@ export const DEFAULT_GENERATION_PREFERENCES: GenerationPreferences = {
   openrouter: {
     textModelId: null,
     imageModelId: null,
-    imageModelOutputModalities: null
+    imageModelOutputModalities: null,
+    imageModelSupportsTransparency: false
   }
 }
 

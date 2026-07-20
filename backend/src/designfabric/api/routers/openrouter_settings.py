@@ -18,17 +18,15 @@ from designfabric.core.generation.openrouter.errors import (
     OpenRouterConfigError,
     OpenRouterError,
 )
+from designfabric.core.generation.openrouter.image_options import supports_transparent_background
 from designfabric.core.generation.openrouter.models_cache import get_models_cache
 from designfabric.core.generation.openrouter.runtime_config import get_openrouter_runtime
 
 router = APIRouter(tags=["openrouter"])
 
 
-@router.get("/api/settings/openrouter", response_model=OpenRouterSettingsPublicResponse)
-def get_openrouter_settings() -> OpenRouterSettingsPublicResponse:
-    runtime = get_openrouter_runtime()
-    runtime.seed_from_settings()
-    snap = runtime.snapshot()
+def _public_settings() -> OpenRouterSettingsPublicResponse:
+    snap = get_openrouter_runtime().snapshot()
     return OpenRouterSettingsPublicResponse(
         configured=snap.configured,
         text_model_id=snap.text_model_id,
@@ -39,6 +37,13 @@ def get_openrouter_settings() -> OpenRouterSettingsPublicResponse:
             else None
         ),
     )
+
+
+@router.get("/api/settings/openrouter", response_model=OpenRouterSettingsPublicResponse)
+def get_openrouter_settings() -> OpenRouterSettingsPublicResponse:
+    runtime = get_openrouter_runtime()
+    runtime.seed_from_settings()
+    return _public_settings()
 
 
 @router.put("/api/settings/openrouter", response_model=OpenRouterSettingsPublicResponse)
@@ -55,19 +60,10 @@ def put_openrouter_settings(payload: OpenRouterSettingsUpdateRequest) -> OpenRou
     }
     if "image_model_output_modalities" in payload.model_fields_set:
         update_kwargs["image_model_output_modalities"] = payload.image_model_output_modalities
-    snap = runtime.update(**update_kwargs)
+    runtime.update(**update_kwargs)
     if payload.clear_api_key or payload.api_key is not None:
         get_models_cache().invalidate()
-    return OpenRouterSettingsPublicResponse(
-        configured=snap.configured,
-        text_model_id=snap.text_model_id,
-        image_model_id=snap.image_model_id,
-        image_model_output_modalities=(
-            list(snap.image_model_output_modalities)
-            if snap.image_model_output_modalities is not None
-            else None
-        ),
-    )
+    return _public_settings()
 
 
 @router.get("/api/openrouter/models", response_model=OpenRouterModelsResponse)
@@ -103,6 +99,9 @@ def list_openrouter_models(
                 id=m.id,
                 name=m.name,
                 output_modalities=list(m.output_modalities),
+                supports_transparent_background=supports_transparent_background(
+                    m.supported_parameters
+                ),
             )
             for m in filtered
         ]

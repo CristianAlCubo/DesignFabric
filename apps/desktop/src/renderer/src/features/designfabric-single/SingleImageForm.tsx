@@ -1,4 +1,4 @@
-import { useEffect, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Sparkles } from 'lucide-react'
 
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,13 +25,15 @@ interface SingleImageFormProps {
 
 /** Formulario single: estado en Zustand (sobrevive a la navegación). */
 export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps) {
-  const { catalog, isImageExecutable } = useGenerationReadiness()
+  const { catalog, isImageExecutable, readiness } = useGenerationReadiness()
 
   const prompt = useGenerationSingleStore((s) => s.prompt)
   const applyStyleSuffix = useGenerationSingleStore((s) => s.applyStyleSuffix)
+  const transparentBackground = useGenerationSingleStore((s) => s.transparentBackground)
   const imageProvider = useGenerationSingleStore((s) => s.imageProvider)
   const setPrompt = useGenerationSingleStore((s) => s.setPrompt)
   const setApplyStyleSuffix = useGenerationSingleStore((s) => s.setApplyStyleSuffix)
+  const setTransparentBackground = useGenerationSingleStore((s) => s.setTransparentBackground)
   const setImageProvider = useGenerationSingleStore((s) => s.setImageProvider)
   const ensureImageProviderDefault = useGenerationSingleStore((s) => s.ensureImageProviderDefault)
 
@@ -41,6 +43,13 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
     const fallback = catalog.image.find((p) => p.available)
     ensureImageProviderDefault((preferred?.id ?? fallback?.id ?? 'test') as ImageProviderId)
   }, [catalog, ensureImageProviderDefault])
+
+  const showTransparentOption =
+    imageProvider === 'openrouter' && Boolean(readiness?.openrouter?.image_model_id)
+  const supportsTransparency = useSupportsTransparency(
+    showTransparentOption,
+    readiness?.openrouter?.image_model_id ?? null
+  )
 
   const comboOk = isImageExecutable(imageProvider)
   const canSubmit = Boolean(catalog) && !isSubmitting && Boolean(prompt.trim()) && comboOk
@@ -81,6 +90,22 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
           </div>
         </Field>
 
+        {showTransparentOption && supportsTransparency ? (
+          <Field orientation="horizontal">
+            <Checkbox
+              id="transparent-background"
+              checked={transparentBackground}
+              onCheckedChange={(checked) => setTransparentBackground(checked === true)}
+            />
+            <div className="flex flex-col gap-0.5">
+              <FieldLabel htmlFor="transparent-background">Fondo transparente</FieldLabel>
+              <FieldDescription>
+                Pide transparencia nativa al modelo (PNG con alpha).
+              </FieldDescription>
+            </div>
+          </Field>
+        ) : null}
+
         <FieldSeparator>Configuración</FieldSeparator>
 
         <ProviderSelector
@@ -97,4 +122,24 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
       </AppButton>
     </form>
   )
+}
+
+function useSupportsTransparency(enabled: boolean, imageModelId: string | null): boolean {
+  const [supports, setSupports] = useState(false)
+
+  useEffect(() => {
+    if (!enabled) {
+      setSupports(false)
+      return
+    }
+    let cancelled = false
+    void window.designfabric.getGenerationPreferences().then((prefs) => {
+      if (!cancelled) setSupports(prefs.openrouter.imageModelSupportsTransparency)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, imageModelId])
+
+  return supports
 }

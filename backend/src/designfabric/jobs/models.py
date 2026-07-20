@@ -53,6 +53,7 @@ class Job:
     finished_at: datetime | None = None
     result: Any | None = None
     error: str | None = None
+    cancel_requested: bool = False
 
     @staticmethod
     def new(job_type: JobType, payload: Any) -> Job:

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import base64
+import concurrent.futures
 import json
 import re
-from typing import Any, Literal, Sequence
+import time
+from collections.abc import Callable
+from typing import Any, Sequence
 from urllib.parse import urlencode
 
 import httpx
@@ -16,6 +19,7 @@ from designfabric.core.generation.openrouter.errors import (
     OpenRouterAuthError,
     OpenRouterConfigError,
     OpenRouterRateLimitError,
+    OpenRouterRequestAborted,
 )
 from designfabric.core.generation.openrouter.models import OpenRouterModel, OutputModality
 
@@ -72,10 +76,28 @@ class OpenRouterClient:
             )
 
     def list_models(self, modality: OutputModality) -> list[OpenRouterModel]:
-        """Lista modelos filtrados por modalidad de salida en la API."""
-        query = urlencode({"output_modalities": modality})
+        """Lista modelos filtrados por modalidad de salida en la API.
+
+        Para ``image``, combina el catálogo general con ``/images/models``
+        (que trae ``supported_parameters``: transparency, size, etc.).
+        """
+        if modality == "image":
+            return self._list_image_models()
+        return self._list_models_from_path(f"/models?{urlencode({'output_modalities': modality})}")
+
+    def _list_image_models(self) -> list[OpenRouterModel]:
+        general = self._list_models_from_path(
+            f"/models?{urlencode({'output_modalities': 'image'})}"
+        )
+        dedicated = self._list_models_from_path("/images/models")
+        by_id: dict[str, OpenRouterModel] = {m.id: m for m in general}
+        for model in dedicated:
+            by_id[model.id] = model
+        return list(by_id.values())
+
+    def _list_models_from_path(self, path: str) -> list[OpenRouterModel]:
         with self._client() as client:
-            response = client.get(f"/models?{query}")
+            response = client.get(path)
             self._raise_for_status(response)
             payload = response.json()
         raw_items = payload.get("data") if isinstance(payload, dict) else None
@@ -124,26 +146,83 @@ class OpenRouterClient:
         *,
         model: str,
         modalities: Sequence[str],
+        image_options: dict[str, Any] | None = None,
+        should_cancel: Callable[[], bool] | None = None,
     ) -> bytes:
         """Genera una imagen y devuelve bytes PNG/JPEG decodificados.
 
         `modalities` es obligatorio (p. ej. ["image"] o ["image","text"]) —
         debe derivarse de las output_modalities del modelo vía
         `resolve_image_request_modalities`.
+
+        - Solo ``image`` → ``POST /images`` (Image API dedicada; p. ej. gpt-image-2).
+        - ``image`` + ``text`` → ``POST /chat/completions`` (modelos multimodales).
+
+        `image_options` (solo path ``/images``) debe venir de
+        `resolve_image_request_options` (transparency solo si el modelo la declara).
+
+        Si se pasa `should_cancel`, la request HTTP se puede abortar en vuelo
+        cerrando el client (lanza `OpenRouterRequestAborted`).
         """
         mods = [m.strip() for m in modalities if isinstance(m, str) and m.strip()]
         if not mods:
             raise OpenRouterConfigError("Faltan modalities para generar imagen en OpenRouter.")
-        body: dict[str, Any] = {
-            "model": model,
-            "messages": [{"role": "user", "content": prompt}],
-            "modalities": mods,
-        }
-        with self._client() as client:
-            response = client.post("/chat/completions", content=json.dumps(body))
+        use_images_api = "text" not in {m.casefold() for m in mods}
+        if use_images_api:
+            path = "/images"
+            body: dict[str, Any] = {
+                "model": model,
+                "prompt": prompt,
+            }
+            body.update(image_options or {"output_format": "png"})
+        else:
+            path = "/chat/completions"
+            body = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "modalities": mods,
+            }
+        client = self._client()
+        try:
+            if should_cancel is None:
+                response = client.post(path, content=json.dumps(body))
+            else:
+                response = self._post_cancelable(client, path, body, should_cancel)
             self._raise_for_status(response)
             payload = response.json()
-        return _extract_image_bytes(payload)
+        finally:
+            client.close()
+        if use_images_api:
+            return _extract_images_api_bytes(payload)
+        return _extract_chat_image_bytes(payload)
+
+    @staticmethod
+    def _post_cancelable(
+        client: httpx.Client,
+        path: str,
+        body: dict[str, Any],
+        should_cancel: Callable[[], bool],
+    ) -> httpx.Response:
+        if should_cancel():
+            raise OpenRouterRequestAborted("Generación de imagen cancelada antes de enviar.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(
+                client.post,
+                path,
+                content=json.dumps(body),
+            )
+            while True:
+                try:
+                    return future.result(timeout=0.2)
+                except concurrent.futures.TimeoutError:
+                    if should_cancel():
+                        client.close()
+                        try:
+                            future.result(timeout=1.0)
+                        except Exception:
+                            pass
+                        raise OpenRouterRequestAborted("Generación de imagen cancelada.")
+                    time.sleep(0)
 
 
 def _extract_text_content(payload: dict[str, Any]) -> str:
@@ -168,7 +247,25 @@ def _extract_text_content(payload: dict[str, Any]) -> str:
     raise OpenRouterApiError("Respuesta OpenRouter sin texto usable.")
 
 
-def _extract_image_bytes(payload: dict[str, Any]) -> bytes:
+def _extract_images_api_bytes(payload: dict[str, Any]) -> bytes:
+    """Parsea la respuesta de ``POST /images`` (``data[].b64_json`` | ``url``)."""
+    data = payload.get("data")
+    if not isinstance(data, list) or not data:
+        raise OpenRouterApiError("Respuesta OpenRouter /images sin data.")
+    first = data[0]
+    if not isinstance(first, dict):
+        raise OpenRouterApiError("Respuesta OpenRouter /images con item inválido.")
+    b64 = first.get("b64_json")
+    if isinstance(b64, str) and b64.strip():
+        return _decode_image_ref(b64)
+    url = first.get("url")
+    if isinstance(url, str) and url.strip():
+        return _decode_image_ref(url)
+    raise OpenRouterApiError("Respuesta OpenRouter /images sin imagen decodificable.")
+
+
+def _extract_chat_image_bytes(payload: dict[str, Any]) -> bytes:
+    """Parsea imagen embebida en ``POST /chat/completions``."""
     choices = payload.get("choices")
     if not isinstance(choices, list) or not choices:
         raise OpenRouterApiError("Respuesta OpenRouter sin choices (imagen).")

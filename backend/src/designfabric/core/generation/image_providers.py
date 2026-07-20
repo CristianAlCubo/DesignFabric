@@ -10,6 +10,7 @@ import os
 import random
 import shutil
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from importlib import resources
 from pathlib import Path
 from typing import Literal, Protocol
@@ -25,8 +26,10 @@ from designfabric.core.progress import (
     emit_phase_started,
     emit_warning,
 )
+from designfabric.jobs.errors import JobCancelled
 
 ImageProviderName = Literal["flux", "openrouter", "test"]
+ShouldCancel = Callable[[], bool]
 
 FLUX_MODEL_ID = "black-forest-labs/FLUX.2-klein-4B"
 IMAGE_SIZE = 1024
@@ -43,6 +46,8 @@ class _OpenRouterImageClient(Protocol):
         *,
         model: str,
         modalities: list[str],
+        image_options: dict | None = None,
+        should_cancel: ShouldCancel | None = None,
     ) -> bytes: ...
 
 
@@ -56,8 +61,19 @@ class ImageProvider(ABC):
         *,
         output_dir: str,
         reporter: ProgressReporter = NullProgressReporter(),
+        should_cancel: ShouldCancel | None = None,
+        transparent_background: bool = True,
     ) -> list[StickerResult]:
         """Genera una imagen por prompt. Fallos individuales no abortan el batch."""
+
+
+def _raise_if_cancelled(
+    should_cancel: ShouldCancel | None,
+    *,
+    partial: list[StickerResult] | None = None,
+) -> None:
+    if should_cancel is not None and should_cancel():
+        raise JobCancelled("Generación de imagen cancelada", partial_result=partial or [])
 
 
 def _test_sticker_path() -> Path:
@@ -74,17 +90,23 @@ class TestImageProvider(ImageProvider):
         *,
         output_dir: str,
         reporter: ProgressReporter = NullProgressReporter(),
+        should_cancel: ShouldCancel | None = None,
+        transparent_background: bool = True,
     ) -> list[StickerResult]:
+        del transparent_background
         os.makedirs(output_dir, exist_ok=True)
         source = _test_sticker_path()
         emit_phase_started(reporter, Phase.IMAGE_GENERATION, total=len(prompts))
         results: list[StickerResult] = []
         try:
             for i, prompt in enumerate(prompts):
+                _raise_if_cancelled(should_cancel, partial=results)
                 filename = f"{output_dir}/sticker_{i + 1}_{slugify(prompt)}.png"
                 shutil.copyfile(source, filename)
                 results.append(StickerResult(prompt=prompt, filename=filename, success=True))
                 emit_phase_progress(reporter, Phase.IMAGE_GENERATION, i + 1, len(prompts), detail=filename)
+        except JobCancelled:
+            raise
         except Exception as exc:
             emit_phase_failed(reporter, Phase.IMAGE_GENERATION, str(exc))
             raise
@@ -102,7 +124,10 @@ class FluxImageProvider(ImageProvider):
         *,
         output_dir: str,
         reporter: ProgressReporter = NullProgressReporter(),
+        should_cancel: ShouldCancel | None = None,
+        transparent_background: bool = True,
     ) -> list[StickerResult]:
+        del transparent_background
         import torch
         from diffusers import Flux2KleinPipeline
 
@@ -113,11 +138,13 @@ class FluxImageProvider(ImageProvider):
         emit_phase_started(reporter, Phase.IMAGE_GENERATION, total=len(prompts))
         results: list[StickerResult] = []
         try:
+            _raise_if_cancelled(should_cancel, partial=results)
             pipe = Flux2KleinPipeline.from_pretrained(FLUX_MODEL_ID, torch_dtype=dtype)
             pipe.enable_model_cpu_offload()
             pipe.set_progress_bar_config(disable=True)
 
             for i, prompt in enumerate(prompts):
+                _raise_if_cancelled(should_cancel, partial=results)
                 try:
                     image = pipe(
                         prompt=prompt,
@@ -136,6 +163,8 @@ class FluxImageProvider(ImageProvider):
                     results.append(StickerResult(prompt=prompt, filename=None, success=False, error=str(exc)))
                     emit_warning(reporter, Phase.IMAGE_GENERATION, f"Error generando el sticker {i + 1}: {exc}")
                     emit_phase_progress(reporter, Phase.IMAGE_GENERATION, i + 1, len(prompts))
+        except JobCancelled:
+            raise
         except Exception as exc:
             emit_phase_failed(reporter, Phase.IMAGE_GENERATION, str(exc))
             raise
@@ -154,9 +183,14 @@ class OpenRouterImageProvider(ImageProvider):
         *,
         output_dir: str,
         reporter: ProgressReporter = NullProgressReporter(),
+        should_cancel: ShouldCancel | None = None,
+        transparent_background: bool = True,
     ) -> list[StickerResult]:
         from designfabric.core.generation.openrouter.client import build_client_from_runtime
-        from designfabric.core.generation.openrouter.errors import OpenRouterConfigError
+        from designfabric.core.generation.openrouter.errors import (
+            OpenRouterConfigError,
+            OpenRouterRequestAborted,
+        )
         from designfabric.core.generation.openrouter.runtime_config import get_openrouter_runtime
 
         snap = get_openrouter_runtime().snapshot()
@@ -166,23 +200,42 @@ class OpenRouterImageProvider(ImageProvider):
 
         client = build_client_from_runtime()
         modalities = self._resolve_modalities(snap.image_model_output_modalities, model, client)
+        image_options = self._resolve_image_options(
+            model,
+            client,
+            modalities,
+            prefer_transparent=transparent_background,
+        )
 
         os.makedirs(output_dir, exist_ok=True)
         emit_phase_started(reporter, Phase.IMAGE_GENERATION, total=len(prompts))
         results: list[StickerResult] = []
         try:
             for i, prompt in enumerate(prompts):
+                _raise_if_cancelled(should_cancel, partial=results)
                 try:
-                    image_bytes = client.generate_image(prompt, model=model, modalities=modalities)
+                    image_bytes = client.generate_image(
+                        prompt,
+                        model=model,
+                        modalities=modalities,
+                        image_options=image_options,
+                        should_cancel=should_cancel,
+                    )
                     filename = f"{output_dir}/sticker_{i + 1}_{slugify(prompt)}.png"
                     with open(filename, "wb") as handle:
                         handle.write(image_bytes)
                     results.append(StickerResult(prompt=prompt, filename=filename, success=True))
                     emit_phase_progress(reporter, Phase.IMAGE_GENERATION, i + 1, len(prompts), detail=filename)
+                except OpenRouterRequestAborted as exc:
+                    raise JobCancelled(str(exc), partial_result=results) from exc
+                except JobCancelled:
+                    raise
                 except Exception as exc:
                     results.append(StickerResult(prompt=prompt, filename=None, success=False, error=str(exc)))
                     emit_warning(reporter, Phase.IMAGE_GENERATION, f"Error generando el sticker {i + 1}: {exc}")
                     emit_phase_progress(reporter, Phase.IMAGE_GENERATION, i + 1, len(prompts))
+        except JobCancelled:
+            raise
         except Exception as exc:
             emit_phase_failed(reporter, Phase.IMAGE_GENERATION, str(exc))
             raise
@@ -212,6 +265,28 @@ class OpenRouterImageProvider(ImageProvider):
                 "Vuelve a seleccionarlo en Ajustes."
             )
         return resolve_image_request_modalities(match.output_modalities)
+
+    @staticmethod
+    def _resolve_image_options(
+        model_id: str,
+        client: _OpenRouterImageClient,
+        modalities: list[str],
+        *,
+        prefer_transparent: bool,
+    ) -> dict | None:
+        """Extras de ``/images`` (transparency, etc.) solo si aplica Image API."""
+        if "text" in {m.casefold() for m in modalities}:
+            return None
+        from designfabric.core.generation.openrouter.image_options import (
+            resolve_image_request_options,
+        )
+        from designfabric.core.generation.openrouter.models_cache import get_models_cache
+
+        cache = get_models_cache()
+        models = cache.get_or_fetch("image", lambda: client.list_models("image"))
+        match = next((m for m in models if m.id == model_id), None)
+        params = match.supported_parameters if match is not None else None
+        return resolve_image_request_options(params, prefer_transparent=prefer_transparent)
 
 
 _PROVIDERS: dict[ImageProviderName, type[ImageProvider]] = {

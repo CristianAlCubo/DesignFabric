@@ -61,7 +61,6 @@ class OpenRouterRuntimeConfig:
                 self._base_url = cfg.openrouter_base_url.rstrip("/")
                 self._seeded = True
                 return
-            # Si ya hubo seed, solo rellenar huecos desde Settings (no pisar PUT).
             if not self._api_key and cfg.openrouter_api_key:
                 self._api_key = cfg.openrouter_api_key
             if not self._text_model_id and cfg.openrouter_text_model:

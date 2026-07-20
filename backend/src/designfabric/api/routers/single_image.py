@@ -53,6 +53,8 @@ def build_handlers(settings: Settings, store: JobStore) -> dict[JobType, Any]:
             output_dir=output_dir,
             reporter=reporter,
             image_provider=payload.image_provider,
+            transparent_background=payload.transparent_background,
+            should_cancel=lambda: store.is_cancel_requested(reporter.job_id),
         )
 
     return {JobType.SINGLE_IMAGE: handle}

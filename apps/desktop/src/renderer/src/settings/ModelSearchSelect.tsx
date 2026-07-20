@@ -14,12 +14,14 @@ interface OpenRouterModelRow {
   id: string
   name: string
   output_modalities: string[]
+  supports_transparent_background?: boolean
 }
 
 export interface OpenRouterModelSelection {
   id: string
   name: string
   output_modalities: string[]
+  supports_transparent_background: boolean
 }
 
 interface OpenRouterModelsResponse {
@@ -116,7 +118,8 @@ export function ModelSearchSelect({
     onChange({
       id: model.id,
       name: model.name,
-      output_modalities: model.output_modalities
+      output_modalities: model.output_modalities,
+      supports_transparent_background: Boolean(model.supports_transparent_background)
     })
   }
 

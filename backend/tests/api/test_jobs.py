@@ -103,6 +103,39 @@ def test_cancel_finished_job_returns_409(client):
     assert response.status_code == 409
 
 
+def test_cancel_running_job_cooperatively(client, mocker):
+    import threading
+
+    from designfabric.jobs.errors import JobCancelled
+
+    started = threading.Event()
+
+    def slow_batch(*_args, **kwargs):
+        should_cancel = kwargs.get("should_cancel")
+        started.set()
+        for _ in range(100):
+            if should_cancel is not None and should_cancel():
+                raise JobCancelled("cancelado en test")
+            time.sleep(0.05)
+        return None
+
+    mocker.patch(
+        "designfabric.api.routers.batch_generation.run_batch",
+        side_effect=slow_batch,
+    )
+
+    job_id = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
+    assert wait_until(started.is_set)
+    assert wait_until(lambda: client.get(f"/api/jobs/{job_id}").json()["status"] == "running")
+
+    cancel_response = client.delete(f"/api/jobs/{job_id}")
+    assert cancel_response.status_code == 204
+    assert wait_until(
+        lambda: client.get(f"/api/jobs/{job_id}").json()["status"] == "cancelled",
+        timeout=5.0,
+    )
+
+
 def test_progress_websocket_accepts_connection(client):
     job_id = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
     with client.websocket_connect(f"/api/jobs/{job_id}/ws"):

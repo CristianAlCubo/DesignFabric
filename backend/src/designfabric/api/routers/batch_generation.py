@@ -54,10 +54,7 @@ def create_batch_job(
 
 
 def build_handlers(settings: Settings, store: JobStore) -> dict[JobType, Any]:
-    """Handler de `batch`. Igual que en ClearCut, `JobHandler` no expone el `job_id` al
-    handler (jobs/worker.py, Fase 2, cerrado); se usa un uuid propio por job en vez del
-    `job_id` que usaba el `worker.py` original de DesignFabric, dentro de una subcarpeta
-    fija `batch/` (mismo patrón que las features de ClearCut)."""
+    """Handler de `batch`. Cancela de forma cooperativa vía `store.is_cancel_requested`."""
 
     def handle(payload: BatchJobRequest, reporter: WebSocketProgressReporter) -> Any:
         output_dir = f"{settings.output_dir}/batch/{uuid.uuid4().hex}"
@@ -69,6 +66,8 @@ def build_handlers(settings: Settings, store: JobStore) -> dict[JobType, Any]:
             ollama_host=settings.ollama_host,
             llm_provider=payload.llm_provider,
             image_provider=payload.image_provider,
+            transparent_background=payload.transparent_background,
+            should_cancel=lambda: store.is_cancel_requested(reporter.job_id),
         )
 
     return {JobType.BATCH: handle}

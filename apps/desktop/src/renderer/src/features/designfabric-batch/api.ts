@@ -7,7 +7,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { apiGet, apiPost } from '../../core/api/httpClient'
+import { apiDelete, apiGet, apiPost } from '../../core/api/httpClient'
 import type { BatchJobRequest, JobCreatedResponse, JobStatusResponse } from '../../core/api/types'
 
 const ACTIVE_STATUSES = new Set(['queued', 'running'])
@@ -18,6 +18,17 @@ export function useCreateBatchJob() {
     mutationFn: (payload: BatchJobRequest) =>
       apiPost<BatchJobRequest, JobCreatedResponse>('/api/jobs/batch', payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['jobs'] })
+  })
+}
+
+export function useCancelJob() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (jobId: string) => apiDelete(`/api/jobs/${jobId}`),
+    onSuccess: (_data, jobId) => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', jobId] })
+      void queryClient.invalidateQueries({ queryKey: ['jobs'] })
+    }
   })
 }
 

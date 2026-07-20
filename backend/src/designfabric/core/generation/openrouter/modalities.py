@@ -1,7 +1,8 @@
 """Política de modalidades de request para generación de imagen OpenRouter.
 
 Pura (sin I/O): traduce `output_modalities` del catálogo al parámetro
-`modalities` del chat/completions.
+`modalities` (chat/completions multimodales) o decide el uso de `/images`
+cuando el modelo solo declara salida `image`.
 """
 
 from __future__ import annotations

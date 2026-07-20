@@ -11,6 +11,10 @@ from designfabric.core.generation.openrouter.errors import (
     OpenRouterError,
     OpenRouterRateLimitError,
 )
+from designfabric.core.generation.openrouter.image_options import (
+    resolve_image_request_options,
+    supports_transparent_background,
+)
 from designfabric.core.generation.openrouter.modalities import resolve_image_request_modalities
 from designfabric.core.generation.openrouter.models import OpenRouterModel, OutputModality
 from designfabric.core.generation.openrouter.runtime_config import (
@@ -33,4 +37,6 @@ __all__ = [
     "build_client_from_runtime",
     "get_openrouter_runtime",
     "resolve_image_request_modalities",
+    "resolve_image_request_options",
+    "supports_transparent_background",
 ]
