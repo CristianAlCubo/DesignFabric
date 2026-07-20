@@ -24,13 +24,16 @@ export function TabPane({
       className="w-full"
       aria-label={ariaLabel}
     >
-      <TabsList variant="line" className="h-auto w-full justify-start rounded-none p-0">
+      <TabsList
+        variant="line"
+        className="h-auto w-fit justify-start gap-1 rounded-none bg-transparent p-0"
+      >
         {orderedTabs.map((tab) => (
           <TabsTrigger
             key={tab.id}
             value={tab.id}
             id={`tab-${tab.id}`}
-            className="rounded-none px-4 py-2.5"
+            className="flex-none rounded-none px-3 py-2.5 text-muted-foreground data-active:bg-transparent data-active:font-semibold data-active:text-foreground data-active:shadow-none dark:data-active:bg-transparent after:bg-primary group-data-[variant=line]/tabs-list:data-active:after:opacity-100"
           >
             {tab.label}
           </TabsTrigger>

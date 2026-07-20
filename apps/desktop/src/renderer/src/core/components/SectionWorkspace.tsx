@@ -21,13 +21,6 @@ export function SectionWorkspace({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {section ? (
-        <header className="px-6 pt-3.5 pb-1">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground text-balance">
-            {section.label}
-          </h2>
-        </header>
-      ) : null}
       {tabs.length > 0 ? (
         <div className="border-b border-border px-6">
           <TabPane
