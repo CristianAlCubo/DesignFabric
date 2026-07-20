@@ -1,6 +1,11 @@
-import { Brain, Image as ImageIcon, Info, KeyRound, type LucideIcon } from 'lucide-react'
+import { Brain, Cpu, Image as ImageIcon, Info, KeyRound, type LucideIcon } from 'lucide-react'
 
-export type SettingsSectionId = 'general' | 'openrouter' | 'language-models' | 'image-models'
+export type SettingsSectionId =
+  | 'general'
+  | 'openrouter'
+  | 'language-models'
+  | 'image-models'
+  | 'local-ai'
 
 export interface SettingsSection {
   id: SettingsSectionId
@@ -33,6 +38,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: 'Modelos de imagen',
     description: 'Configura el modelo de cada provider de imagen.',
     icon: ImageIcon
+  },
+  {
+    id: 'local-ai',
+    label: 'IA local',
+    description: 'Módulo de generación local (Ollama + FLUX.2 Klein).',
+    icon: Cpu
   }
 ] as const
 

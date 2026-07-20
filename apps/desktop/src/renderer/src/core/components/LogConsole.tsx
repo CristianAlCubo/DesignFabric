@@ -2,7 +2,7 @@
  * Consola de observabilidad: muestra en vivo todo lo que loguean el backend
  * (Python/uvicorn) y el proceso main de Electron, con auto-scroll y
  * resaltado por severidad. Se monta en el ConsoleSheet del shell (y en
- * SetupWizard / FeatureNotInstalled durante instalación). El historial se
+ * LocalAiSection / FeatureNotInstalled durante instalación). El historial se
  * conserva en el proceso main aunque el panel esté oculto.
  */
 

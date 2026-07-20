@@ -160,17 +160,12 @@ function bootstrap(): void {
     return
   }
 
+  // Primer arranque empaquetado: sin preferencias previas, `localAiChoice` es
+  // `null` → arranca sin el extra `local-ai` (igual que elegir "Más tarde" en
+  // el wizard que existía antes). El usuario puede instalarlo después desde
+  // Settings (ver `setup:install-local-ai-later`), lo que persiste la
+  // elección para los arranques siguientes.
   const prefs = readSetupPreferences()
-  if (!prefs.wizardCompleted) {
-    // Primer arranque empaquetado sin preferencias todavía: NO arrancamos el
-    // backend aquí. El renderer (Fase 5) mostrará el wizard de bienvenida y,
-    // cuando el usuario responda, el handler `setup:complete-wizard` (ver
-    // `setup-ipc.ts`) es quien dispara `spawnBackend` con los extras
-    // correctos.
-    createMainWindow()
-    return
-  }
-
   const extras = prefs.localAiChoice === 'installed' ? ['local-ai'] : []
   startBackendInBackground(extras)
   createMainWindow()

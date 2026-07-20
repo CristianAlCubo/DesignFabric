@@ -2,8 +2,6 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { Terminal } from 'lucide-react'
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 
-import type { SetupPreferences } from '@shared/setupPreferences'
-
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -13,7 +11,6 @@ import { AppSidebar } from './core/components/AppSidebar'
 import { BackendStartupScreen } from './core/components/BackendStartupScreen'
 import { ConsoleSheet } from './core/components/ConsoleSheet'
 import { SectionWorkspace } from './core/components/SectionWorkspace'
-import { SetupWizard } from './core/components/SetupWizard'
 import { useBackendReady } from './core/hooks/useBackendReady'
 import { useNavigationStore } from './core/state/navigationStore'
 import { queryClient } from './core/state/queryClient'
@@ -71,10 +68,7 @@ function AppShell() {
   )
 }
 
-/**
- * Monta el shell solo cuando el backend local responde en `/health`.
- * Se monta después del wizard para no sondear mientras aún no hay proceso.
- */
+/** Monta el shell solo cuando el backend local responde en `/health`. */
 function BackendReadyGate({ children }: { children: ReactNode }) {
   const backend = useBackendReady()
 
@@ -84,32 +78,12 @@ function BackendReadyGate({ children }: { children: ReactNode }) {
   return children
 }
 
-/**
- * Gatea `AppShell` detrás del wizard de primer arranque y de que el backend
- * local esté listo. En dev, `setup:get-preferences` reporta siempre
- * "completado" sin tocar disco — el wizard solo aplica a builds empaquetadas
- * sin preferencias previas.
- */
-function AppGate() {
-  const [prefs, setPrefs] = useState<SetupPreferences | null>(null)
-
-  useEffect(() => {
-    window.designfabric.getSetupPreferences().then(setPrefs)
-  }, [])
-
-  if (prefs === null) return <BackendStartupScreen />
-  if (!prefs.wizardCompleted) return <SetupWizard onCompleted={setPrefs} />
-  return (
-    <BackendReadyGate>
-      <AppShell />
-    </BackendReadyGate>
-  )
-}
-
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppGate />
+      <BackendReadyGate>
+        <AppShell />
+      </BackendReadyGate>
     </QueryClientProvider>
   )
 }

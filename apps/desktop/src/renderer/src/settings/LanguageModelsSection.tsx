@@ -28,7 +28,8 @@ function ollamaWarningMessages(args: {
   const messages: string[] = []
   if (args.localAiMissing) {
     messages.push(
-      `Requiere el extra local-ai (falta: ${args.missingModules.join(', ') || 'deps'}).`
+      `Requiere el extra local-ai (falta: ${args.missingModules.join(', ') || 'deps'}). ` +
+        'Instálalo desde la sección IA local.'
     )
   } else if (args.error) {
     messages.push(`Ollama no responde en ${args.host}: ${args.error}`)

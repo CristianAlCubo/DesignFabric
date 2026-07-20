@@ -5,7 +5,6 @@ import type {
   GenerationPreferences,
   OpenRouterPublicStatus
 } from '@shared/generationPreferences'
-import type { SetupPreferences } from '@shared/setupPreferences'
 
 const api = {
   getBackendBaseUrl: (): Promise<string> => ipcRenderer.invoke('get-backend-base-url'),
@@ -40,14 +39,7 @@ const api = {
   /** Abre una ruta (archivo o carpeta) en el explorador de archivos del SO. */
   openPath: (targetPath: string): Promise<string> => ipcRenderer.invoke('shell:openPath', targetPath),
 
-  /** Preferencias del wizard de primer arranque (en dev, siempre "completado"). */
-  getSetupPreferences: (): Promise<SetupPreferences> => ipcRenderer.invoke('setup:get-preferences'),
-
-  /** Persiste la elección del wizard y arranca el backend con los extras correspondientes. */
-  completeWizard: (choice: 'installed' | 'deferred'): Promise<SetupPreferences> =>
-    ipcRenderer.invoke('setup:complete-wizard', choice),
-
-  /** Instala el módulo de IA local diferido: reinicia el backend con el extra `local-ai`. */
+  /** Instala el módulo de IA local: reinicia el backend con el extra `local-ai`. */
   installLocalAiLater: (): Promise<void> => ipcRenderer.invoke('setup:install-local-ai-later'),
 
   /** Abre (o enfoca) la ventana hija de configuración. */

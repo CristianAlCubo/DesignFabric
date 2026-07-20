@@ -5,7 +5,6 @@ import type {
   OpenRouterPublicStatus
 } from '@shared/generationPreferences'
 import type { LogEntry } from '@shared/logEntry'
-import type { SetupPreferences } from '@shared/setupPreferences'
 
 declare global {
   interface Window {
@@ -46,13 +45,7 @@ declare global {
       /** Abre una ruta (archivo o carpeta) en el explorador de archivos del SO. */
       openPath: (targetPath: string) => Promise<string>
 
-      /** Preferencias del wizard de primer arranque (en dev, siempre "completado"). */
-      getSetupPreferences: () => Promise<SetupPreferences>
-
-      /** Persiste la elección del wizard y arranca el backend con los extras correspondientes. */
-      completeWizard: (choice: 'installed' | 'deferred') => Promise<SetupPreferences>
-
-      /** Instala el módulo de IA local diferido: reinicia el backend con el extra `local-ai`. */
+      /** Instala el módulo de IA local: reinicia el backend con el extra `local-ai`. */
       installLocalAiLater: () => Promise<void>
 
       /** Abre (o enfoca) la ventana hija de configuración. */
