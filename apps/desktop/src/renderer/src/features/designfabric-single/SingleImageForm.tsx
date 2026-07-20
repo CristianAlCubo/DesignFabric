@@ -1,20 +1,39 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+
+import { ProviderSelector } from '../../core/components/ProviderSelector'
+import { useGenerationProviders } from '../../core/hooks/useGenerationProviders'
+import type { ImageProviderId } from '../../core/api/types'
+
+export interface SingleImageFormValues {
+  prompt: string
+  applyStyleSuffix: boolean
+  imageProvider: ImageProviderId
+}
 
 interface SingleImageFormProps {
-  onSubmit: (prompt: string, applyStyleSuffix: boolean) => void
+  onSubmit: (values: SingleImageFormValues) => void
   isSubmitting: boolean
 }
 
-/** Formulario de la funcionalidad nueva: generar una imagen a partir de un prompt libre. */
+/** Formulario: prompt libre + provider de imagen. */
 export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps) {
+  const catalog = useGenerationProviders()
   const [prompt, setPrompt] = useState('')
   const [applyStyleSuffix, setApplyStyleSuffix] = useState(true)
+  const [imageProvider, setImageProvider] = useState<ImageProviderId>('test')
+
+  useEffect(() => {
+    if (!catalog) return
+    const preferred = catalog.image.find((p) => p.id === 'flux' && p.available)
+    const fallback = catalog.image.find((p) => p.available)
+    setImageProvider((preferred?.id ?? fallback?.id ?? 'test') as ImageProviderId)
+  }, [catalog])
 
   function handleSubmit(event: FormEvent): void {
     event.preventDefault()
     const trimmed = prompt.trim()
     if (!trimmed) return
-    onSubmit(trimmed, applyStyleSuffix)
+    onSubmit({ prompt: trimmed, applyStyleSuffix, imageProvider })
   }
 
   return (
@@ -28,6 +47,13 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
           rows={4}
         />
       </label>
+      <ProviderSelector
+        label="Provider de imagen"
+        value={imageProvider}
+        providers={catalog?.image ?? []}
+        onChange={(v) => setImageProvider(v as ImageProviderId)}
+        disabled={!catalog || isSubmitting}
+      />
       <label className="field field--checkbox">
         <input
           type="checkbox"
@@ -36,7 +62,7 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
         />
         <span>Aplicar estilo sticker (bordes gruesos, colores planos, fondo blanco)</span>
       </label>
-      <button type="submit" disabled={isSubmitting || !prompt.trim()}>
+      <button type="submit" disabled={isSubmitting || !prompt.trim() || !catalog}>
         {isSubmitting ? 'Generando…' : 'Generar'}
       </button>
     </form>

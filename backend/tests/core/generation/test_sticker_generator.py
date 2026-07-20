@@ -1,4 +1,4 @@
-"""Tests de `core.sticker_generator`: mockean el pipeline de Flux para no requerir GPU real."""
+"""Tests de FluxImageProvider / generate_stickers (requieren local-ai para mocks del pipeline)."""
 
 from __future__ import annotations
 
@@ -6,26 +6,20 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Este módulo importa `torch`/`diffusers` a nivel de módulo: sin el extra
-# `local-ai` instalado, ni siquiera se puede colectar el test file.
 pytest.importorskip("torch")
 pytest.importorskip("diffusers")
 
-from designfabric.core.progress import Phase, ProgressEventType
 from designfabric.core.generation.sticker_generator import generate_stickers, slugify
+from designfabric.core.progress import Phase, ProgressEventType
 
 
 def _mock_pipeline(mocker, images: list[MagicMock]):
-    """Parchea `Flux2KleinPipeline.from_pretrained` para devolver imágenes falsas en orden.
-
-    También parchea `torch.Generator` (requiere CUDA real) para que los tests
-    corran en cualquier máquina, con o sin GPU.
-    """
-    mocker.patch("designfabric.core.generation.sticker_generator.torch.Generator")
+    """Parchea Flux2KleinPipeline.from_pretrained y torch.Generator."""
+    mocker.patch("torch.Generator")
     pipe_instance = MagicMock()
     pipe_instance.side_effect = [MagicMock(images=[img]) for img in images]
     mocker.patch(
-        "designfabric.core.generation.sticker_generator.Flux2KleinPipeline.from_pretrained",
+        "diffusers.Flux2KleinPipeline.from_pretrained",
         return_value=pipe_instance,
     )
     return pipe_instance
@@ -56,12 +50,12 @@ def test_generate_stickers_saves_each_image(tmp_path, mocker, fake_reporter):
 
 
 def test_generate_stickers_continues_after_individual_failure(tmp_path, mocker, fake_reporter):
-    mocker.patch("designfabric.core.generation.sticker_generator.torch.Generator")
     pipe_instance = MagicMock()
     good_image = MagicMock()
     pipe_instance.side_effect = [RuntimeError("OOM"), MagicMock(images=[good_image])]
+    mocker.patch("torch.Generator")
     mocker.patch(
-        "designfabric.core.generation.sticker_generator.Flux2KleinPipeline.from_pretrained",
+        "diffusers.Flux2KleinPipeline.from_pretrained",
         return_value=pipe_instance,
     )
 

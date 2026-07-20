@@ -56,6 +56,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/designfabric"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/designfabric/core/generation/assets/test_sticker.png" = "designfabric/core/generation/assets/test_sticker.png"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

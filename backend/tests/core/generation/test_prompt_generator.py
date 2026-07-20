@@ -1,4 +1,4 @@
-"""Tests de `core.prompt_generator`: mockean ChatOllama/ollama para no requerir GPU ni Ollama real."""
+"""Tests del dominio de conceptos encima de un LlmProvider."""
 
 from __future__ import annotations
 
@@ -6,39 +6,25 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Este módulo importa `langchain_ollama` a nivel de módulo: sin el extra
-# `local-ai` instalado, ni siquiera se puede colectar el test file.
-pytest.importorskip("langchain_ollama")
-
-from designfabric.core.progress import Phase, ProgressEventType
+from designfabric.core.generation.llm_providers import LlmTestProvider, LLM_TEST_FIXED_TEXT
 from designfabric.core.generation.prompt_generator import (
     STYLE_SUFFIX,
     apply_style_suffix,
     generate_concepts,
     unload_ollama,
 )
-
-
-def _mock_llm(mocker, contents: list[str]):
-    """Parchea `ChatOllama` para que `invoke` devuelva respuestas predefinidas en orden."""
-    responses = [MagicMock(content=c) for c in contents]
-    llm_instance = MagicMock()
-    llm_instance.invoke.side_effect = responses
-    mocker.patch("designfabric.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
-    return llm_instance
+from designfabric.core.progress import Phase, ProgressEventType
 
 
 def test_apply_style_suffix_appends_fixed_style():
     assert apply_style_suffix("a cat") == f"a cat, {STYLE_SUFFIX}"
 
 
-def test_generate_concepts_happy_path(mocker, fake_reporter):
-    _mock_llm(mocker, ['"a brave fox exploring a cave"'])
+def test_generate_concepts_with_test_provider(fake_reporter):
+    prompts = generate_concepts(2, llm=LlmTestProvider(), reporter=fake_reporter)
 
-    prompts = generate_concepts(1, model="fake-model", reporter=fake_reporter)
-
-    assert prompts == [f"a brave fox exploring a cave, {STYLE_SUFFIX}"]
-
+    expected = f"{LLM_TEST_FIXED_TEXT}, {STYLE_SUFFIX}"
+    assert prompts == [expected, expected]
     types = [e.type for e in fake_reporter.events]
     assert types[0] is ProgressEventType.STARTED
     assert ProgressEventType.PROGRESS in types
@@ -46,34 +32,35 @@ def test_generate_concepts_happy_path(mocker, fake_reporter):
     assert all(e.phase is Phase.PROMPT_GENERATION for e in fake_reporter.events)
 
 
-def test_generate_concepts_retries_then_succeeds(mocker, fake_reporter):
-    llm_instance = MagicMock()
-    llm_instance.invoke.side_effect = [RuntimeError("timeout"), MagicMock(content="a grumpy owl")]
-    mocker.patch("designfabric.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
+def test_generate_concepts_retries_then_succeeds(fake_reporter):
+    llm = MagicMock()
+    llm.generate_text.side_effect = [RuntimeError("timeout"), "a grumpy owl"]
 
-    prompts = generate_concepts(1, reporter=fake_reporter)
+    prompts = generate_concepts(1, llm=llm, reporter=fake_reporter)
 
     assert prompts == [f"a grumpy owl, {STYLE_SUFFIX}"]
     warnings = [e for e in fake_reporter.events if e.type is ProgressEventType.WARNING]
     assert len(warnings) == 1
 
 
-def test_generate_concepts_raises_when_all_concepts_fail(mocker, fake_reporter):
-    llm_instance = MagicMock()
-    llm_instance.invoke.side_effect = RuntimeError("ollama down")
-    mocker.patch("designfabric.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
+def test_generate_concepts_raises_when_all_concepts_fail(fake_reporter):
+    llm = MagicMock()
+    llm.generate_text.side_effect = RuntimeError("ollama down")
 
-    with pytest.raises(RuntimeError, match="no generó ningún concepto"):
-        generate_concepts(1, reporter=fake_reporter)
+    with pytest.raises(RuntimeError, match="ningún concepto válido"):
+        generate_concepts(1, llm=llm, reporter=fake_reporter)
 
     assert fake_reporter.events[-1].type is ProgressEventType.FAILED
 
 
 def test_unload_ollama_swallows_errors_and_warns(mocker, fake_reporter):
-    mock_generate = mocker.patch("designfabric.core.generation.prompt_generator.ollama_client.generate")
-    mock_generate.side_effect = RuntimeError("connection refused")
+    pytest.importorskip("ollama")
+    mock_client_cls = mocker.patch("ollama.Client")
+    mock_client = MagicMock()
+    mock_client.generate.side_effect = RuntimeError("connection refused")
+    mock_client_cls.return_value = mock_client
+    mocker.patch("ollama.generate", side_effect=RuntimeError("connection refused"))
 
-    unload_ollama(model="fake-model", reporter=fake_reporter)
+    unload_ollama(model="fake-model", reporter=fake_reporter, ollama_host="http://localhost:11434")
 
-    mock_generate.assert_called_once_with(model="fake-model", prompt="", keep_alive=0)
     assert fake_reporter.events[-1].type is ProgressEventType.WARNING

@@ -8,34 +8,28 @@ from designfabric.api.registry import LOCAL_AI_AVAILABLE
 
 
 def test_features_reports_local_ai_state(client):
-    """En el entorno normal de test, refleja lo que haya realmente instalado (con o sin `local-ai`)."""
+    """Las tabs de generación siempre están registradas; local_ai refleja deps reales."""
     response = client.get("/features")
     assert response.status_code == 200
     body = response.json()
     assert body["local_ai_available"] is LOCAL_AI_AVAILABLE
-    expected_count = 5 if LOCAL_AI_AVAILABLE else 3
-    assert len(body["modules"]) == expected_count
+    assert len(body["modules"]) == 5
     assert "remove-background" in body["modules"]
     assert "scale" in body["modules"]
     assert "clearcut-batch" in body["modules"]
+    assert "designfabric-batch" in body["modules"]
+    assert "designfabric-single" in body["modules"]
 
 
-def test_features_reports_unavailable_when_local_ai_missing(monkeypatch, tmp_path):
-    """Simula el entorno sin el extra `local-ai`: solo deberían quedar los 3 módulos CPU."""
-    from designfabric.api import registry
+def test_features_keeps_generation_modules_when_local_ai_flag_false(monkeypatch, tmp_path):
+    """LOCAL_AI_AVAILABLE=False no oculta las tabs; solo marca deps ausentes."""
+    from designfabric.api import local_ai, registry
     from designfabric.api.app import create_app
     from designfabric.api.routers import features
 
-    cpu_only = tuple(m for m in registry.FEATURE_REGISTRY if m.worker_affinity == "cpu")
-
-    # `features.py` y `app.py` importaron `FEATURE_REGISTRY`/`LOCAL_AI_AVAILABLE` con
-    # `from ... import`, así que quedan como nombres propios de cada módulo: hay que
-    # parchear esas referencias ya bindeadas, no solo las de `registry`.
+    monkeypatch.setattr(local_ai, "LOCAL_AI_AVAILABLE", False)
     monkeypatch.setattr(registry, "LOCAL_AI_AVAILABLE", False)
-    monkeypatch.setattr(registry, "FEATURE_REGISTRY", cpu_only)
     monkeypatch.setattr(features, "LOCAL_AI_AVAILABLE", False)
-    monkeypatch.setattr(features, "FEATURE_REGISTRY", cpu_only)
-    monkeypatch.setattr("designfabric.api.app.FEATURE_REGISTRY", cpu_only)
     monkeypatch.setenv("DESIGNFABRIC_OUTPUT_DIR", str(tmp_path / "output"))
 
     app = create_app()
@@ -45,4 +39,5 @@ def test_features_reports_unavailable_when_local_ai_missing(monkeypatch, tmp_pat
     assert response.status_code == 200
     body = response.json()
     assert body["local_ai_available"] is False
-    assert set(body["modules"]) == {"remove-background", "scale", "clearcut-batch"}
+    assert len(body["modules"]) == 5
+    assert "designfabric-batch" in body["modules"]

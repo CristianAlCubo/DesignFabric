@@ -10,10 +10,11 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from designfabric.api.dependencies import get_job_dispatcher
 from designfabric.api.dispatcher import JobDispatcher
+from designfabric.api.local_ai import LOCAL_AI_AVAILABLE
 from designfabric.api.schemas import JobCreatedResponse, SingleImageJobRequest
 from designfabric.core.config import Settings
 from designfabric.core.generation.pipeline import run_single_image
@@ -30,10 +31,23 @@ def create_single_image_job(
     payload: SingleImageJobRequest,
     dispatcher: JobDispatcher = Depends(get_job_dispatcher),
 ) -> JobCreatedResponse:
-    """Encola un job de imagen única: bypasea Ollama y va directo a Flux con el prompt del usuario."""
+    """Encola un job de imagen única: bypasea el LLM y usa el image provider elegido."""
+    if payload.image_provider == "flux" and not LOCAL_AI_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "El provider flux requiere el extra 'local-ai'. "
+                "Usa image_provider=test, o instala local-ai."
+            ),
+        )
     job = Job.new(JobType.SINGLE_IMAGE, payload)
     dispatcher.submit(job)
-    logger.info("Job %s encolado (single-image, prompt=%r)", job.id, payload.prompt[:60])
+    logger.info(
+        "Job %s encolado (single-image, image=%s, prompt=%r)",
+        job.id,
+        payload.image_provider,
+        payload.prompt[:60],
+    )
     return JobCreatedResponse(job_id=job.id, status=job.status)
 
 
@@ -45,6 +59,7 @@ def build_handlers(settings: Settings, store: JobStore) -> dict[JobType, Any]:
             apply_style=payload.apply_style_suffix,
             output_dir=output_dir,
             reporter=reporter,
+            image_provider=payload.image_provider,
         )
 
     return {JobType.SINGLE_IMAGE: handle}

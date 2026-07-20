@@ -5,7 +5,8 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from designfabric.api.registry import FEATURE_REGISTRY, LOCAL_AI_AVAILABLE
+from designfabric.api.local_ai import LOCAL_AI_AVAILABLE
+from designfabric.api.registry import FEATURE_REGISTRY
 
 router = APIRouter(tags=["features"])
 

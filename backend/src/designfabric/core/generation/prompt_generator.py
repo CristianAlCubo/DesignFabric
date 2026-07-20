@@ -1,25 +1,21 @@
-"""Generación de conceptos de sujeto/escena vía Ollama (LangChain ChatOllama).
+"""Dominio de conceptos de sticker: orquesta un LlmProvider primitivo.
 
-Módulo de dominio puro: no imprime nada directamente, reporta su progreso a
-través de un `ProgressReporter` para que CLI y API puedan renderizarlo cada
-uno a su manera.
+Contiene la lógica de negocio (SYSTEM_PROMPT, STYLE_SUFFIX, retries, limpieza).
+No importa SDKs de Ollama/LangChain directamente.
 """
 
 from __future__ import annotations
 
-import ollama as ollama_client
-from langchain_ollama import ChatOllama
-from langchain_core.messages import SystemMessage, HumanMessage
-
 from designfabric.core.generation.constants import OLLAMA_MODEL_DEFAULT
+from designfabric.core.generation.llm_providers import ChatMessage, LlmProvider, create_llm_provider
 from designfabric.core.progress import (
+    NullProgressReporter,
     Phase,
     ProgressReporter,
-    NullProgressReporter,
-    emit_phase_started,
-    emit_phase_progress,
     emit_phase_completed,
     emit_phase_failed,
+    emit_phase_progress,
+    emit_phase_started,
     emit_warning,
 )
 
@@ -30,14 +26,19 @@ STYLE_SUFFIX = (
     "print-ready, professional vector art, sharp edges, no gradients."
 )
 
-SYSTEM_PROMPT = SystemMessage(
-    content=(
-        "Eres un director creativo especializado en diseño de stickers para ropa. "
-        "Propones sujetos y escenas originales, vívidas y con detalle realista "
-        "(personajes, animales, objetos o criaturas en una acción o escena concreta), "
-        "pensados para convertirse luego en arte vectorial tipo sticker. "
-        "No menciones estilo visual, técnica de dibujo, colores ni acabado: describe solo el sujeto y la escena."
-    )
+SYSTEM_PROMPT_TEXT = (
+    "Eres un director creativo especializado en diseño de stickers para ropa. "
+    "Propones sujetos y escenas originales, vívidas y con detalle realista "
+    "(personajes, animales, objetos o criaturas en una acción o escena concreta), "
+    "pensados para convertirse luego en arte vectorial tipo sticker. "
+    "No menciones estilo visual, técnica de dibujo, colores ni acabado: describe solo el sujeto y la escena."
+)
+
+CONCEPT_USER_PROMPT = (
+    "Genera un único concepto de sujeto y escena original. Responde "
+    "únicamente con la descripción en inglés, en una sola línea, sin "
+    "comillas ni texto adicional. "
+    "Ejemplo: a grumpy owl perched on a stack of old books, wearing tiny reading glasses"
 )
 
 
@@ -56,43 +57,37 @@ def apply_style_suffix(concept: str) -> str:
 
 def generate_concepts(
     num_images: int,
+    llm: LlmProvider | None = None,
     model: str = OLLAMA_MODEL_DEFAULT,
     reporter: ProgressReporter = NullProgressReporter(),
     ollama_host: str | None = None,
 ) -> list[str]:
-    """Usa Ollama (modelo parametrizable) vía LangChain para crear sujetos/escenas realistas y variados.
+    """Genera sujetos/escenas vía el LlmProvider inyectado (Ollama por defecto).
 
-    Se hace una llamada por concepto (en vez de pedir todos de una vez) para
-    evitar respuestas largas que el modelo trunca o formatea mal.
-
+    Se hace una llamada por concepto para evitar respuestas truncadas.
     Devuelve la lista de prompts finales (concepto + `STYLE_SUFFIX`).
     """
+    provider = llm if llm is not None else create_llm_provider("ollama")
+    messages = [
+        ChatMessage(role="system", content=SYSTEM_PROMPT_TEXT),
+        ChatMessage(role="user", content=CONCEPT_USER_PROMPT),
+    ]
+
     emit_phase_started(reporter, Phase.PROMPT_GENERATION, total=num_images)
     try:
-        llm = ChatOllama(model=model, temperature=0.9, base_url=ollama_host)
-
         concepts: list[str] = []
         for i in range(num_images):
-            # Cada llamada es independiente: no se pasan los conceptos ya
-            # generados para evitar que el contexto/memoria crezca sin límite.
-            human = HumanMessage(
-                content=(
-                    "Genera un único concepto de sujeto y escena original. Responde "
-                    "únicamente con la descripción en inglés, en una sola línea, sin "
-                    "comillas ni texto adicional. "
-                    "Ejemplo: a grumpy owl perched on a stack of old books, wearing tiny reading glasses"
-                )
-            )
-
             concept = None
             for intento in range(1, 3):
                 try:
-                    response = llm.invoke([SYSTEM_PROMPT, human])
-                    concept = _clean_concept(response.content)
+                    raw = provider.generate_text(messages, model=model, host=ollama_host)
+                    concept = _clean_concept(raw)
                     break
                 except Exception as e:
                     emit_warning(
-                        reporter, Phase.PROMPT_GENERATION, f"Intento {intento} fallido generando un concepto: {e}"
+                        reporter,
+                        Phase.PROMPT_GENERATION,
+                        f"Intento {intento} fallido generando un concepto: {e}",
                     )
 
             if concept is None:
@@ -104,7 +99,7 @@ def generate_concepts(
             emit_phase_progress(reporter, Phase.PROMPT_GENERATION, i + 1, num_images, detail=concept[:50])
 
         if not concepts:
-            raise RuntimeError("Ollama no generó ningún concepto válido")
+            raise RuntimeError("No se generó ningún concepto válido")
     except Exception as e:
         emit_phase_failed(reporter, Phase.PROMPT_GENERATION, str(e))
         raise
@@ -119,9 +114,5 @@ def unload_ollama(
     reporter: ProgressReporter = NullProgressReporter(),
     ollama_host: str | None = None,
 ) -> None:
-    """Libera la VRAM ocupada por Ollama antes de cargar Flux."""
-    client = ollama_client.Client(host=ollama_host) if ollama_host else ollama_client
-    try:
-        client.generate(model=model, prompt="", keep_alive=0)
-    except Exception as e:
-        emit_warning(reporter, Phase.PROMPT_GENERATION, f"No se pudo descargar el modelo de Ollama limpiamente: {e}")
+    """Compat: libera VRAM vía el provider Ollama."""
+    create_llm_provider("ollama").release(model=model, host=ollama_host, reporter=reporter)

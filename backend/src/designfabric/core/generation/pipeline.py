@@ -1,24 +1,19 @@
 """Facade del pipeline completo de generación.
 
-Reúne la orquestación que antes vivía en `app.py` (generar conceptos,
-descargar Ollama, generar imágenes) en dos funciones reutilizables por
-cualquier adaptador (CLI, worker de la API): `run_batch` (equivalente al
-flujo actual del CLI) y `run_single_image` (nueva funcionalidad: generar una
-única imagen a partir de un prompt libre, sin pasar por Ollama).
+Orquesta dominio de conceptos + providers primitivos (LLM e imagen).
+Reutilizable por CLI y workers de la API.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from designfabric.core.generation.constants import OLLAMA_MODEL_DEFAULT
+from designfabric.core.generation.image_providers import ImageProviderName, create_image_provider
+from designfabric.core.generation.llm_providers import LlmProviderName, create_llm_provider
+from designfabric.core.generation.prompt_generator import apply_style_suffix, generate_concepts
+from designfabric.core.generation.sticker_generator import StickerResult
 from designfabric.core.progress import NullProgressReporter, ProgressReporter
-from designfabric.core.generation.prompt_generator import (
-    OLLAMA_MODEL_DEFAULT,
-    apply_style_suffix,
-    generate_concepts,
-    unload_ollama,
-)
-from designfabric.core.generation.sticker_generator import StickerResult, generate_stickers
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,19 +34,28 @@ def run_batch(
     output_dir: str = "output",
     reporter: ProgressReporter = NullProgressReporter(),
     ollama_host: str | None = None,
+    llm_provider: LlmProviderName = "ollama",
+    image_provider: ImageProviderName = "flux",
 ) -> BatchResult:
-    """Genera `num_images` stickers: idea conceptos vía Ollama y los renderiza con Flux.
+    """Genera `num_images` stickers: conceptos vía LLM provider e imágenes vía image provider.
 
-    Equivalente al flujo actual del CLI (`--n`). `unload_ollama` se ejecuta
-    siempre, incluso si la generación de conceptos falla a mitad de camino,
-    para no dejar el modelo ocupando VRAM innecesariamente antes de cargar Flux.
+    `release` del LLM se ejecuta siempre en `finally` para liberar VRAM antes
+    de cargar un motor de imagen local (p. ej. Flux).
     """
+    llm = create_llm_provider(llm_provider)
     try:
-        prompts = generate_concepts(num_images, model=ollama_model, reporter=reporter, ollama_host=ollama_host)
+        prompts = generate_concepts(
+            num_images,
+            llm=llm,
+            model=ollama_model,
+            reporter=reporter,
+            ollama_host=ollama_host,
+        )
     finally:
-        unload_ollama(model=ollama_model, reporter=reporter, ollama_host=ollama_host)
+        llm.release(model=ollama_model, host=ollama_host, reporter=reporter)
 
-    results = generate_stickers(prompts, output_dir=output_dir, reporter=reporter)
+    image = create_image_provider(image_provider)
+    results = image.generate_images(prompts, output_dir=output_dir, reporter=reporter)
     return BatchResult(prompts=prompts, results=results)
 
 
@@ -60,13 +64,14 @@ def run_single_image(
     apply_style: bool = True,
     output_dir: str = "output",
     reporter: ProgressReporter = NullProgressReporter(),
+    image_provider: ImageProviderName = "flux",
 ) -> StickerResult:
-    """Genera una única imagen a partir de un prompt libre, sin pasar por Ollama.
+    """Genera una única imagen a partir de un prompt libre, sin pasar por LLM.
 
     Si `apply_style` es True, se le concatena el mismo `STYLE_SUFFIX` que usa
-    el flujo batch para mantener consistencia visual con los stickers generados
-    por conceptos automáticos.
+    el flujo batch para mantener consistencia visual.
     """
     final_prompt = apply_style_suffix(prompt) if apply_style else prompt
-    results = generate_stickers([final_prompt], output_dir=output_dir, reporter=reporter)
+    image = create_image_provider(image_provider)
+    results = image.generate_images([final_prompt], output_dir=output_dir, reporter=reporter)
     return results[0]

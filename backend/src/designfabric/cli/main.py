@@ -301,7 +301,13 @@ def clearcut_cli() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _run_designfabric(num_images: int, ollama_model: str, run_generation_batch: object) -> None:
+def _run_designfabric(
+    num_images: int,
+    ollama_model: str,
+    llm_provider: str,
+    image_provider: str,
+    run_generation_batch: object,
+) -> None:
     """Orquesta el flujo completo: generar conceptos y renderizarlos como stickers."""
     from designfabric.cli.rich_reporter import RichProgressReporter, console
 
@@ -314,20 +320,15 @@ def _run_designfabric(num_images: int, ollama_model: str, run_generation_batch: 
         output_dir=settings.output_dir,
         reporter=RichProgressReporter(),
         ollama_host=settings.ollama_host,
+        llm_provider=llm_provider,
+        image_provider=image_provider,
     )
 
 
 def designfabric_cli() -> None:
     """Punto de entrada del comando `designfabric`."""
-    try:
-        from designfabric.core.generation.pipeline import run_batch as run_generation_batch
-        from designfabric.core.generation.prompt_generator import OLLAMA_MODEL_DEFAULT
-    except ImportError as exc:
-        print(
-            f"Este comando requiere el extra 'local-ai': uv sync --extra local-ai\n({exc})",
-            file=sys.stderr,
-        )
-        raise SystemExit(1) from exc
+    from designfabric.core.generation.constants import OLLAMA_MODEL_DEFAULT
+    from designfabric.core.generation.pipeline import run_batch as run_generation_batch
 
     parser = argparse.ArgumentParser(description="Generador de stickers CLI de DesignFabric.")
     parser.add_argument("--n", type=int, default=1, help="Número de imágenes a generar")
@@ -337,9 +338,27 @@ def designfabric_cli() -> None:
         default=OLLAMA_MODEL_DEFAULT,
         help=f"Modelo de Ollama a usar para generar conceptos (por defecto: {OLLAMA_MODEL_DEFAULT})",
     )
+    parser.add_argument(
+        "--llm-provider",
+        choices=("ollama", "test"),
+        default="ollama",
+        help="Provider primitivo de texto (por defecto: ollama)",
+    )
+    parser.add_argument(
+        "--image-provider",
+        choices=("flux", "test"),
+        default="flux",
+        help="Provider primitivo de imagen (por defecto: flux)",
+    )
 
     args = parser.parse_args()
-    _run_designfabric(args.n, args.ollama_model, run_generation_batch)
+    _run_designfabric(
+        args.n,
+        args.ollama_model,
+        args.llm_provider,
+        args.image_provider,
+        run_generation_batch,
+    )
 
 
 if __name__ == "__main__":

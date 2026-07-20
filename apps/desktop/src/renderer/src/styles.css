@@ -1010,7 +1010,9 @@ input {
 }
 
 .batch-form input,
+.batch-form select,
 .batch-form textarea,
+.single-image-form select,
 .single-image-form input,
 .single-image-form textarea {
   appearance: none;

@@ -23,6 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from designfabric.api.dispatcher import JobDispatcher
 from designfabric.api.registry import FEATURE_REGISTRY
 from designfabric.api.routers import features as features_router
+from designfabric.api.routers import generation_providers as generation_providers_router
 from designfabric.api.routers import health as health_router
 from designfabric.api.routers import jobs as jobs_router
 from designfabric.api.routers import progress_ws as progress_ws_router
@@ -104,6 +105,7 @@ def create_app() -> FastAPI:
     app.include_router(progress_ws_router.router)
     app.include_router(health_router.router)
     app.include_router(features_router.router)
+    app.include_router(generation_providers_router.router)
 
     return app
 

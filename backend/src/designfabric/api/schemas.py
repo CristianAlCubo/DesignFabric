@@ -46,6 +46,12 @@ class BatchJobRequest(BaseModel):
 
     num_images: int = Field(gt=0, le=50, description="Número de stickers a generar")
     ollama_model: str = Field(default=OLLAMA_MODEL_DEFAULT, description="Modelo de Ollama a usar para los conceptos")
+    llm_provider: Literal["ollama", "test"] = Field(
+        default="ollama", description="Provider primitivo de texto para generar conceptos"
+    )
+    image_provider: Literal["flux", "test"] = Field(
+        default="flux", description="Provider primitivo de imagen para renderizar prompts"
+    )
 
 
 class SingleImageJobRequest(BaseModel):
@@ -55,6 +61,25 @@ class SingleImageJobRequest(BaseModel):
     apply_style_suffix: bool = Field(
         default=True, description="Si se concatena el STYLE_SUFFIX de sticker al prompt del usuario"
     )
+    image_provider: Literal["flux", "test"] = Field(
+        default="flux", description="Provider primitivo de imagen para renderizar el prompt"
+    )
+
+
+class ProviderInfoSchema(BaseModel):
+    """Entrada del catálogo de providers de generación."""
+
+    id: str
+    label: str
+    available: bool
+    requires_local_ai: bool
+
+
+class GenerationProvidersResponse(BaseModel):
+    """Catálogo de providers LLM e imagen disponibles en este entorno."""
+
+    llm: list[ProviderInfoSchema]
+    image: list[ProviderInfoSchema]
 
 
 class JobCreatedResponse(BaseModel):

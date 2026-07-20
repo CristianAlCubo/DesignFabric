@@ -3,12 +3,10 @@
 import { useState } from 'react'
 
 import { ErrorBanner } from '../../core/components/ErrorBanner'
-import { FeatureNotInstalled } from '../../core/components/FeatureNotInstalled'
 import { JobProgressPanel } from '../../core/components/JobProgressPanel'
-import { useLocalAiAvailability } from '../../core/hooks/useLocalAiAvailability'
 import type { BatchJobResult } from '../../core/api/types'
 import { useCreateBatchJob, useJob } from './api'
-import { BatchForm } from './BatchForm'
+import { BatchForm, type BatchFormValues } from './BatchForm'
 import { ResultsGallery } from './ResultsGallery'
 import { useBackendBaseUrl } from './useBackendBaseUrl'
 
@@ -17,16 +15,15 @@ export function BatchGeneratorView() {
   const createJob = useCreateBatchJob()
   const { data: job } = useJob(jobId)
   const backendBaseUrl = useBackendBaseUrl()
-  const localAiAvailable = useLocalAiAvailability()
-  const [installedOverride, setInstalledOverride] = useState(false)
 
-  if (localAiAvailable === false && !installedOverride) {
-    return <FeatureNotInstalled onInstalled={() => setInstalledOverride(true)} />
-  }
-
-  function handleSubmit(numImages: number, ollamaModel: string): void {
+  function handleSubmit(values: BatchFormValues): void {
     createJob.mutate(
-      { num_images: numImages, ollama_model: ollamaModel },
+      {
+        num_images: values.numImages,
+        ollama_model: values.ollamaModel,
+        llm_provider: values.llmProvider,
+        image_provider: values.imageProvider,
+      },
       { onSuccess: (response) => setJobId(response.job_id) }
     )
   }
@@ -38,6 +35,7 @@ export function BatchGeneratorView() {
     <section className="view">
       <h2>Generar stickers (batch)</h2>
       <BatchForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+      {createJob.isError && <ErrorBanner message={createJob.error?.message ?? 'Error al encolar el job'} />}
       {job?.status === 'failed' && <ErrorBanner message={job.error ?? 'Error desconocido'} />}
       <JobProgressPanel jobId={jobId} />
       {result && backendBaseUrl && <ResultsGallery results={result.results} backendBaseUrl={backendBaseUrl} />}

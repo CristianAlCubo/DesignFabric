@@ -32,14 +32,32 @@ export type JobType = 'batch' | 'single_image'
 
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
 
+export type LlmProviderId = 'ollama' | 'test'
+export type ImageProviderId = 'flux' | 'test'
+
+export interface ProviderInfo {
+  id: string
+  label: string
+  available: boolean
+  requires_local_ai: boolean
+}
+
+export interface GenerationProvidersResponse {
+  llm: ProviderInfo[]
+  image: ProviderInfo[]
+}
+
 export interface BatchJobRequest {
   num_images: number
   ollama_model?: string
+  llm_provider?: LlmProviderId
+  image_provider?: ImageProviderId
 }
 
 export interface SingleImageJobRequest {
   prompt: string
   apply_style_suffix?: boolean
+  image_provider?: ImageProviderId
 }
 
 export interface StickerResult {

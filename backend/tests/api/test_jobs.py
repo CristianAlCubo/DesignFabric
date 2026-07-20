@@ -4,14 +4,9 @@ from __future__ import annotations
 
 import time
 
-import pytest
-
-from designfabric.api.registry import LOCAL_AI_AVAILABLE
 from tests.api.conftest import wait_until
 
-pytestmark = pytest.mark.skipif(
-    not LOCAL_AI_AVAILABLE, reason="requiere el extra local-ai (endpoints /api/jobs/batch y /api/jobs/single-image)"
-)
+_TEST_PROVIDERS = {"llm_provider": "test", "image_provider": "test"}
 
 
 def test_health_endpoint(client):
@@ -21,7 +16,7 @@ def test_health_endpoint(client):
 
 
 def test_batch_job_lifecycle_reaches_succeeded(client):
-    response = client.post("/api/jobs/batch", json={"num_images": 1})
+    response = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS})
     assert response.status_code == 202
     job_id = response.json()["job_id"]
     assert response.json()["status"] == "queued"
@@ -38,12 +33,23 @@ def test_batch_job_lifecycle_reaches_succeeded(client):
 
 
 def test_batch_job_rejects_invalid_num_images(client):
-    response = client.post("/api/jobs/batch", json={"num_images": 0})
+    response = client.post("/api/jobs/batch", json={"num_images": 0, **_TEST_PROVIDERS})
+    assert response.status_code == 422
+
+
+def test_batch_job_rejects_unknown_provider(client):
+    response = client.post(
+        "/api/jobs/batch",
+        json={"num_images": 1, "llm_provider": "nope", "image_provider": "test"},
+    )
     assert response.status_code == 422
 
 
 def test_single_image_job_lifecycle_reaches_succeeded(client):
-    response = client.post("/api/jobs/single-image", json={"prompt": "a lone wolf howling"})
+    response = client.post(
+        "/api/jobs/single-image",
+        json={"prompt": "a lone wolf howling", "image_provider": "test"},
+    )
     assert response.status_code == 202
     job_id = response.json()["job_id"]
 
@@ -62,8 +68,8 @@ def test_get_unknown_job_returns_404(client):
 
 
 def test_list_jobs_returns_most_recent_first(client):
-    first = client.post("/api/jobs/batch", json={"num_images": 1}).json()["job_id"]
-    second = client.post("/api/jobs/batch", json={"num_images": 1}).json()["job_id"]
+    first = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
+    second = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
 
     listing = client.get("/api/jobs").json()
     ids = [job["id"] for job in listing]
@@ -78,8 +84,8 @@ def test_cancel_queued_job_succeeds(client, mocker):
         side_effect=lambda *a, **k: time.sleep(0.3) or None,
     )
 
-    busy_job = client.post("/api/jobs/batch", json={"num_images": 1}).json()["job_id"]
-    queued_job = client.post("/api/jobs/batch", json={"num_images": 1}).json()["job_id"]
+    busy_job = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
+    queued_job = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
 
     assert wait_until(lambda: client.get(f"/api/jobs/{busy_job}").json()["status"] == "running")
     assert client.get(f"/api/jobs/{queued_job}").json()["status"] == "queued"
@@ -90,7 +96,7 @@ def test_cancel_queued_job_succeeds(client, mocker):
 
 
 def test_cancel_finished_job_returns_409(client):
-    job_id = client.post("/api/jobs/batch", json={"num_images": 1}).json()["job_id"]
+    job_id = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
     assert wait_until(lambda: client.get(f"/api/jobs/{job_id}").json()["status"] == "succeeded")
 
     response = client.delete(f"/api/jobs/{job_id}")
@@ -98,6 +104,6 @@ def test_cancel_finished_job_returns_409(client):
 
 
 def test_progress_websocket_accepts_connection(client):
-    job_id = client.post("/api/jobs/batch", json={"num_images": 1}).json()["job_id"]
+    job_id = client.post("/api/jobs/batch", json={"num_images": 1, **_TEST_PROVIDERS}).json()["job_id"]
     with client.websocket_connect(f"/api/jobs/{job_id}/ws"):
-        pass  # conectar y desconectar sin error ya valida el ciclo de suscripción/desuscripción
+        pass
