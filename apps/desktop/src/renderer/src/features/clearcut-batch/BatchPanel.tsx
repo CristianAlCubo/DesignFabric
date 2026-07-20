@@ -24,6 +24,34 @@ function basename(filePath: string): string {
   return parts[parts.length - 1] || filePath
 }
 
+interface PathPickerProps {
+  icon: typeof Folder
+  label: string
+  meta?: string | null
+  title?: string
+  empty: boolean
+  disabled?: boolean
+  onClick: () => void
+}
+
+/** Control de ruta de altura fija: la selección vive en la etiqueta, sin bloques extra. */
+function PathPicker({ icon, label, meta, title, empty, disabled, onClick }: PathPickerProps) {
+  return (
+    <AppButton
+      type="button"
+      variant="outline"
+      icon={icon}
+      className={`batch-path-picker${empty ? ' batch-path-picker--empty' : ''}`}
+      disabled={disabled}
+      title={title}
+      onClick={onClick}
+    >
+      <span className="batch-path-picker__label">{label}</span>
+      {meta ? <span className="batch-path-picker__meta tabular-nums">{meta}</span> : null}
+    </AppButton>
+  )
+}
+
 export function BatchPanel() {
   const strategies = useBatchStore((state) => state.strategies)
   const scaleStrategies = useBatchStore((state) => state.scaleStrategies)
@@ -119,6 +147,33 @@ export function BatchPanel() {
   const scaleLabel =
     scaleStrategies.find((item) => item.id === batchScaleStrategyId)?.label ?? '—'
 
+  const inputEmpty =
+    batchInputMode === 'folder' ? !batchInputDir : batchInputFiles.length === 0
+  const inputLabel =
+    batchInputMode === 'folder'
+      ? batchInputDir
+        ? basename(batchInputDir)
+        : 'Seleccionar carpeta'
+      : batchInputFiles.length > 0
+        ? batchInputFiles.length === 1
+          ? basename(batchInputFiles[0])
+          : `${batchInputFiles.length} archivos`
+        : 'Seleccionar archivos'
+  const inputMeta =
+    batchInputMode === 'folder' && batchInputDir && batchInputCount !== null
+      ? `${batchInputCount} img`
+      : null
+  const inputTitle =
+    batchInputMode === 'folder'
+      ? batchInputDir ?? undefined
+      : batchInputFiles.length > 0
+        ? batchInputFiles.map(basename).slice(0, 8).join('\n') +
+          (batchInputFiles.length > 8 ? `\n… y ${batchInputFiles.length - 8} más` : '')
+        : undefined
+
+  const outputEmpty = !batchOutputDir.trim()
+  const outputLabel = outputEmpty ? 'Elegir carpeta de salida' : basename(batchOutputDir)
+
   return (
     <div className="batch-layout" role="tabpanel" id="panel-batch" aria-labelledby="tab-batch">
       <aside className="batch-setup panel panel--form">
@@ -149,73 +204,27 @@ export function BatchPanel() {
           })}
         </ToggleGroup>
 
-        {batchInputMode === 'folder' ? (
-          <>
-            <AppButton
-              type="button"
-              variant="outline"
-              icon={Folder}
-              onClick={() => void selectBatchFolder()}
-              disabled={isBatchRunning}
-            >
-              Seleccionar carpeta
-            </AppButton>
-            {batchInputDir ? (
-              <div className="batch-input-summary">
-                <p className="batch-input-summary__title tabular-nums">
-                  {batchInputCount === null
-                    ? 'Carpeta seleccionada'
-                    : `${batchInputCount} imagen${batchInputCount === 1 ? '' : 'es'}`}
-                </p>
-                <p className="path-hint" title={batchInputDir}>
-                  {batchInputDir}
-                </p>
-              </div>
-            ) : null}
-            <p className="muted field-hint">Imágenes compatibles de la carpeta (sin subcarpetas).</p>
-          </>
-        ) : (
-          <>
-            <AppButton
-              type="button"
-              variant="outline"
-              icon={Files}
-              onClick={() => void selectBatchFiles()}
-              disabled={isBatchRunning}
-            >
-              Seleccionar archivos
-            </AppButton>
-            {batchInputFiles.length > 0 ? (
-              <div className="batch-input-summary">
-                <p className="batch-input-summary__title tabular-nums">
-                  {batchInputFiles.length} archivo{batchInputFiles.length === 1 ? '' : 's'}{' '}
-                  seleccionado{batchInputFiles.length === 1 ? '' : 's'}
-                </p>
-                <p className="muted field-hint">
-                  Ej. {basename(batchInputFiles[0])}
-                  {batchInputFiles.length > 1 ? ` y ${batchInputFiles.length - 1} más` : ''}
-                </p>
-              </div>
-            ) : null}
-            <p className="muted field-hint">Solo se procesarán los archivos seleccionados.</p>
-          </>
-        )}
+        <PathPicker
+          icon={batchInputMode === 'folder' ? Folder : Files}
+          label={inputLabel}
+          meta={inputMeta}
+          title={inputTitle}
+          empty={inputEmpty}
+          disabled={isBatchRunning}
+          onClick={() =>
+            void (batchInputMode === 'folder' ? selectBatchFolder() : selectBatchFiles())
+          }
+        />
 
         <h2 className="column__title">Salida</h2>
-        <AppButton
-          type="button"
-          variant="outline"
+        <PathPicker
           icon={FolderOutput}
-          onClick={() => void selectBatchOutputDir()}
+          label={outputLabel}
+          title={outputEmpty ? undefined : batchOutputDir}
+          empty={outputEmpty}
           disabled={isBatchRunning}
-        >
-          Elegir carpeta de salida
-        </AppButton>
-        {batchOutputDir ? (
-          <p className="path-hint" title={batchOutputDir}>
-            {batchOutputDir}
-          </p>
-        ) : null}
+          onClick={() => void selectBatchOutputDir()}
+        />
 
         <details className="batch-setup-details" open={!isBatchRunning && !batchReport}>
           <summary className="column__title batch-setup-details__summary">
