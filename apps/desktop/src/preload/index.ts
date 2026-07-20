@@ -44,7 +44,10 @@ const api = {
     ipcRenderer.invoke('setup:complete-wizard', choice),
 
   /** Instala el módulo de IA local diferido: reinicia el backend con el extra `local-ai`. */
-  installLocalAiLater: (): Promise<void> => ipcRenderer.invoke('setup:install-local-ai-later')
+  installLocalAiLater: (): Promise<void> => ipcRenderer.invoke('setup:install-local-ai-later'),
+
+  /** Abre (o enfoca) la ventana hija de configuración. */
+  openSettings: (): Promise<void> => ipcRenderer.invoke('settings:open')
 }
 
 contextBridge.exposeInMainWorld('designfabric', api)

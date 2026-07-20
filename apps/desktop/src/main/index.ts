@@ -10,7 +10,7 @@ import { getLastImageDirectory, rememberImageDirectory } from './lastImageDirect
 import { getLogHistory, pushLog } from './log-store'
 import { registerSetupIpc } from './setup-ipc'
 import { readSetupPreferences } from './setup-preferences'
-import { createMainWindow } from './window'
+import { createMainWindow, openSettingsWindow } from './window'
 
 // Workaround de renderizado en Linux (mismo que ClearCut original): evita problemas de
 // GTK4 con algunas distros. Debe aplicarse ANTES de `app.whenReady()`.
@@ -117,6 +117,10 @@ ipcMain.handle(
 // Abre una ruta (archivo o carpeta) en el explorador de archivos del SO.
 ipcMain.handle('shell:openPath', async (_event, targetPath: string): Promise<string> => {
   return shell.openPath(targetPath)
+})
+
+ipcMain.handle('settings:open', (event): void => {
+  openSettingsWindow(BrowserWindow.fromWebContents(event.sender))
 })
 
 function startBackendInBackground(extras: string[]): void {

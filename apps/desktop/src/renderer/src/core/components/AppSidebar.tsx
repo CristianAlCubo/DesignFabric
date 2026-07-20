@@ -1,3 +1,6 @@
+import { Settings } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -26,9 +29,23 @@ export function AppSidebar({ activeSectionId, onSelect }: AppSidebarProps) {
   return (
     <Sidebar collapsible="none" className="border-r border-sidebar-border">
       <SidebarHeader className="px-4 py-3">
-        <span className="text-base font-bold tracking-wide text-sidebar-foreground">
-          DesignFabric
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-base font-bold tracking-wide text-sidebar-foreground">
+            DesignFabric
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Abrir configuración"
+            title="Configuración"
+            onClick={() => {
+              void window.designfabric.openSettings()
+            }}
+          >
+            <Settings aria-hidden strokeWidth={1.75} />
+          </Button>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

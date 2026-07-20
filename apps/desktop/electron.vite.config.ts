@@ -27,6 +27,14 @@ export default defineConfig({
         ...sharedAlias,
       },
     },
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve("src/renderer/index.html"),
+          settings: resolve("src/renderer/settings.html"),
+        },
+      },
+    },
     server: {
       open: false,
     },

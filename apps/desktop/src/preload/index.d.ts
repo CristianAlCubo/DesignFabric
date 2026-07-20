@@ -50,6 +50,9 @@ declare global {
 
       /** Instala el módulo de IA local diferido: reinicia el backend con el extra `local-ai`. */
       installLocalAiLater: () => Promise<void>
+
+      /** Abre (o enfoca) la ventana hija de configuración. */
+      openSettings: () => Promise<void>
     }
   }
 }
