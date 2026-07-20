@@ -7,13 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-20
+
 ### Added
 
-- Endpoint `GET /api/generation/readiness` como fuente de verdad del estado de generación IA (deps `local-ai`, Ollama reachable/modelos, pesos FLUX en caché HF, CUDA). La UI de generación deshabilita en los selectores los providers no ejecutables.
-- Nota: la remediación (instalar deps, pull de Ollama, predescarga de FLUX) queda para un futuro panel de configuración; este cambio solo reporta.
+- OpenRouter como provider de texto e imagen: API key con cifrado seguro (`safeStorage`), selectores de modelo en Settings, y jobs de generación junto a Ollama/FLUX.2. Usa la API de `/images` para modelos solo-imagen y pide transparencia según las capacidades de cada modelo, con cancelación cooperativa de jobs.
+- Ventana hija de Configuración (Settings), con navegación por secciones (OpenRouter, modelos de lenguaje, modelos de imagen, IA local, general).
+- Endpoint `GET /api/generation/readiness` como fuente de verdad del estado de generación IA (deps `local-ai`, Ollama reachable/modelos, pesos FLUX en caché HF, CUDA); la UI deshabilita en los selectores los providers no ejecutables.
+- Sección "IA local" en Settings para instalar el módulo de generación local (Ollama + FLUX.2 Klein, varios GB) en cualquier momento después del primer arranque, con progreso en vivo.
+
+### Changed
+
+- Rediseño del shell: dashboard con sidebar de dos niveles (Generación, Retocado, Lotes), consola de logs movida a un sheet lateral y cerrada por defecto.
+- Migración de la UI a componentes shadcn/Radix con Tailwind 4; botones de producto unificados bajo `AppButton` con iconos Lucide.
+- El estado de los formularios de generación (batch/single) se persiste en stores Zustand y ya no se pierde al cambiar de sección o tab.
+- Actualización de Electron 36.9.5 → 43.1.1 (Chromium/Node más nuevos; el paquete `electron` ya no autodescarga el binario en `postinstall` desde la v40, `npm run setup` lo cubre explícitamente).
+
+### Fixed
+
+- 404 en modelos OpenRouter solo-imagen por pedir siempre `image+text` modalities; ahora resuelve las modalities por modelo.
+- "Failed to fetch" al abrir la UI antes de que el backend esté listo; progreso/ETA y cola del lote ClearCut endurecidos para cientos de archivos.
+- Flash de skeleton en Settings > OpenRouter en cargas rápidas de IPC.
+- Backend empaquetado (`.AppImage`/`.exe`) crasheaba al arrancar con `ModuleNotFoundError: httpx` — la dependencia estaba declarada solo en el extra de desarrollo.
 
 ### Removed
 
+- Wizard de primer arranque que bloqueaba el inicio preguntando si instalar el módulo de IA local; ahora arranca directo (equivalente a elegir "Más tarde") y la instalación se hace desde Settings > IA local sin reiniciar la app.
 - Estrategia de escalado vectorial (VTracer + CairoSVG). Real-ESRGAN queda como única opción de escalado en Escalado, Lote, API y CLI.
 
 ## [0.1.0] - 2026-07-20
