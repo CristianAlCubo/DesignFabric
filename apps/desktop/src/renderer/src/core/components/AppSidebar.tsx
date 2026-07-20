@@ -1,6 +1,7 @@
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -9,6 +10,7 @@ import {
   SidebarMenuItem
 } from '@/components/ui/sidebar'
 
+import { useAppVersion } from '../hooks/useAppVersion'
 import { listSections } from '../registry/sections'
 import type { SectionId } from '../registry/types'
 
@@ -19,6 +21,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeSectionId, onSelect }: AppSidebarProps) {
   const sections = listSections()
+  const version = useAppVersion()
 
   return (
     <Sidebar collapsible="none" className="border-r border-sidebar-border">
@@ -53,6 +56,11 @@ export function AppSidebar({ activeSectionId, onSelect }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="mt-auto border-t border-sidebar-border px-4 py-3">
+        <p className="text-xs text-muted-foreground tabular-nums" title="Versión del software">
+          {version ? `v${version}` : '…'}
+        </p>
+      </SidebarFooter>
     </Sidebar>
   )
 }

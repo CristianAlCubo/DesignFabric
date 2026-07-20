@@ -5,6 +5,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 
 import { killBackend, spawnBackend, waitForBackendReady } from './backend-process'
 import { backendBaseUrl } from './config'
+import { readAppVersion } from './app-version'
 import { getLastImageDirectory, rememberImageDirectory } from './lastImageDirectory'
 import { getLogHistory, pushLog } from './log-store'
 import { registerSetupIpc } from './setup-ipc'
@@ -28,6 +29,8 @@ const MIME_BY_EXT: Record<string, string> = {
 }
 
 ipcMain.handle('get-backend-base-url', (): string => backendBaseUrl)
+
+ipcMain.handle('app:get-version', (): string => readAppVersion())
 
 ipcMain.handle('get-log-history', () => getLogHistory())
 

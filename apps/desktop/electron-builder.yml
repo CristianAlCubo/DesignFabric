@@ -10,6 +10,8 @@ files:
   - out/**/*
   - package.json
 extraResources:
+  - from: ../../VERSION
+    to: VERSION
   - from: ../../backend
     to: backend
     filter:

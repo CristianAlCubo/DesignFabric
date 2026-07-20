@@ -23,11 +23,7 @@ function AppShell() {
   const setActiveTab = useNavigationStore((state) => state.setActiveTab)
   const ensureDefaults = useNavigationStore((state) => state.ensureDefaults)
 
-  // Visible por defecto: en el primer arranque de una build empaquetada, el
-  // setup del entorno Python (torch/diffusers) puede tardar varios minutos y
-  // requiere internet — mostrar la consola de entrada ayuda a notar el
-  // progreso. El usuario puede colapsarla después.
-  const [showLogs, setShowLogs] = useState(true)
+  const [showLogs, setShowLogs] = useState(false)
 
   useEffect(() => {
     ensureDefaults()

@@ -8,6 +8,9 @@ declare global {
     designfabric: {
       getBackendBaseUrl: () => Promise<string>
 
+      /** Versión del producto leída desde el archivo VERSION (raíz del monorepo). */
+      getAppVersion: () => Promise<string>
+
       /** Historial de logs acumulado (ring buffer de 2000 entradas) del proceso main + backend. */
       getLogHistory: () => Promise<LogEntry[]>
 

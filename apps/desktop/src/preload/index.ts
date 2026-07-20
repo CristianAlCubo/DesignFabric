@@ -6,6 +6,8 @@ import type { SetupPreferences } from '@shared/setupPreferences'
 const api = {
   getBackendBaseUrl: (): Promise<string> => ipcRenderer.invoke('get-backend-base-url'),
 
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version'),
+
   getLogHistory: (): Promise<LogEntry[]> => ipcRenderer.invoke('get-log-history'),
 
   onLog: (callback: (entry: LogEntry) => void): (() => void) => {
