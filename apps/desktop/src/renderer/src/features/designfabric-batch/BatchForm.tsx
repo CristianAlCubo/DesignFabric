@@ -1,8 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { ModelSelector } from '../../core/components/ModelSelector'
 import { ProviderSelector } from '../../core/components/ProviderSelector'
@@ -20,6 +28,8 @@ interface BatchFormProps {
   onSubmit: (values: BatchFormValues) => void
   isSubmitting: boolean
 }
+
+const QUANTITY_PRESETS = ['1', '4', '8', '12'] as const
 
 function pickDefault(providers: { id: string; available: boolean }[], preferred: string, fallback: string): string {
   const preferredItem = providers.find((p) => p.id === preferred && p.available)
@@ -49,21 +59,51 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
 
   const llmProviders = catalog?.llm ?? []
   const imageProviders = catalog?.image ?? []
+  const presetValue = QUANTITY_PRESETS.includes(String(numImages) as (typeof QUANTITY_PRESETS)[number])
+    ? String(numImages)
+    : ''
 
   return (
-    <form className="batch-form" onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="batch-num-images">Número de stickers</FieldLabel>
-          <Input
-            id="batch-num-images"
-            type="number"
-            min={1}
-            max={50}
-            value={numImages}
-            onChange={(e) => setNumImages(Number(e.target.value))}
-          />
+          <FieldLabel>Número de stickers</FieldLabel>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            spacing={0}
+            className="w-full"
+            value={presetValue}
+            onValueChange={(value) => {
+              if (!value) return
+              setNumImages(Number(value))
+            }}
+            disabled={isSubmitting}
+          >
+            {QUANTITY_PRESETS.map((preset) => (
+              <ToggleGroupItem key={preset} value={preset} className="flex-1">
+                {preset}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <div className="flex items-center gap-2">
+            <Input
+              id="batch-num-images"
+              type="number"
+              min={1}
+              max={50}
+              value={numImages}
+              onChange={(e) => setNumImages(Number(e.target.value))}
+              disabled={isSubmitting}
+              className="w-24"
+              aria-label="Cantidad personalizada"
+            />
+            <FieldDescription className="m-0">Hasta 50 por lote.</FieldDescription>
+          </div>
         </Field>
+
+        <FieldSeparator>Configuración</FieldSeparator>
+
         <ProviderSelector
           label="Provider LLM"
           value={llmProvider}
@@ -79,10 +119,12 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
           onChange={(v) => setImageProvider(v as ImageProviderId)}
           disabled={!catalog || isSubmitting}
         />
-        <Button type="submit" disabled={isSubmitting || !catalog}>
-          {isSubmitting ? 'Generando…' : 'Generar'}
-        </Button>
       </FieldGroup>
+
+      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !catalog}>
+        <Sparkles data-icon="inline-start" />
+        {isSubmitting ? 'Generando…' : 'Generar'}
+      </Button>
     </form>
   )
 }

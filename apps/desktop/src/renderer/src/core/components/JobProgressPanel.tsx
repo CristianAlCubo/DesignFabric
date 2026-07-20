@@ -5,6 +5,9 @@
  * features `designfabric-batch` y `designfabric-single`.
  */
 
+import { Images, MessageSquareText } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+
 import { useJobProgress } from '../hooks/useJobProgress'
 import { ProgressBar } from './ProgressBar'
 
@@ -12,9 +15,9 @@ interface JobProgressPanelProps {
   jobId: string | null
 }
 
-const PHASE_LABELS: Record<string, string> = {
-  prompt_generation: '🧠 Generación de prompts',
-  image_generation: '🎨 Generación de imágenes'
+const PHASE_META: Record<string, { label: string; icon: LucideIcon }> = {
+  prompt_generation: { label: 'Generación de prompts', icon: MessageSquareText },
+  image_generation: { label: 'Generación de imágenes', icon: Images }
 }
 
 export function JobProgressPanel({ jobId }: JobProgressPanelProps) {
@@ -25,24 +28,33 @@ export function JobProgressPanel({ jobId }: JobProgressPanelProps) {
   const phases = Array.from(new Set(events.map((event) => event.phase)))
 
   return (
-    <div className="job-progress-panel">
+    <div className="flex flex-col gap-3 border-t border-border bg-card px-4 py-3">
       {phases.map((phase) => {
         const phaseEvents = events.filter((event) => event.phase === phase)
         const lastProgressOrStart = [...phaseEvents].reverse().find((e) => e.total !== null) ?? phaseEvents[0]
         const warnings = phaseEvents.filter((event) => event.type === 'warning')
+        const meta = PHASE_META[phase]
+        const Icon = meta?.icon
+        const labelBase = meta?.label ?? phase
 
         return (
-          <div key={phase} className="job-progress-panel__phase">
+          <div key={phase} className="flex flex-col gap-1.5">
             <ProgressBar
               current={lastProgressOrStart.current ?? 0}
               total={lastProgressOrStart.total ?? 0}
-              label={`${PHASE_LABELS[phase] ?? phase}${
-                lastProgressOrStart.detail ? ` — ${lastProgressOrStart.detail}` : ''
-              }`}
+              label={
+                <span className="inline-flex items-center gap-1.5">
+                  {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden /> : null}
+                  <span>
+                    {labelBase}
+                    {lastProgressOrStart.detail ? ` — ${lastProgressOrStart.detail}` : ''}
+                  </span>
+                </span>
+              }
             />
             {warnings.map((warning, index) => (
               <p key={index} className="text-sm text-warning">
-                ⚠ {warning.message}
+                {warning.message}
               </p>
             ))}
           </div>

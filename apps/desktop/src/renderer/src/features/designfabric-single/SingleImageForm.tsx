@@ -1,8 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator
+} from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 
 import { ProviderSelector } from '../../core/components/ProviderSelector'
@@ -42,7 +49,7 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
   }
 
   return (
-    <form className="single-image-form" onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="single-prompt">Prompt</FieldLabel>
@@ -51,9 +58,28 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="a grumpy owl perched on a stack of old books, wearing tiny reading glasses"
-            rows={4}
+            rows={6}
+            className="min-h-32 resize-y"
           />
+          <FieldDescription>Describe el sticker que quieres generar.</FieldDescription>
         </Field>
+
+        <Field orientation="horizontal">
+          <Checkbox
+            id="apply-style-suffix"
+            checked={applyStyleSuffix}
+            onCheckedChange={(checked) => setApplyStyleSuffix(checked === true)}
+          />
+          <div className="flex flex-col gap-0.5">
+            <FieldLabel htmlFor="apply-style-suffix">Estilo sticker</FieldLabel>
+            <FieldDescription>
+              Bordes gruesos, colores planos y fondo blanco.
+            </FieldDescription>
+          </div>
+        </Field>
+
+        <FieldSeparator>Configuración</FieldSeparator>
+
         <ProviderSelector
           label="Provider de imagen"
           value={imageProvider}
@@ -61,20 +87,17 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
           onChange={(v) => setImageProvider(v as ImageProviderId)}
           disabled={!catalog || isSubmitting}
         />
-        <Field orientation="horizontal">
-          <Checkbox
-            id="apply-style-suffix"
-            checked={applyStyleSuffix}
-            onCheckedChange={(checked) => setApplyStyleSuffix(checked === true)}
-          />
-          <FieldLabel htmlFor="apply-style-suffix">
-            Aplicar estilo sticker (bordes gruesos, colores planos, fondo blanco)
-          </FieldLabel>
-        </Field>
-        <Button type="submit" disabled={isSubmitting || !prompt.trim() || !catalog}>
-          {isSubmitting ? 'Generando…' : 'Generar'}
-        </Button>
       </FieldGroup>
+
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full"
+        disabled={isSubmitting || !prompt.trim() || !catalog}
+      >
+        <Sparkles data-icon="inline-start" />
+        {isSubmitting ? 'Generando…' : 'Generar'}
+      </Button>
     </form>
   )
 }

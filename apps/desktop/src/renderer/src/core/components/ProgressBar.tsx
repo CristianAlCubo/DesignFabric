@@ -1,9 +1,11 @@
+import type { ReactNode } from 'react'
+
 import { Progress } from '@/components/ui/progress'
 
 interface ProgressBarProps {
   current: number
   total: number
-  label?: string
+  label?: ReactNode
 }
 
 /** Barra de progreso simple, reutilizada por las vistas batch y de imagen única. */
