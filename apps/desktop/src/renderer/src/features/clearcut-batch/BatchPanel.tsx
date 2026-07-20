@@ -54,14 +54,12 @@ function PathPicker({ icon, label, meta, title, empty, disabled, onClick }: Path
 
 export function BatchPanel() {
   const strategies = useBatchStore((state) => state.strategies)
-  const scaleStrategies = useBatchStore((state) => state.scaleStrategies)
   const batchInputMode = useBatchStore((state) => state.batchInputMode)
   const batchInputDir = useBatchStore((state) => state.batchInputDir)
   const batchInputFiles = useBatchStore((state) => state.batchInputFiles)
   const batchInputCount = useBatchStore((state) => state.batchInputCount)
   const batchOutputDir = useBatchStore((state) => state.batchOutputDir)
   const batchRemovalStrategyId = useBatchStore((state) => state.batchRemovalStrategyId)
-  const batchScaleStrategyId = useBatchStore((state) => state.batchScaleStrategyId)
   const batchFactor = useBatchStore((state) => state.batchFactor)
   const batchReport = useBatchStore((state) => state.batchReport)
   const batchError = useBatchStore((state) => state.batchError)
@@ -70,10 +68,8 @@ export function BatchPanel() {
   const jobId = useBatchStore((state) => state.jobId)
 
   const loadStrategies = useBatchStore((state) => state.loadStrategies)
-  const loadScaleStrategies = useBatchStore((state) => state.loadScaleStrategies)
   const setBatchInputMode = useBatchStore((state) => state.setBatchInputMode)
   const setBatchRemovalStrategyId = useBatchStore((state) => state.setBatchRemovalStrategyId)
-  const setBatchScaleStrategyId = useBatchStore((state) => state.setBatchScaleStrategyId)
   const setBatchFactor = useBatchStore((state) => state.setBatchFactor)
   const selectBatchOutputDir = useBatchStore((state) => state.selectBatchOutputDir)
   const selectBatchFolder = useBatchStore((state) => state.selectBatchFolder)
@@ -93,8 +89,7 @@ export function BatchPanel() {
 
   useEffect(() => {
     void loadStrategies()
-    void loadScaleStrategies()
-  }, [loadStrategies, loadScaleStrategies])
+  }, [loadStrategies])
 
   useEffect(() => {
     if (!isBatchRunning) return
@@ -130,22 +125,13 @@ export function BatchPanel() {
     if (batchInputCount === 0) blockers.push('La entrada no contiene imágenes compatibles')
     if (!batchOutputDir.trim()) blockers.push('Elige una carpeta de salida')
     if (!batchRemovalStrategyId) blockers.push('Elige una estrategia de recorte')
-    if (!batchScaleStrategyId) blockers.push('Elige una estrategia de escalado')
     return blockers
-  }, [
-    hasInput,
-    batchInputCount,
-    batchOutputDir,
-    batchRemovalStrategyId,
-    batchScaleStrategyId
-  ])
+  }, [hasInput, batchInputCount, batchOutputDir, batchRemovalStrategyId])
 
   const canRun = runBlockers.length === 0 && !isBatchRunning
 
   const removalLabel =
     strategies.find((item) => item.id === batchRemovalStrategyId)?.label ?? '—'
-  const scaleLabel =
-    scaleStrategies.find((item) => item.id === batchScaleStrategyId)?.label ?? '—'
 
   const inputEmpty =
     batchInputMode === 'folder' ? !batchInputDir : batchInputFiles.length === 0
@@ -233,7 +219,7 @@ export function BatchPanel() {
           <div className="batch-setup-details__body">
             {(isBatchRunning || batchReport) && (
               <p className="batch-setup-summary muted">
-                {removalLabel} · {scaleLabel} · {batchFactor}x
+                {removalLabel} · Real-ESRGAN · {batchFactor}x
               </p>
             )}
             <h2 className="column__title">Recorte</h2>
@@ -246,21 +232,7 @@ export function BatchPanel() {
               legend="Estrategia de recorte"
             />
 
-            <h2 className="column__title">Escalado</h2>
-            <StrategyList
-              strategies={scaleStrategies}
-              selectedId={batchScaleStrategyId}
-              onSelect={(id) => {
-                if (id === 'vector' || id === 'realesrgan') {
-                  setBatchScaleStrategyId(id)
-                }
-              }}
-              disabled={isBatchRunning}
-              name="batch-scale-strategy"
-              legend="Estrategia de escalado"
-            />
-
-            <h2 className="column__title">Factor</h2>
+            <h2 className="column__title">Factor de escalado</h2>
             <ToggleGroup
               type="single"
               variant="outline"

@@ -10,17 +10,15 @@ import pytest
 
 from designfabric.core.imaging.ai_upscalers.common import choose_model_scale_factor, resolve_target_size
 from designfabric.core.imaging.upscale_config import UpscaleConfig, load_upscale_config
-from designfabric.core.imaging.upscale_pipeline import ScaleOutcome, scale_image
+from designfabric.core.imaging.upscale_pipeline import scale_image
 from designfabric.core.imaging.upscale_strategies import (
     RealEsrganUpscaleStrategy,
     UpscaleError,
     UpscaleRequest,
     UpscaleResult,
     UpscaleStrategy,
-    VectorUpscaleStrategy,
     create_upscale_strategy,
 )
-from designfabric.core.imaging.vector_engine import ExportConfig, TraceConfig
 
 
 def _make_bgra(size: int = 64) -> np.ndarray:
@@ -43,35 +41,38 @@ def _request(
     target_width: int | None = 128,
     target_height: int | None = 128,
     suffix: str = ".png",
-    svg_text: str | None = None,
     config: UpscaleConfig | None = None,
 ) -> UpscaleRequest:
     ok, buf = cv2.imencode(".png", image)
     assert ok
     return UpscaleRequest(
-        image_bgra=image if svg_text is None else None,
-        png_bytes=buf.tobytes() if svg_text is None else None,
-        svg_text=svg_text,
+        image_bgra=image,
+        png_bytes=buf.tobytes(),
         input_suffix=suffix,
         target_width=target_width,
         target_height=target_height,
-        dpi=300.0,
-        trace=TraceConfig(),
         config=config or UpscaleConfig(),
     )
 
 
+class FakeBackend:
+    native_scale = 4
+
+    def upscale_to_factor(self, image_bgra: np.ndarray, factor: int) -> np.ndarray:
+        h, w = image_bgra.shape[:2]
+        return cv2.resize(image_bgra, (w * factor, h * factor), interpolation=cv2.INTER_NEAREST)
+
+
 def test_create_upscale_strategy_known_ids() -> None:
-    for name in ("vector", "realesrgan"):
-        strategy = create_upscale_strategy(name)  # type: ignore[arg-type]
-        assert strategy.name == name
+    strategy = create_upscale_strategy("realesrgan")
+    assert strategy.name == "realesrgan"
 
 
 def test_create_upscale_strategy_rejects_unknown() -> None:
     with pytest.raises(ValueError, match="desconocida"):
         create_upscale_strategy("auto")  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="desconocida"):
-        create_upscale_strategy("bicubic")  # type: ignore[arg-type]
+        create_upscale_strategy("vector")  # type: ignore[arg-type]
 
 
 def test_choose_model_scale_factor_thresholds() -> None:
@@ -84,14 +85,6 @@ def test_choose_model_scale_factor_thresholds() -> None:
 def test_resolve_target_size_aspect() -> None:
     assert resolve_target_size(100, 50, 200, None) == (200, 100)
     assert resolve_target_size(100, 50, None, 100) == (200, 100)
-
-
-def test_vector_strategy_honors_size() -> None:
-    result = VectorUpscaleStrategy().upscale(_request(_make_bgra(64), target_width=100, target_height=100))
-    assert result.backend == "vector"
-    decoded = cv2.imdecode(np.frombuffer(result.png_bytes, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
-    assert decoded is not None
-    assert decoded.shape[:2] == (100, 100)
 
 
 def test_pipeline_passthrough_when_all_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -120,14 +113,16 @@ def test_pipeline_passthrough_when_all_fail(tmp_path: Path, monkeypatch: pytest.
     assert output_path.read_bytes() == original
 
 
-def test_scale_image_vector_strategy(tmp_path: Path) -> None:
+def test_scale_image_realesrgan_with_fake_backend(tmp_path: Path) -> None:
     input_path = _make_png(tmp_path / "in.png")
     output_path = tmp_path / "out.png"
     outcome = scale_image(
         input_path,
         output_path,
-        strategy="vector",
-        export=ExportConfig(width_px=80, height_px=80),
+        strategy="realesrgan",
+        width=80,
+        height=80,
+        strategy_impl=RealEsrganUpscaleStrategy(backend=FakeBackend()),  # type: ignore[arg-type]
     )
     assert outcome.output_path == output_path
     loaded = cv2.imread(str(output_path), cv2.IMREAD_UNCHANGED)
@@ -148,13 +143,6 @@ def test_load_upscale_config_from_toml(tmp_path: Path) -> None:
 
 
 def test_realesrgan_strategy_uses_injected_backend() -> None:
-    class FakeBackend:
-        native_scale = 4
-
-        def upscale_to_factor(self, image_bgra: np.ndarray, factor: int) -> np.ndarray:
-            h, w = image_bgra.shape[:2]
-            return cv2.resize(image_bgra, (w * factor, h * factor), interpolation=cv2.INTER_NEAREST)
-
     result = RealEsrganUpscaleStrategy(backend=FakeBackend()).upscale(  # type: ignore[arg-type]
         _request(_make_bgra(32), target_width=128, target_height=128)
     )

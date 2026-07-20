@@ -11,12 +11,10 @@ dependencies = [
     "rich>=15.0.0",
     "uvicorn[standard]>=0.32.0",
     "websockets>=13.1",
-    # ClearCut (remove background / scale / vectorize)
-    "cairosvg>=2.9.0",
+    # ClearCut (remove background / scale)
     "numpy>=2.4.6",
     "onnxruntime>=1.20.0",
     "opencv-python>=5.0.0.93",
-    "vtracer>=0.6.15",
 ]
 
 [project.optional-dependencies]

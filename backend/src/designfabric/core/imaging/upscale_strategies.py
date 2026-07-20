@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-import cv2
 import numpy as np
 
 from designfabric.core.imaging.ai_upscalers.common import (
@@ -19,21 +18,15 @@ from designfabric.core.imaging.ai_upscalers.common import (
 )
 from designfabric.core.imaging.ai_upscalers.realesrgan import RealEsrganBackend
 from designfabric.core.imaging.upscale_config import UpscaleConfig
-from designfabric.core.imaging.vector_engine import ExportConfig, TraceConfig, VectorEngine, VectorEngineError
 
 # Auto y SPAN desactivados; ver historial / ai_upscalers/span.py
-UpscaleStrategyName = Literal["vector", "realesrgan"]
+UpscaleStrategyName = Literal["realesrgan"]
 
 SCALE_STRATEGY_META: tuple[dict[str, str], ...] = (
     {
         "id": "realesrgan",
         "label": "Real-ESRGAN (CPU)",
         "description": "Real-ESRGAN General x4v3 vía ONNX; buen equilibrio calidad/velocidad en CPU.",
-    },
-    {
-        "id": "vector",
-        "label": "Vectorial (SVG)",
-        "description": "Vectoriza con VTracer y rasteriza a alta resolución (máxima fidelidad).",
     },
 )
 
@@ -48,12 +41,9 @@ class UpscaleRequest:
 
     image_bgra: np.ndarray | None
     png_bytes: bytes | None
-    svg_text: str | None
     input_suffix: str
     target_width: int | None
     target_height: int | None
-    dpi: float
-    trace: TraceConfig
     config: UpscaleConfig
     project_root: Path | None = None
 
@@ -80,47 +70,6 @@ class UpscaleStrategy(ABC):
     @abstractmethod
     def upscale(self, request: UpscaleRequest) -> UpscaleResult:
         """Escala la imagen al tamaño objetivo."""
-
-
-class VectorUpscaleStrategy(UpscaleStrategy):
-    """Escalado profesional vía VTracer + CairoSVG."""
-
-    name = "vector"
-
-    def upscale(self, request: UpscaleRequest) -> UpscaleResult:
-        started = time.perf_counter()
-        engine = VectorEngine(request.trace)
-        export = ExportConfig(
-            width_px=request.target_width,
-            height_px=request.target_height,
-            dpi=request.dpi,
-        )
-
-        if request.svg_text is not None:
-            png_bytes = engine.rasterize(request.svg_text, export)
-            source_size = _svg_source_size(request.svg_text)
-        elif request.png_bytes is not None:
-            source_size = _png_size(request.png_bytes, request.image_bgra)
-            png_bytes = engine.process(request.png_bytes, export)
-        else:
-            raise UpscaleError("La estrategia vectorial requiere PNG o SVG de entrada.")
-
-        final = _png_size(png_bytes, None)
-        factor = (
-            max(final[0] / source_size[0], final[1] / source_size[1])
-            if source_size[0] and source_size[1]
-            else 1.0
-        )
-        elapsed_ms = (time.perf_counter() - started) * 1000.0
-        return UpscaleResult(
-            png_bytes=png_bytes,
-            backend=self.name,
-            device="cpu",
-            scale_factor=factor,
-            source_size=source_size,
-            final_size=final,
-            inference_ms=elapsed_ms,
-        )
 
 
 class RealEsrganUpscaleStrategy(UpscaleStrategy):
@@ -179,7 +128,6 @@ class RealEsrganUpscaleStrategy(UpscaleStrategy):
 
 
 _STRATEGIES: dict[UpscaleStrategyName, type[UpscaleStrategy]] = {
-    "vector": VectorUpscaleStrategy,
     "realesrgan": RealEsrganUpscaleStrategy,
 }
 
@@ -194,23 +142,3 @@ def create_upscale_strategy(name: UpscaleStrategyName) -> UpscaleStrategy:
             f"Opciones: {sorted(_STRATEGIES)}"
         ) from exc
     return strategy_cls()
-
-
-def _png_size(png_bytes: bytes, image_bgra: np.ndarray | None) -> tuple[int, int]:
-    if image_bgra is not None:
-        return image_bgra.shape[1], image_bgra.shape[0]
-    arr = np.frombuffer(png_bytes, dtype=np.uint8)
-    decoded = cv2.imdecode(arr, cv2.IMREAD_UNCHANGED)
-    if decoded is None:
-        raise UpscaleError("No se pudo leer el tamaño del PNG.")
-    return decoded.shape[1], decoded.shape[0]
-
-
-def _svg_source_size(svg_text: str) -> tuple[int, int]:
-    from designfabric.core.imaging.vector_engine import _parse_svg_size
-
-    try:
-        width, height = _parse_svg_size(svg_text)
-    except VectorEngineError:
-        return (1, 1)
-    return max(1, round(width)), max(1, round(height))

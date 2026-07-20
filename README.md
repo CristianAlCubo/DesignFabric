@@ -1,13 +1,13 @@
 # DesignFabric
 
-Fusión de **ClearCut** (eliminación de fondo de imágenes + escalado/vectorización) y
+Fusión de **ClearCut** (eliminación de fondo de imágenes + escalado Real-ESRGAN) y
 **DesignFabric** (generación de stickers vía Ollama + FLUX.2 Klein) en una sola app de
 escritorio Electron, con un único backend FastAPI.
 
 Todas las tools conviven como tabs de un mismo tabpane:
 
 - Eliminación de fondo (ex-ClearCut)
-- Escalado / vectorizado (ex-ClearCut)
+- Escalado Real-ESRGAN (ex-ClearCut)
 - Procesamiento por lotes de ClearCut (ex-ClearCut)
 - Generación por lotes con IA (ex-DesignFabric)
 - Imagen única con IA (ex-DesignFabric)

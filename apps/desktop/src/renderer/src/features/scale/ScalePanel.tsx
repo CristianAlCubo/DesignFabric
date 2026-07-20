@@ -1,24 +1,14 @@
 import { useEffect } from 'react'
-import { ChevronDown, ChevronUp, Download, FileImage, Scaling } from 'lucide-react'
+import { Download, FileImage, Scaling } from 'lucide-react'
 
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { AppButton } from '../../core/components/AppButton'
 import { TransparentImage } from '../../core/components/TransparentImage'
 import type { ScaleFactor, SizeInputMode } from './store'
 import { useScaleStore } from './store'
-import { StrategyList } from './StrategyList'
 
 const SIZE_MODE_OPTIONS: { id: SizeInputMode; label: string }[] = [
   { id: 'factor', label: 'Factor' },
@@ -28,9 +18,6 @@ const SIZE_MODE_OPTIONS: { id: SizeInputMode; label: string }[] = [
 const FACTOR_OPTIONS: ScaleFactor[] = [2, 4]
 
 export function ScalePanel() {
-  const defaults = useScaleStore((state) => state.scaleDefaults)
-  const scaleStrategies = useScaleStore((state) => state.scaleStrategies)
-  const selectedScaleStrategyId = useScaleStore((state) => state.selectedScaleStrategyId)
   const inputPath = useScaleStore((state) => state.inputPath)
   const inputPreview = useScaleStore((state) => state.inputPreview)
   const inputWidth = useScaleStore((state) => state.inputWidth)
@@ -42,45 +29,25 @@ export function ScalePanel() {
   const warning = useScaleStore((state) => state.warning)
   const isScaling = useScaleStore((state) => state.isScaling)
   const isExporting = useScaleStore((state) => state.isExporting)
-  const showAdvanced = useScaleStore((state) => state.showAdvanced)
   const sizeInputMode = useScaleStore((state) => state.sizeInputMode)
   const scaleFactor = useScaleStore((state) => state.scaleFactor)
   const width = useScaleStore((state) => state.width)
   const height = useScaleStore((state) => state.height)
-  const dpi = useScaleStore((state) => state.dpi)
-  const cornerThreshold = useScaleStore((state) => state.cornerThreshold)
-  const colorPrecision = useScaleStore((state) => state.colorPrecision)
-  const filterSpeckle = useScaleStore((state) => state.filterSpeckle)
-  const layerDifference = useScaleStore((state) => state.layerDifference)
-  const colormode = useScaleStore((state) => state.colormode)
-  const mode = useScaleStore((state) => state.mode)
 
   const loadScaleDefaults = useScaleStore((state) => state.loadScaleDefaults)
-  const loadScaleStrategies = useScaleStore((state) => state.loadScaleStrategies)
-  const setSelectedScaleStrategyId = useScaleStore((state) => state.setSelectedScaleStrategyId)
   const selectInputImage = useScaleStore((state) => state.selectInputImage)
   const runScale = useScaleStore((state) => state.runScale)
   const exportOutput = useScaleStore((state) => state.exportOutput)
-  const setShowAdvanced = useScaleStore((state) => state.setShowAdvanced)
   const setSizeInputMode = useScaleStore((state) => state.setSizeInputMode)
   const setScaleFactor = useScaleStore((state) => state.setScaleFactor)
   const setWidth = useScaleStore((state) => state.setWidth)
   const setHeight = useScaleStore((state) => state.setHeight)
-  const setDpi = useScaleStore((state) => state.setDpi)
-  const setCornerThreshold = useScaleStore((state) => state.setCornerThreshold)
-  const setColorPrecision = useScaleStore((state) => state.setColorPrecision)
-  const setFilterSpeckle = useScaleStore((state) => state.setFilterSpeckle)
-  const setLayerDifference = useScaleStore((state) => state.setLayerDifference)
-  const setColormode = useScaleStore((state) => state.setColormode)
-  const setMode = useScaleStore((state) => state.setMode)
 
   useEffect(() => {
-    void loadScaleStrategies()
     void loadScaleDefaults()
-  }, [loadScaleStrategies, loadScaleDefaults])
+  }, [loadScaleDefaults])
 
-  const canScale = Boolean(inputPath && selectedScaleStrategyId) && !isScaling
-  const showVectorKnobs = selectedScaleStrategyId === 'vector'
+  const canScale = Boolean(inputPath) && !isScaling
   const targetWidth =
     inputWidth !== null && sizeInputMode === 'factor' ? inputWidth * scaleFactor : null
   const targetHeight =
@@ -108,20 +75,6 @@ export function ScalePanel() {
       </section>
 
       <section className="column panel panel--form">
-        <h2 className="column__title">Estrategia</h2>
-        <StrategyList
-          strategies={scaleStrategies}
-          selectedId={selectedScaleStrategyId}
-          onSelect={(id) => {
-            if (id === 'vector' || id === 'realesrgan') {
-              setSelectedScaleStrategyId(id)
-            }
-          }}
-          disabled={isScaling}
-          name="scale-strategy"
-          legend="Estrategia de escalado"
-        />
-
         <h2 className="column__title">Resolución</h2>
 
         <ToggleGroup
@@ -202,127 +155,6 @@ export function ScalePanel() {
             <p className="muted field-hint">Indica al menos ancho o alto en píxeles.</p>
           </>
         )}
-
-        <Field>
-          <FieldLabel htmlFor="scale-dpi">DPI</FieldLabel>
-          <Input
-            id="scale-dpi"
-            type="number"
-            min={1}
-            step={1}
-            value={dpi}
-            onChange={(event) => setDpi(event.target.value)}
-            disabled={isScaling}
-          />
-        </Field>
-        <p className="muted field-hint">
-          DPI de rasterización
-          {defaults ? ` (default: ${defaults.dpi}).` : '.'}
-        </p>
-
-        {showVectorKnobs ? (
-          <>
-            <h2 className="column__title">Calidad del trazado</h2>
-            <Field>
-              <FieldLabel>Corner threshold ({cornerThreshold})</FieldLabel>
-              <Slider
-                min={0}
-                max={180}
-                value={[cornerThreshold]}
-                onValueChange={(vals) => setCornerThreshold(vals[0])}
-                disabled={isScaling}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Color precision ({colorPrecision})</FieldLabel>
-              <Slider
-                min={1}
-                max={8}
-                value={[colorPrecision]}
-                onValueChange={(vals) => setColorPrecision(vals[0])}
-                disabled={isScaling}
-              />
-            </Field>
-
-            <AppButton
-              type="button"
-              variant="ghost"
-              icon={showAdvanced ? ChevronUp : ChevronDown}
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              disabled={isScaling}
-            >
-              {showAdvanced ? 'Ocultar avanzado' : 'Mostrar avanzado'}
-            </AppButton>
-
-            {showAdvanced ? (
-              <div className="advanced-fields">
-                <Field>
-                  <FieldLabel>Filter speckle ({filterSpeckle})</FieldLabel>
-                  <Slider
-                    min={0}
-                    max={20}
-                    value={[filterSpeckle]}
-                    onValueChange={(vals) => setFilterSpeckle(vals[0])}
-                    disabled={isScaling}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Layer difference ({layerDifference})</FieldLabel>
-                  <Slider
-                    min={1}
-                    max={64}
-                    value={[layerDifference]}
-                    onValueChange={(vals) => setLayerDifference(vals[0])}
-                    disabled={isScaling}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel>Color mode</FieldLabel>
-                  <Select
-                    value={colormode}
-                    onValueChange={(value) =>
-                      setColormode(value === 'binary' ? 'binary' : 'color')
-                    }
-                    disabled={isScaling}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="color">color</SelectItem>
-                        <SelectItem value="binary">binary</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field>
-                  <FieldLabel>Mode</FieldLabel>
-                  <Select
-                    value={mode}
-                    onValueChange={(value) => {
-                      if (value === 'polygon' || value === 'none' || value === 'spline') {
-                        setMode(value)
-                      }
-                    }}
-                    disabled={isScaling}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="spline">spline</SelectItem>
-                        <SelectItem value="polygon">polygon</SelectItem>
-                        <SelectItem value="none">none</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            ) : null}
-          </>
-        ) : null}
 
         <AppButton type="button" icon={Scaling} onClick={() => void runScale()} disabled={!canScale}>
           {isScaling ? 'Escalando…' : 'Escalar'}

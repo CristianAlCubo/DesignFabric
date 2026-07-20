@@ -126,31 +126,13 @@ class RemoveBackgroundResultSchema(BaseModel):
     image_url: str
 
 
-class TraceConfigSchema(BaseModel):
-    """Réplica pydantic de `core.imaging.vector_engine.TraceConfig` (parámetros VTracer 0.6.15)."""
-
-    colormode: str = "color"
-    hierarchical: str = "stacked"
-    mode: str = "spline"
-    filter_speckle: int = 4
-    color_precision: int = 6
-    layer_difference: int = 16
-    corner_threshold: int = 60
-    length_threshold: float = 4.0
-    max_iterations: int = 10
-    splice_threshold: int = 45
-    path_precision: int = 8
-
-
 class ScaleJobRequest(BaseModel):
-    """Payload para escalar una única imagen (vectorial o Real-ESRGAN)."""
+    """Payload para escalar una única imagen con Real-ESRGAN."""
 
     input_path: str
-    strategy: Literal["vector", "realesrgan"] = "realesrgan"
+    strategy: Literal["realesrgan"] = "realesrgan"
     width: int | None = None
     height: int | None = None
-    dpi: float | None = None
-    trace: TraceConfigSchema | None = None
 
 
 class ScaleResultSchema(BaseModel):
@@ -181,7 +163,7 @@ class ClearcutBatchJobRequest(BaseModel):
     input: ClearcutBatchInputSchema
     output_dir: str
     removal_strategy: Literal["white_background", "color_background"]
-    scale_strategy: Literal["vector", "realesrgan"]
+    scale_strategy: Literal["realesrgan"]
     factor: Literal[2, 4]
 
 

@@ -71,8 +71,7 @@ def test_processor_success_and_factor_dimensions(tmp_path: Path) -> None:
         output_path: Path,
         **kwargs: Any,
     ) -> ScaleOutcome:
-        export = kwargs["export"]
-        seen_exports.append((export.width_px, export.height_px))
+        seen_exports.append((kwargs.get("width"), kwargs.get("height")))
         output_path.write_bytes(b"scaled")
         return _fake_outcome(output_path)
 
@@ -80,7 +79,7 @@ def test_processor_success_and_factor_dimensions(tmp_path: Path) -> None:
     report = processor.run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(a, b)),
@@ -121,7 +120,7 @@ def test_processor_continues_after_failure(tmp_path: Path) -> None:
     report = BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=4,
         ),
         FilesInputSource(paths=(bad, good)),
@@ -158,7 +157,7 @@ def test_processor_skips_unsupported(tmp_path: Path) -> None:
     report = BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FolderInputSource(directory=tmp_path),
@@ -185,7 +184,7 @@ def test_processor_missing_file_fails(tmp_path: Path) -> None:
     ).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(missing,)),
@@ -219,7 +218,7 @@ def test_processor_progress_callback(tmp_path: Path) -> None:
     BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(path,)),
@@ -257,7 +256,7 @@ def test_processor_cancels_between_items(tmp_path: Path) -> None:
     report = BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(a, b)),
@@ -316,7 +315,7 @@ def test_processor_reporter_emits_started_progress_completed(tmp_path: Path) -> 
     report = BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(a, b)),
@@ -386,7 +385,7 @@ def test_processor_reporter_completed_even_when_cancelled(tmp_path: Path) -> Non
     report = BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(a, b)),
@@ -430,7 +429,7 @@ def test_processor_reporter_and_legacy_callbacks_coexist(tmp_path: Path) -> None
     BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(path,)),
@@ -476,7 +475,7 @@ def test_processor_no_reporter_keeps_legacy_behavior_intact(tmp_path: Path) -> N
     report = BatchProcessor(remove_fn=remove_fn, scale_fn=scale_fn).run(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(path,)),
@@ -509,7 +508,7 @@ def test_run_batch_functional_accepts_reporter(tmp_path: Path) -> None:
     report = run_batch(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FilesInputSource(paths=(path,)),
@@ -528,9 +527,32 @@ def test_run_batch_functional_accepts_reporter(tmp_path: Path) -> None:
     ]
 
 
-def test_run_batch_integration_vector(
-    tmp_path: Path, synthetic_white_bg_path: Path
+def test_run_batch_integration_realesrgan(
+    tmp_path: Path,
+    synthetic_white_bg_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    import cv2
+
+    from designfabric.core.imaging.upscale_strategies import RealEsrganUpscaleStrategy
+
+    class _FakeBackend:
+        native_scale = 4
+
+        def upscale_to_factor(self, image_bgra: np.ndarray, factor: int) -> np.ndarray:
+            h, w = image_bgra.shape[:2]
+            return cv2.resize(image_bgra, (w * factor, h * factor), interpolation=cv2.INTER_NEAREST)
+
+    fake = RealEsrganUpscaleStrategy(backend=_FakeBackend())  # type: ignore[arg-type]
+    monkeypatch.setattr(
+        "designfabric.core.imaging.upscale_pipeline.create_upscale_strategy",
+        lambda name: fake,
+    )
+    monkeypatch.setattr(
+        "designfabric.core.imaging.upscale_pipeline.ensure_models_for_strategy",
+        lambda *args, **kwargs: None,
+    )
+
     input_dir = tmp_path / "in"
     output_dir = tmp_path / "out"
     input_dir.mkdir()
@@ -543,7 +565,7 @@ def test_run_batch_integration_vector(
     report = run_batch(
         BatchConfig(
             removal_strategy="white_background",
-            scale_strategy="vector",
+            scale_strategy="realesrgan",
             scale_factor=2,
         ),
         FolderInputSource(directory=input_dir),

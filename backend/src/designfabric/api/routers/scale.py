@@ -1,4 +1,4 @@
-"""Endpoint de ClearCut: escalado (vectorial o Real-ESRGAN) de una única imagen."""
+"""Endpoint de ClearCut: escalado Real-ESRGAN de una única imagen."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ from designfabric.api.schemas import JobCreatedResponse, ScaleJobRequest
 from designfabric.core.config import Settings
 from designfabric.core.imaging.model_assets import ensure_models
 from designfabric.core.imaging.upscale_pipeline import get_scale_defaults, scale_image
-from designfabric.core.imaging.vector_engine import ExportConfig, TraceConfig
 from designfabric.jobs.models import Job, JobType
 from designfabric.jobs.store import JobStore
 from designfabric.jobs.ws_reporter import WebSocketProgressReporter
@@ -26,7 +25,7 @@ router = APIRouter(prefix="/api/clearcut", tags=["clearcut-scale"])
 
 @router.get("/scale/defaults")
 def scale_defaults() -> dict:
-    """Defaults de trace/export/estrategias/config para hidratar la UI (Fase 5/6)."""
+    """Defaults de estrategias/config para hidratar la UI."""
     return get_scale_defaults()
 
 
@@ -59,23 +58,12 @@ def build_handlers(settings: Settings, store: JobStore) -> dict[JobType, Any]:
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"{uuid.uuid4().hex}.png"
 
-        trace = TraceConfig(**payload.trace.model_dump()) if payload.trace is not None else None
-
-        export_kwargs: dict[str, Any] = {}
-        if payload.width is not None:
-            export_kwargs["width_px"] = payload.width
-        if payload.height is not None:
-            export_kwargs["height_px"] = payload.height
-        if payload.dpi is not None:
-            export_kwargs["dpi"] = payload.dpi
-        export = ExportConfig(**export_kwargs) if export_kwargs else None
-
         outcome = scale_image(
             Path(payload.input_path),
             output_path,
             strategy=payload.strategy,
-            trace=trace,
-            export=export,
+            width=payload.width,
+            height=payload.height,
         )
         result = outcome.result
         return {

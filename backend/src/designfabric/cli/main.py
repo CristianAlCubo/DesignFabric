@@ -32,7 +32,6 @@ from designfabric.core.imaging.model_assets import ensure_models, report_to_json
 from designfabric.core.imaging.silhouette_strategies import StrategyName, create_silhouette_strategy
 from designfabric.core.imaging.upscale_pipeline import WARNING_PREFIX, get_scale_defaults, scale_image
 from designfabric.core.imaging.upscale_strategies import UpscaleError, UpscaleStrategyName
-from designfabric.core.imaging.vector_engine import ExportConfig, TraceConfig, VectorEngineError
 
 logger = logging.getLogger(__name__)
 
@@ -67,38 +66,25 @@ def _add_remove_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentP
 def _add_scale_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparsers.add_parser(
         "scale",
-        help="Escala un PNG/SVG con la estrategia seleccionada (vectorial o IA).",
+        help="Escala un PNG con Real-ESRGAN.",
     )
-    parser.add_argument("--input", type=Path, required=True, help="Ruta del PNG o SVG de entrada.")
+    parser.add_argument("--input", type=Path, required=True, help="Ruta del PNG de entrada.")
     parser.add_argument("--output", type=Path, required=True, help="Ruta del PNG de salida.")
     parser.add_argument(
         "--strategy",
-        choices=("vector", "realesrgan"),
+        choices=("realesrgan",),
         default="realesrgan",
         help="Estrategia de escalado (default: realesrgan).",
     )
     parser.add_argument("--width", type=int, default=None, help="Ancho de salida en píxeles.")
     parser.add_argument("--height", type=int, default=None, help="Alto de salida en píxeles.")
-    parser.add_argument("--dpi", type=float, default=ExportConfig().dpi, help="DPI de exportación.")
-    defaults = TraceConfig()
-    parser.add_argument("--colormode", choices=("color", "binary"), default=defaults.colormode)
-    parser.add_argument("--hierarchical", choices=("stacked", "cutout"), default=defaults.hierarchical)
-    parser.add_argument("--mode", choices=("spline", "polygon", "none"), default=defaults.mode)
-    parser.add_argument("--filter-speckle", type=int, default=defaults.filter_speckle)
-    parser.add_argument("--color-precision", type=int, default=defaults.color_precision)
-    parser.add_argument("--layer-difference", type=int, default=defaults.layer_difference)
-    parser.add_argument("--corner-threshold", type=int, default=defaults.corner_threshold)
-    parser.add_argument("--length-threshold", type=float, default=defaults.length_threshold)
-    parser.add_argument("--trace-max-iterations", type=int, default=defaults.max_iterations)
-    parser.add_argument("--splice-threshold", type=int, default=defaults.splice_threshold)
-    parser.add_argument("--path-precision", type=int, default=defaults.path_precision)
     parser.set_defaults(handler=_handle_scale)
 
 
 def _add_scale_defaults_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparsers.add_parser(
         "scale-defaults",
-        help="Imprime en JSON los defaults de escalado (estrategias, TraceConfig, DPI).",
+        help="Imprime en JSON los defaults de escalado (estrategias y config).",
     )
     parser.set_defaults(handler=_handle_scale_defaults)
 
@@ -129,7 +115,7 @@ def _add_batch_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     )
     parser.add_argument(
         "--scale-strategy",
-        choices=("vector", "realesrgan"),
+        choices=("realesrgan",),
         default="realesrgan",
         help="Estrategia de escalado (default: realesrgan).",
     )
@@ -163,33 +149,24 @@ def _handle_remove(args: argparse.Namespace) -> None:
 
 def _handle_scale(args: argparse.Namespace) -> None:
     strategy_name: UpscaleStrategyName = args.strategy
-    trace = TraceConfig(
-        colormode=args.colormode,
-        hierarchical=args.hierarchical,
-        mode=args.mode,
-        filter_speckle=args.filter_speckle,
-        color_precision=args.color_precision,
-        layer_difference=args.layer_difference,
-        corner_threshold=args.corner_threshold,
-        length_threshold=args.length_threshold,
-        max_iterations=args.trace_max_iterations,
-        splice_threshold=args.splice_threshold,
-        path_precision=args.path_precision,
-    )
-    export = ExportConfig(width_px=args.width, height_px=args.height, dpi=args.dpi)
 
     logger.info(
-        "Escalando %s -> %s (strategy=%s width=%s height=%s dpi=%s)",
+        "Escalando %s -> %s (strategy=%s width=%s height=%s)",
         args.input,
         args.output,
         strategy_name,
         args.width,
         args.height,
-        args.dpi,
     )
     try:
-        outcome = scale_image(args.input, args.output, strategy=strategy_name, trace=trace, export=export)
-    except (UpscaleError, VectorEngineError) as exc:
+        outcome = scale_image(
+            args.input,
+            args.output,
+            strategy=strategy_name,
+            width=args.width,
+            height=args.height,
+        )
+    except UpscaleError as exc:
         logger.error("%s", exc)
         raise SystemExit(1) from exc
 

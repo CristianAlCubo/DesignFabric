@@ -56,8 +56,6 @@ interface JobStatusResponse<TResult> {
 interface BatchState {
   strategies: StrategyInfo[]
   strategiesLoaded: boolean
-  scaleStrategies: StrategyInfo[]
-  scaleStrategiesLoaded: boolean
 
   batchInputMode: BatchInputMode
   batchInputDir: string | null
@@ -66,7 +64,6 @@ interface BatchState {
   batchInputCount: number | null
   batchOutputDir: string
   batchRemovalStrategyId: string | null
-  batchScaleStrategyId: string | null
   batchFactor: ScaleFactor
 
   jobId: string | null
@@ -76,13 +73,11 @@ interface BatchState {
   batchPhase: BatchJobPhase
 
   loadStrategies: () => Promise<void>
-  loadScaleStrategies: () => Promise<void>
   setBatchInputMode: (mode: BatchInputMode) => void
   selectBatchFolder: () => Promise<void>
   selectBatchFiles: () => Promise<void>
   selectBatchOutputDir: () => Promise<void>
   setBatchRemovalStrategyId: (id: string | null) => void
-  setBatchScaleStrategyId: (id: string | null) => void
   setBatchFactor: (factor: ScaleFactor) => void
   setBatchError: (error: string | null) => void
   runBatch: () => Promise<void>
@@ -95,8 +90,6 @@ interface BatchState {
 export const useBatchStore = create<BatchState>((set, get) => ({
   strategies: [],
   strategiesLoaded: false,
-  scaleStrategies: [],
-  scaleStrategiesLoaded: false,
 
   batchInputMode: 'folder',
   batchInputDir: null,
@@ -104,7 +97,6 @@ export const useBatchStore = create<BatchState>((set, get) => ({
   batchInputCount: null,
   batchOutputDir: '',
   batchRemovalStrategyId: null,
-  batchScaleStrategyId: null,
   batchFactor: 2,
 
   jobId: null,
@@ -125,28 +117,6 @@ export const useBatchStore = create<BatchState>((set, get) => ({
       }))
     } catch (err) {
       set({ batchError: err instanceof Error ? err.message : 'No se pudieron cargar las estrategias.' })
-    }
-  },
-
-  loadScaleStrategies: async () => {
-    if (get().scaleStrategiesLoaded) return
-    try {
-      const defaults = await apiGet<{ strategies?: StrategyInfo[]; default_strategy?: string }>(
-        '/api/clearcut/scale/defaults'
-      )
-      const items = defaults.strategies ?? []
-      const preferred =
-        items.find((item) => item.id === 'realesrgan')?.id ?? items[0]?.id ?? 'realesrgan'
-      set((state) => ({
-        scaleStrategies: items,
-        scaleStrategiesLoaded: true,
-        batchScaleStrategyId: state.batchScaleStrategyId ?? preferred
-      }))
-    } catch (err) {
-      set({
-        batchError:
-          err instanceof Error ? err.message : 'No se pudieron cargar las estrategias de escalado.'
-      })
     }
   },
 
@@ -214,7 +184,6 @@ export const useBatchStore = create<BatchState>((set, get) => ({
   },
 
   setBatchRemovalStrategyId: (id) => set({ batchRemovalStrategyId: id }),
-  setBatchScaleStrategyId: (id) => set({ batchScaleStrategyId: id }),
   setBatchFactor: (factor) => set({ batchFactor: factor }),
   setBatchError: (error) => set({ batchError: error }),
 
@@ -223,7 +192,6 @@ export const useBatchStore = create<BatchState>((set, get) => ({
     if (state.isBatchRunning) return
 
     const removalStrategy = state.batchRemovalStrategyId ?? 'white_background'
-    const scaleStrategy = state.batchScaleStrategyId ?? 'realesrgan'
 
     const hasInput =
       state.batchInputMode === 'folder' ? Boolean(state.batchInputDir) : state.batchInputFiles.length > 0
@@ -254,11 +222,9 @@ export const useBatchStore = create<BatchState>((set, get) => ({
     })
 
     try {
-      if (scaleStrategy === 'realesrgan') {
-        apiPost<Record<string, never>, unknown>('/api/clearcut/scale/ensure-models', {}).catch(
-          () => undefined
-        )
-      }
+      apiPost<Record<string, never>, unknown>('/api/clearcut/scale/ensure-models', {}).catch(
+        () => undefined
+      )
 
       const { job_id: jobId } = await apiPost<
         {
@@ -267,7 +233,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
             | { kind: 'files'; paths: string[] }
           output_dir: string
           removal_strategy: string
-          scale_strategy: string
+          scale_strategy: 'realesrgan'
           factor: ScaleFactor
         },
         { job_id: string; status: string }
@@ -278,7 +244,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
             : { kind: 'files', paths: state.batchInputFiles },
         output_dir: outputDir,
         removal_strategy: removalStrategy,
-        scale_strategy: scaleStrategy,
+        scale_strategy: 'realesrgan',
         factor: state.batchFactor
       })
 

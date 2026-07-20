@@ -1,4 +1,4 @@
-"""Orquestación del escalado multi-estrategia: I/O, fallbacks y logging."""
+"""Orquestación del escalado: I/O, fallbacks y logging."""
 
 from __future__ import annotations
 
@@ -21,12 +21,6 @@ from designfabric.core.imaging.upscale_strategies import (
     UpscaleStrategyName,
     create_upscale_strategy,
 )
-from designfabric.core.imaging.vector_engine import (
-    ExportConfig,
-    TraceConfig,
-    VectorEngineError,
-    get_scale_defaults as _vector_scale_defaults,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +36,9 @@ class ScaleOutcome:
 
 
 def get_scale_defaults() -> dict:
-    """Defaults de escalado para UI/bridge (trace + estrategias + config)."""
-    base = _vector_scale_defaults()
+    """Defaults de escalado para UI/bridge (estrategias + config)."""
     config = load_upscale_config()
     return {
-        **base,
         "default_strategy": "realesrgan",
         "strategies": [dict(item) for item in SCALE_STRATEGY_META],
         "config": config.to_dict(),
@@ -58,8 +50,8 @@ def scale_image(
     output_path: Path,
     *,
     strategy: UpscaleStrategyName = "realesrgan",
-    trace: TraceConfig | None = None,
-    export: ExportConfig | None = None,
+    width: int | None = None,
+    height: int | None = None,
     config: UpscaleConfig | None = None,
     project_root: Path | None = None,
     strategy_impl: UpscaleStrategy | None = None,
@@ -70,18 +62,16 @@ def scale_image(
         raise UpscaleError(f"No existe el archivo de entrada: {path}")
 
     suffix = path.suffix.lower()
-    export = export or ExportConfig()
     cfg = config or load_upscale_config()
     root = project_root or _find_project_root(path)
 
-    if strategy != "vector":
-        ensure_models_for_strategy(strategy, config=cfg, project_root=root)
+    ensure_models_for_strategy(strategy, config=cfg, project_root=root)
 
     request = _build_request(
         path=path,
         suffix=suffix,
-        export=export,
-        trace=trace or TraceConfig(),
+        width=width,
+        height=height,
         config=cfg,
         project_root=root,
     )
@@ -101,28 +91,13 @@ def _build_request(
     *,
     path: Path,
     suffix: str,
-    export: ExportConfig,
-    trace: TraceConfig,
+    width: int | None,
+    height: int | None,
     config: UpscaleConfig,
     project_root: Path | None,
 ) -> UpscaleRequest:
-    if suffix == ".svg":
-        svg_text = path.read_text(encoding="utf-8")
-        return UpscaleRequest(
-            image_bgra=None,
-            png_bytes=None,
-            svg_text=svg_text,
-            input_suffix=suffix,
-            target_width=export.width_px,
-            target_height=export.height_px,
-            dpi=export.dpi,
-            trace=trace,
-            config=config,
-            project_root=project_root,
-        )
-
     if suffix != ".png":
-        raise UpscaleError("El escalado requiere un PNG (o SVG) de entrada.")
+        raise UpscaleError("El escalado requiere un PNG de entrada.")
 
     png_bytes = path.read_bytes()
     image = cv2.imdecode(np.frombuffer(png_bytes, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
@@ -136,12 +111,9 @@ def _build_request(
     return UpscaleRequest(
         image_bgra=image,
         png_bytes=png_bytes,
-        svg_text=None,
         input_suffix=suffix,
-        target_width=export.width_px,
-        target_height=export.height_px,
-        dpi=export.dpi,
-        trace=trace,
+        target_width=width,
+        target_height=height,
         config=config,
         project_root=project_root,
     )
@@ -160,34 +132,12 @@ def _run_with_fallback(
             getattr(strategy, "name", requested_name),
             primary_exc,
         )
-        if requested_name == "realesrgan" or getattr(strategy, "name", "") == "realesrgan":
-            return _passthrough(
-                request,
-                warning=(
-                    f"Real-ESRGAN falló: {primary_exc}. Se devolvió la imagen original."
-                ),
-            )
-
         return _passthrough(
             request,
             warning=(
-                f"Escalado '{requested_name}' falló: {primary_exc}. "
-                "Se devolvió la imagen original."
+                f"Real-ESRGAN falló: {primary_exc}. Se devolvió la imagen original."
             ),
         )
-
-
-def _with_warning(result: UpscaleResult, warning: str) -> UpscaleResult:
-    return UpscaleResult(
-        png_bytes=result.png_bytes,
-        backend=result.backend,
-        device=result.device,
-        scale_factor=result.scale_factor,
-        source_size=result.source_size,
-        final_size=result.final_size,
-        inference_ms=result.inference_ms,
-        warning=warning,
-    )
 
 
 def _passthrough(request: UpscaleRequest, *, warning: str) -> UpscaleResult:
@@ -243,12 +193,10 @@ def _find_project_root(start: Path) -> Path | None:
     return None
 
 
-# Re-export útil para callers que capturaban VectorEngineError
 __all__ = [
     "ScaleOutcome",
     "WARNING_PREFIX",
     "get_scale_defaults",
     "scale_image",
     "UpscaleError",
-    "VectorEngineError",
 ]

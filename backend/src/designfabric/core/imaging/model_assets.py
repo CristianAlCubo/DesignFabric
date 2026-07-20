@@ -223,13 +223,7 @@ def ensure_models_for_strategy(
     project_root: Path | None = None,
 ) -> EnsureModelsReport:
     """Prepara solo los modelos relevantes para una estrategia."""
-    if strategy == "vector":
-        return EnsureModelsReport(
-            models_dir=str((config or load_upscale_config()).models_path(project_root)),
-            dependencies=check_dependencies(),
-            ready_realesrgan=False,
-            ready_span=False,
-        )
+    _ = strategy
     return ensure_models(
         config=config,
         project_root=project_root,

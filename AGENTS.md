@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 DesignFabric is a monorepo fusing two former projects — **ClearCut** (background removal +
-upscaling/vectorization) and **DesignFabric** (sticker generation via Ollama + FLUX.2 Klein) —
+upscaling) and **DesignFabric** (sticker generation via Ollama + FLUX.2 Klein) —
 into one Electron desktop app backed by a single FastAPI backend. All tools live as tabs of one
-tabpane: background removal, scale/vectorize, ClearCut batch processing, AI batch generation, and
+tabpane: background removal, scale, ClearCut batch processing, AI batch generation, and
 AI single-image generation.
 
 ## Commands
@@ -111,7 +111,7 @@ a request handler. `backend/src/designfabric/jobs/`:
   module per feature, each exposing a `router` + `build_handlers`), `dispatcher.py`,
   `schemas.py`/`serializers.py`.
 - `core/` — domain logic, framework-agnostic: `imaging/` (background removal, upscaling
-  strategies incl. AI upscalers, vectorization via `vtracer`, batch processing pipeline) and
+  strategies incl. AI upscalers, batch processing pipeline) and
   `generation/` (Ollama prompt generation + FLUX.2 Klein sticker pipeline).
 - `jobs/` — the queue/worker/dispatcher system described above.
 - `cli/` — standalone Typer/Rich-based CLIs (`clearcut`, `designfabric`) that call the same `core/`

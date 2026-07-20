@@ -1,7 +1,7 @@
 # designfabric (backend)
 
 Backend Python (FastAPI + jobs GPU/CPU) de DesignFabric: fusión del dominio
-de ClearCut (eliminación de fondo, escalado/vectorizado) y de DesignFabric
+de ClearCut (eliminación de fondo, escalado Real-ESRGAN) y de DesignFabric
 (generación de stickers vía Ollama + FLUX.2 Klein).
 
 Ver el `README.md` de la raíz del repo para la documentación completa del

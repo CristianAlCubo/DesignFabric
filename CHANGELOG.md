@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- Estrategia de escalado vectorial (VTracer + CairoSVG). Real-ESRGAN queda como única opción de escalado en Escalado, Lote, API y CLI.
+
 ## [0.1.0] - 2026-07-20
 
 Primer release: fusión de **ClearCut** (eliminación de fondo y escalado/vectorizado de imágenes) y **DesignFabric** (generación de stickers vía Ollama + FLUX.2 Klein) en una sola app de escritorio.

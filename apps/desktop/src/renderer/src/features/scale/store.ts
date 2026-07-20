@@ -13,35 +13,13 @@ import { create } from 'zustand'
 
 import { apiGet, apiPost, getBackendBaseUrl } from '../../core/api/httpClient'
 
-export type ScaleStrategyId = 'vector' | 'realesrgan'
+export type ScaleStrategyId = 'realesrgan'
 export type SizeInputMode = 'factor' | 'manual'
 export type ScaleFactor = 2 | 4
-type ColorMode = 'color' | 'binary'
-type TraceMode = 'spline' | 'polygon' | 'none'
-
-export interface StrategyInfo {
-  id: string
-  label: string
-  description?: string
-}
 
 export interface ScaleDefaults {
-  dpi: number
   default_strategy?: string
-  trace: {
-    colormode: string
-    hierarchical: string
-    mode: string
-    filter_speckle: number
-    color_precision: number
-    layer_difference: number
-    corner_threshold: number
-    length_threshold: number
-    max_iterations: number
-    splice_threshold: number
-    path_precision: number
-  }
-  strategies?: StrategyInfo[]
+  strategies?: { id: string; label: string; description?: string }[]
   config?: Record<string, unknown>
 }
 
@@ -96,14 +74,7 @@ function probeImageSize(objectUrl: string): Promise<{ width: number; height: num
   })
 }
 
-function isScaleStrategyId(id: string): id is ScaleStrategyId {
-  return id === 'vector' || id === 'realesrgan'
-}
-
 interface ScaleState {
-  scaleStrategies: StrategyInfo[]
-  scaleStrategiesLoaded: boolean
-  selectedScaleStrategyId: ScaleStrategyId | null
   scaleDefaults: ScaleDefaults | null
   scaleDefaultsLoaded: boolean
 
@@ -119,35 +90,17 @@ interface ScaleState {
   isScaling: boolean
   isExporting: boolean
 
-  showAdvanced: boolean
   sizeInputMode: SizeInputMode
   scaleFactor: ScaleFactor
   width: string
   height: string
-  dpi: string
-  cornerThreshold: number
-  colorPrecision: number
-  filterSpeckle: number
-  layerDifference: number
-  colormode: ColorMode
-  mode: TraceMode
 
-  setSelectedScaleStrategyId: (id: ScaleStrategyId | null) => void
   setError: (error: string | null) => void
-  setShowAdvanced: (value: boolean) => void
   setSizeInputMode: (value: SizeInputMode) => void
   setScaleFactor: (value: ScaleFactor) => void
   setWidth: (value: string) => void
   setHeight: (value: string) => void
-  setDpi: (value: string) => void
-  setCornerThreshold: (value: number) => void
-  setColorPrecision: (value: number) => void
-  setFilterSpeckle: (value: number) => void
-  setLayerDifference: (value: number) => void
-  setColormode: (value: ColorMode) => void
-  setMode: (value: TraceMode) => void
 
-  loadScaleStrategies: () => Promise<void>
   loadScaleDefaults: () => Promise<void>
   selectInputImage: () => Promise<void>
   /** Recibe un input desde otra feature (ej. "Enviar a escalado" de remove-background). */
@@ -157,9 +110,6 @@ interface ScaleState {
 }
 
 export const useScaleStore = create<ScaleState>((set, get) => ({
-  scaleStrategies: [],
-  scaleStrategiesLoaded: false,
-  selectedScaleStrategyId: null,
   scaleDefaults: null,
   scaleDefaultsLoaded: false,
 
@@ -175,85 +125,31 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
   isScaling: false,
   isExporting: false,
 
-  showAdvanced: false,
   sizeInputMode: 'factor',
   scaleFactor: 2,
   width: '',
   height: '',
-  dpi: '300',
-  cornerThreshold: 60,
-  colorPrecision: 6,
-  filterSpeckle: 4,
-  layerDifference: 16,
-  colormode: 'color',
-  mode: 'spline',
 
-  setSelectedScaleStrategyId: (id) => set({ selectedScaleStrategyId: id }),
   setError: (error) => set({ error }),
-  setShowAdvanced: (value) => set({ showAdvanced: value }),
   setSizeInputMode: (value) => set({ sizeInputMode: value }),
   setScaleFactor: (value) => set({ scaleFactor: value }),
   setWidth: (value) => set({ width: value }),
   setHeight: (value) => set({ height: value }),
-  setDpi: (value) => set({ dpi: value }),
-  setCornerThreshold: (value) => set({ cornerThreshold: value }),
-  setColorPrecision: (value) => set({ colorPrecision: value }),
-  setFilterSpeckle: (value) => set({ filterSpeckle: value }),
-  setLayerDifference: (value) => set({ layerDifference: value }),
-  setColormode: (value) => set({ colormode: value }),
-  setMode: (value) => set({ mode: value }),
-
-  loadScaleStrategies: async () => {
-    if (get().scaleStrategiesLoaded) return
-
-    try {
-      const defaults = await apiGet<ScaleDefaults>('/api/clearcut/scale/defaults')
-      const items = defaults.strategies ?? []
-      const preferred =
-        items.find((item) => item.id === 'realesrgan')?.id ?? items[0]?.id ?? null
-      set((state) => ({
-        scaleStrategies: items,
-        scaleStrategiesLoaded: true,
-        selectedScaleStrategyId:
-          state.selectedScaleStrategyId ??
-          (preferred && isScaleStrategyId(preferred) ? preferred : 'realesrgan'),
-        error: null
-      }))
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'No se pudieron cargar las estrategias de escalado.' })
-    }
-  },
 
   loadScaleDefaults: async () => {
     if (get().scaleDefaultsLoaded) return
 
     try {
       const items = await apiGet<ScaleDefaults>('/api/clearcut/scale/defaults')
-      // Fire-and-forget: dispara la descarga de modelos si hace falta, sin bloquear la UI.
       apiPost<Record<string, never>, unknown>('/api/clearcut/scale/ensure-models', {}).catch(
         () => undefined
       )
 
-      const defaultStrategy =
-        items.default_strategy && isScaleStrategyId(items.default_strategy)
-          ? items.default_strategy
-          : null
-      set((state) => ({
+      set({
         scaleDefaults: items,
         scaleDefaultsLoaded: true,
-        dpi: String(items.dpi),
-        cornerThreshold: items.trace.corner_threshold,
-        colorPrecision: items.trace.color_precision,
-        filterSpeckle: items.trace.filter_speckle,
-        layerDifference: items.trace.layer_difference,
-        colormode: items.trace.colormode === 'binary' ? 'binary' : 'color',
-        mode:
-          items.trace.mode === 'polygon' || items.trace.mode === 'none'
-            ? items.trace.mode
-            : 'spline',
-        selectedScaleStrategyId: state.selectedScaleStrategyId ?? defaultStrategy ?? 'realesrgan',
         error: null
-      }))
+      })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'No se pudieron cargar los defaults.' })
     }
@@ -304,13 +200,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     const state = get()
     if (!state.inputPath || state.isScaling) return
 
-    const strategy = state.selectedScaleStrategyId ?? 'realesrgan'
-    const dpiValue = Number(state.dpi)
-    if (!Number.isFinite(dpiValue) || dpiValue <= 0) {
-      set({ error: 'El DPI debe ser un número positivo.' })
-      return
-    }
-
     let widthPx: number | undefined
     let heightPx: number | undefined
 
@@ -349,34 +238,13 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
           strategy: ScaleStrategyId
           width?: number
           height?: number
-          dpi?: number
-          trace?: {
-            corner_threshold: number
-            color_precision: number
-            filter_speckle: number
-            layer_difference: number
-            colormode: ColorMode
-            mode: TraceMode
-          }
         },
         { job_id: string; status: string }
       >('/api/clearcut/scale', {
         input_path: state.inputPath,
-        strategy,
+        strategy: 'realesrgan',
         width: widthPx,
-        height: heightPx,
-        dpi: dpiValue,
-        trace:
-          strategy === 'vector'
-            ? {
-                corner_threshold: state.cornerThreshold,
-                color_precision: state.colorPrecision,
-                filter_speckle: state.filterSpeckle,
-                layer_difference: state.layerDifference,
-                colormode: state.colormode,
-                mode: state.mode
-              }
-            : undefined
+        height: heightPx
       })
 
       const result = await waitForJob<ScaleResult>(jobId)

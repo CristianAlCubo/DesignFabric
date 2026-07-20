@@ -24,7 +24,6 @@ from designfabric.core.imaging.batch.types import (
 )
 from designfabric.core.imaging.silhouette_strategies import SilhouetteStrategy, create_silhouette_strategy
 from designfabric.core.imaging.upscale_pipeline import ScaleOutcome, scale_image
-from designfabric.core.imaging.vector_engine import ExportConfig
 from designfabric.core.progress import (
     Phase,
     ProgressReporter,
@@ -150,15 +149,12 @@ class BatchProcessor:
 
             cutout = self._remove_fn(path, temp_path, strategy, config.removal)
             height, width = cutout.shape[:2]
-            export = ExportConfig(
-                width_px=width * config.scale_factor,
-                height_px=height * config.scale_factor,
-            )
             outcome = self._scale_fn(
                 temp_path,
                 output_path,
                 strategy=config.scale_strategy,
-                export=export,
+                width=width * config.scale_factor,
+                height=height * config.scale_factor,
             )
             warning = outcome.result.warning
             return BatchItemResult(

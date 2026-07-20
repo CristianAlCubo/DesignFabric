@@ -15,14 +15,7 @@ from designfabric.core.imaging.upscale_strategies import (
     UpscaleError,
     UpscaleStrategy,
     UpscaleStrategyName,
-    VectorUpscaleStrategy,
     create_upscale_strategy,
-)
-from designfabric.core.imaging.vector_engine import (
-    ExportConfig,
-    TraceConfig,
-    VectorEngine,
-    VectorEngineError,
 )
 
 __all__ = [
@@ -34,17 +27,12 @@ __all__ = [
     "ColorBackgroundStrategy",
     "StrategyName",
     "create_silhouette_strategy",
-    "ExportConfig",
-    "TraceConfig",
-    "VectorEngine",
-    "VectorEngineError",
     "get_scale_defaults",
     "scale_image",
     "ScaleOutcome",
     "UpscaleStrategy",
     "UpscaleStrategyName",
     "UpscaleError",
-    "VectorUpscaleStrategy",
     "RealEsrganUpscaleStrategy",
     "create_upscale_strategy",
     "ensure_models",
