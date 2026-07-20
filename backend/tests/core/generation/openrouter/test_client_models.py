@@ -117,6 +117,8 @@ def test_generate_image_from_data_url():
     )
 
     def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body["modalities"] == ["image"]
         return httpx.Response(
             200,
             json={
@@ -133,5 +135,46 @@ def test_generate_image_from_data_url():
         )
 
     client = OpenRouterClient("sk-test", transport=_MockTransport(handler))
-    data = client.generate_image("a fox", model="google/gemini-image")
+    data = client.generate_image(
+        "a fox",
+        model="google/gemini-image",
+        modalities=["image"],
+    )
     assert data[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_generate_image_sends_passed_modalities():
+    png_b64 = (
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body["modalities"] == ["image", "text"]
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "images": [
+                                {"image_url": {"url": f"data:image/png;base64,{png_b64}"}}
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
+
+    client = OpenRouterClient("sk-test", transport=_MockTransport(handler))
+    client.generate_image(
+        "a fox",
+        model="google/gemini-image",
+        modalities=["image", "text"],
+    )
+
+
+def test_generate_image_rejects_empty_modalities():
+    client = OpenRouterClient("sk-test")
+    with pytest.raises(OpenRouterConfigError, match="modalities"):
+        client.generate_image("a fox", model="x", modalities=[])

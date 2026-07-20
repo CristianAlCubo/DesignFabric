@@ -33,6 +33,11 @@ def get_openrouter_settings() -> OpenRouterSettingsPublicResponse:
         configured=snap.configured,
         text_model_id=snap.text_model_id,
         image_model_id=snap.image_model_id,
+        image_model_output_modalities=(
+            list(snap.image_model_output_modalities)
+            if snap.image_model_output_modalities is not None
+            else None
+        ),
     )
 
 
@@ -40,20 +45,28 @@ def get_openrouter_settings() -> OpenRouterSettingsPublicResponse:
 def put_openrouter_settings(payload: OpenRouterSettingsUpdateRequest) -> OpenRouterSettingsPublicResponse:
     runtime = get_openrouter_runtime()
     runtime.seed_from_settings()
-    snap = runtime.update(
-        api_key=payload.api_key,
-        clear_api_key=payload.clear_api_key,
-        text_model_id=payload.text_model_id,
-        image_model_id=payload.image_model_id,
-        clear_text_model=payload.clear_text_model,
-        clear_image_model=payload.clear_image_model,
-    )
+    update_kwargs: dict = {
+        "api_key": payload.api_key,
+        "clear_api_key": payload.clear_api_key,
+        "text_model_id": payload.text_model_id,
+        "image_model_id": payload.image_model_id,
+        "clear_text_model": payload.clear_text_model,
+        "clear_image_model": payload.clear_image_model,
+    }
+    if "image_model_output_modalities" in payload.model_fields_set:
+        update_kwargs["image_model_output_modalities"] = payload.image_model_output_modalities
+    snap = runtime.update(**update_kwargs)
     if payload.clear_api_key or payload.api_key is not None:
         get_models_cache().invalidate()
     return OpenRouterSettingsPublicResponse(
         configured=snap.configured,
         text_model_id=snap.text_model_id,
         image_model_id=snap.image_model_id,
+        image_model_output_modalities=(
+            list(snap.image_model_output_modalities)
+            if snap.image_model_output_modalities is not None
+            else None
+        ),
     )
 
 

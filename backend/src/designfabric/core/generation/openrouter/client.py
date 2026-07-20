@@ -123,10 +123,17 @@ class OpenRouterClient:
         prompt: str,
         *,
         model: str,
-        modalities: list[str] | None = None,
+        modalities: Sequence[str],
     ) -> bytes:
-        """Genera una imagen y devuelve bytes PNG/JPEG decodificados."""
-        mods = modalities or ["image", "text"]
+        """Genera una imagen y devuelve bytes PNG/JPEG decodificados.
+
+        `modalities` es obligatorio (p. ej. ["image"] o ["image","text"]) —
+        debe derivarse de las output_modalities del modelo vía
+        `resolve_image_request_modalities`.
+        """
+        mods = [m.strip() for m in modalities if isinstance(m, str) and m.strip()]
+        if not mods:
+            raise OpenRouterConfigError("Faltan modalities para generar imagen en OpenRouter.")
         body: dict[str, Any] = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],

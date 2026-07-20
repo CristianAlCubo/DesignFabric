@@ -12,7 +12,7 @@ import shutil
 from abc import ABC, abstractmethod
 from importlib import resources
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
 
 from designfabric.core.generation.sticker_generator import StickerResult, slugify
 from designfabric.core.progress import (
@@ -32,6 +32,18 @@ FLUX_MODEL_ID = "black-forest-labs/FLUX.2-klein-4B"
 IMAGE_SIZE = 1024
 GUIDANCE_SCALE = 1.0
 NUM_INFERENCE_STEPS = 4
+
+
+class _OpenRouterImageClient(Protocol):
+    def list_models(self, modality: Literal["text", "image"]) -> list: ...
+
+    def generate_image(
+        self,
+        prompt: str,
+        *,
+        model: str,
+        modalities: list[str],
+    ) -> bytes: ...
 
 
 class ImageProvider(ABC):
@@ -152,14 +164,16 @@ class OpenRouterImageProvider(ImageProvider):
         if not model:
             raise OpenRouterConfigError("Falta el modelo de imagen de OpenRouter.")
 
-        os.makedirs(output_dir, exist_ok=True)
         client = build_client_from_runtime()
+        modalities = self._resolve_modalities(snap.image_model_output_modalities, model, client)
+
+        os.makedirs(output_dir, exist_ok=True)
         emit_phase_started(reporter, Phase.IMAGE_GENERATION, total=len(prompts))
         results: list[StickerResult] = []
         try:
             for i, prompt in enumerate(prompts):
                 try:
-                    image_bytes = client.generate_image(prompt, model=model)
+                    image_bytes = client.generate_image(prompt, model=model, modalities=modalities)
                     filename = f"{output_dir}/sticker_{i + 1}_{slugify(prompt)}.png"
                     with open(filename, "wb") as handle:
                         handle.write(image_bytes)
@@ -175,6 +189,29 @@ class OpenRouterImageProvider(ImageProvider):
         else:
             emit_phase_completed(reporter, Phase.IMAGE_GENERATION)
         return results
+
+    @staticmethod
+    def _resolve_modalities(
+        configured: tuple[str, ...] | None,
+        model_id: str,
+        client: _OpenRouterImageClient,
+    ) -> list[str]:
+        from designfabric.core.generation.openrouter.errors import OpenRouterConfigError
+        from designfabric.core.generation.openrouter.modalities import resolve_image_request_modalities
+        from designfabric.core.generation.openrouter.models_cache import get_models_cache
+
+        if configured:
+            return resolve_image_request_modalities(configured)
+
+        cache = get_models_cache()
+        models = cache.get_or_fetch("image", lambda: client.list_models("image"))
+        match = next((m for m in models if m.id == model_id), None)
+        if match is None:
+            raise OpenRouterConfigError(
+                f"No se encontraron output_modalities para el modelo de imagen '{model_id}'. "
+                "Vuelve a seleccionarlo en Ajustes."
+            )
+        return resolve_image_request_modalities(match.output_modalities)
 
 
 _PROVIDERS: dict[ImageProviderName, type[ImageProvider]] = {

@@ -56,13 +56,13 @@ export function LanguageModelsSection({ onNavigate }: LanguageModelsSectionProps
 
   const ready = !hydrating && prefs !== null && status !== null && readiness !== null
 
-  async function updateTextModel(modelId: string | null): Promise<void> {
+  async function updateTextModel(selection: { id: string } | null): Promise<void> {
     if (!prefs) return
     setSaving(true)
     try {
       const next = {
         ...prefs,
-        openrouter: { ...prefs.openrouter, textModelId: modelId }
+        openrouter: { ...prefs.openrouter, textModelId: selection?.id ?? null }
       }
       const saved = await window.designfabric.setGenerationPreferences(next)
       setPrefs(saved)
@@ -162,8 +162,8 @@ export function LanguageModelsSection({ onNavigate }: LanguageModelsSectionProps
               <ModelSearchSelect
                 modality="text"
                 value={prefs.openrouter.textModelId}
-                onChange={(id) => {
-                  void updateTextModel(id)
+                onChange={(selection) => {
+                  void updateTextModel(selection)
                 }}
                 disabled={saving}
                 configured={status.configured}

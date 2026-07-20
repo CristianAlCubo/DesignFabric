@@ -138,6 +138,7 @@ class OpenRouterSettingsUpdateRequest(BaseModel):
     clear_api_key: bool = False
     text_model_id: str | None = None
     image_model_id: str | None = None
+    image_model_output_modalities: list[str] | None = None
     clear_text_model: bool = False
     clear_image_model: bool = False
 
@@ -148,6 +149,7 @@ class OpenRouterSettingsPublicResponse(BaseModel):
     configured: bool
     text_model_id: str | None = None
     image_model_id: str | None = None
+    image_model_output_modalities: list[str] | None = None
 
 
 class OpenRouterModelSchema(BaseModel):

@@ -16,6 +16,12 @@ interface OpenRouterModelRow {
   output_modalities: string[]
 }
 
+export interface OpenRouterModelSelection {
+  id: string
+  name: string
+  output_modalities: string[]
+}
+
 interface OpenRouterModelsResponse {
   models: OpenRouterModelRow[]
 }
@@ -23,7 +29,7 @@ interface OpenRouterModelsResponse {
 interface ModelSearchSelectProps {
   modality: 'text' | 'image'
   value: string | null
-  onChange: (modelId: string | null) => void
+  onChange: (selection: OpenRouterModelSelection | null) => void
   disabled?: boolean
   configured: boolean
   onGoToOpenRouter?: () => void
@@ -107,7 +113,11 @@ export function ModelSearchSelect({
     setSelectedMeta({ id: model.id, name: model.name })
     clearSearchState()
     setBrowsing(false)
-    onChange(model.id)
+    onChange({
+      id: model.id,
+      name: model.name,
+      output_modalities: model.output_modalities
+    })
   }
 
   function handleClear(): void {

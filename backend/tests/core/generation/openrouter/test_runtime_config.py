@@ -32,16 +32,32 @@ def test_seed_from_settings_once():
 
 def test_update_and_clear():
     cfg = OpenRouterRuntimeConfig()
-    cfg.update(api_key="  sk-a  ", text_model_id="m1", image_model_id="m2")
+    cfg.update(
+        api_key="  sk-a  ",
+        text_model_id="m1",
+        image_model_id="m2",
+        image_model_output_modalities=["image"],
+    )
     snap = cfg.snapshot()
     assert snap.api_key == "sk-a"
     assert snap.llm_ready and snap.image_ready
+    assert snap.image_model_output_modalities == ("image",)
 
     cfg.update(clear_api_key=True, clear_text_model=True, clear_image_model=True)
     snap = cfg.snapshot()
     assert not snap.configured
     assert not snap.llm_ready
     assert not snap.image_ready
+    assert snap.image_model_output_modalities is None
+
+
+def test_image_modalities_unset_vs_null():
+    cfg = OpenRouterRuntimeConfig()
+    cfg.update(image_model_id="m", image_model_output_modalities=["image", "text"])
+    cfg.update(api_key="sk")
+    assert cfg.snapshot().image_model_output_modalities == ("image", "text")
+    cfg.update(image_model_output_modalities=None)
+    assert cfg.snapshot().image_model_output_modalities is None
 
 
 def test_llm_ready_requires_key_and_model():

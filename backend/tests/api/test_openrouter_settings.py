@@ -34,15 +34,46 @@ def test_put_and_get_settings(client):
             "api_key": "sk-test-key",
             "text_model_id": "openai/gpt-4o",
             "image_model_id": "black-forest-labs/flux",
+            "image_model_output_modalities": ["image"],
         },
     )
     assert res.status_code == 200
     assert res.json()["configured"] is True
     assert res.json()["text_model_id"] == "openai/gpt-4o"
+    assert res.json()["image_model_output_modalities"] == ["image"]
 
     get_res = client.get("/api/settings/openrouter")
     assert get_res.json()["configured"] is True
+    assert get_res.json()["image_model_output_modalities"] == ["image"]
     assert "api_key" not in get_res.json()
+
+
+def test_put_preserves_modalities_when_omitted(client):
+    client.put(
+        "/api/settings/openrouter",
+        json={
+            "api_key": "sk-test",
+            "image_model_id": "google/gemini-image",
+            "image_model_output_modalities": ["image", "text"],
+        },
+    )
+    res = client.put("/api/settings/openrouter", json={"text_model_id": "openai/gpt-4o"})
+    assert res.json()["image_model_output_modalities"] == ["image", "text"]
+    assert res.json()["text_model_id"] == "openai/gpt-4o"
+
+
+def test_clear_image_model_clears_modalities(client):
+    client.put(
+        "/api/settings/openrouter",
+        json={
+            "api_key": "sk-test",
+            "image_model_id": "google/gemini-image",
+            "image_model_output_modalities": ["image"],
+        },
+    )
+    res = client.put("/api/settings/openrouter", json={"clear_image_model": True})
+    assert res.json()["image_model_id"] is None
+    assert res.json()["image_model_output_modalities"] is None
 
 
 def test_clear_api_key(client):

@@ -13,7 +13,8 @@ export async function syncOpenRouterToBackend(): Promise<void> {
 
   const body: Record<string, unknown> = {
     text_model_id: prefs.openrouter.textModelId,
-    image_model_id: prefs.openrouter.imageModelId
+    image_model_id: prefs.openrouter.imageModelId,
+    image_model_output_modalities: prefs.openrouter.imageModelOutputModalities
   }
 
   if (apiKey) {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { ModelSearchSelect } from './ModelSearchSelect'
+import { ModelSearchSelect, type OpenRouterModelSelection } from './ModelSearchSelect'
 import { ProviderAvailabilityWarning } from './ProviderAvailabilityWarning'
 import { useSettingsGeneration } from './SettingsGenerationContext'
 import { OpenRouterSettingsSkeleton } from './SettingsSkeletons'
@@ -66,13 +66,17 @@ export function ImageModelsSection({ onNavigate }: ImageModelsSectionProps) {
 
   const ready = !hydrating && prefs !== null && status !== null && readiness !== null
 
-  async function updateImageModel(modelId: string | null): Promise<void> {
+  async function updateImageModel(selection: OpenRouterModelSelection | null): Promise<void> {
     if (!prefs) return
     setSaving(true)
     try {
       const next = {
         ...prefs,
-        openrouter: { ...prefs.openrouter, imageModelId: modelId }
+        openrouter: {
+          ...prefs.openrouter,
+          imageModelId: selection?.id ?? null,
+          imageModelOutputModalities: selection?.output_modalities ?? null
+        }
       }
       const saved = await window.designfabric.setGenerationPreferences(next)
       setPrefs(saved)
@@ -174,8 +178,8 @@ export function ImageModelsSection({ onNavigate }: ImageModelsSectionProps) {
               <ModelSearchSelect
                 modality="image"
                 value={prefs.openrouter.imageModelId}
-                onChange={(id) => {
-                  void updateImageModel(id)
+                onChange={(selection) => {
+                  void updateImageModel(selection)
                 }}
                 disabled={saving}
                 configured={status.configured}

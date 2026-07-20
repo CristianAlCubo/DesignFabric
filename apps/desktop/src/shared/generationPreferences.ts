@@ -6,18 +6,21 @@
 export interface OpenRouterModelPreferences {
   textModelId: string | null
   imageModelId: string | null
+  /** Capacidades de salida del modelo de imagen (catálogo OpenRouter). */
+  imageModelOutputModalities: string[] | null
 }
 
 export interface GenerationPreferences {
-  version: 1
+  version: 2
   openrouter: OpenRouterModelPreferences
 }
 
 export const DEFAULT_GENERATION_PREFERENCES: GenerationPreferences = {
-  version: 1,
+  version: 2,
   openrouter: {
     textModelId: null,
-    imageModelId: null
+    imageModelId: null,
+    imageModelOutputModalities: null
   }
 }
 

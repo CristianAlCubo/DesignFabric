@@ -19,6 +19,7 @@ class OpenRouterSnapshot:
     api_key: str | None
     text_model_id: str | None
     image_model_id: str | None
+    image_model_output_modalities: tuple[str, ...] | None
     base_url: str
 
     @property
@@ -34,6 +35,9 @@ class OpenRouterSnapshot:
         return self.configured and bool(self.image_model_id and self.image_model_id.strip())
 
 
+_UNSET: object = object()
+
+
 class OpenRouterRuntimeConfig:
     """Singleton: key + model IDs mutables sin reiniciar el proceso."""
 
@@ -42,6 +46,7 @@ class OpenRouterRuntimeConfig:
         self._api_key: str | None = None
         self._text_model_id: str | None = None
         self._image_model_id: str | None = None
+        self._image_model_output_modalities: tuple[str, ...] | None = None
         self._base_url: str = "https://openrouter.ai/api/v1"
         self._seeded = False
 
@@ -73,6 +78,7 @@ class OpenRouterRuntimeConfig:
         clear_api_key: bool = False,
         text_model_id: str | None = None,
         image_model_id: str | None = None,
+        image_model_output_modalities: list[str] | tuple[str, ...] | None | object = _UNSET,
         clear_text_model: bool = False,
         clear_image_model: bool = False,
         base_url: str | None = None,
@@ -91,9 +97,23 @@ class OpenRouterRuntimeConfig:
                 self._text_model_id = stripped or None
             if clear_image_model:
                 self._image_model_id = None
-            elif image_model_id is not None:
-                stripped = image_model_id.strip()
-                self._image_model_id = stripped or None
+                self._image_model_output_modalities = None
+            else:
+                if image_model_id is not None:
+                    stripped = image_model_id.strip()
+                    self._image_model_id = stripped or None
+                    if not self._image_model_id:
+                        self._image_model_output_modalities = None
+                if image_model_output_modalities is not _UNSET:
+                    if image_model_output_modalities is None:
+                        self._image_model_output_modalities = None
+                    else:
+                        cleaned = tuple(
+                            m.strip()
+                            for m in image_model_output_modalities  # type: ignore[union-attr]
+                            if isinstance(m, str) and m.strip()
+                        )
+                        self._image_model_output_modalities = cleaned or None
             if base_url is not None:
                 self._base_url = base_url.rstrip("/")
             return self.snapshot()
@@ -104,6 +124,7 @@ class OpenRouterRuntimeConfig:
                 api_key=self._api_key,
                 text_model_id=self._text_model_id,
                 image_model_id=self._image_model_id,
+                image_model_output_modalities=self._image_model_output_modalities,
                 base_url=self._base_url,
             )
 
@@ -113,6 +134,7 @@ class OpenRouterRuntimeConfig:
             self._api_key = None
             self._text_model_id = None
             self._image_model_id = None
+            self._image_model_output_modalities = None
             self._base_url = "https://openrouter.ai/api/v1"
             self._seeded = False
 
