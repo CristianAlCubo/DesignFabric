@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils'
 
 import { apiGet } from '@/core/api/httpClient'
 
+import { ModelListSkeleton } from './SettingsSkeletons'
+import { useDeferredLoading } from './useDeferredLoading'
+
 interface OpenRouterModelRow {
   id: string
   name: string
@@ -37,7 +40,7 @@ export function ModelSearchSelect({
   configured,
   onGoToOpenRouter
 }: ModelSearchSelectProps) {
-  const [browsing, setBrowsing] = useState(!value)
+  const [browsing, setBrowsing] = useState(() => !value)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [models, setModels] = useState<OpenRouterModelRow[]>([])
@@ -119,6 +122,9 @@ export function ModelSearchSelect({
     setBrowsing(true)
   }
 
+  const visibleModels = value ? models.filter((model) => model.id !== value) : models
+  const showInitialSkeleton = useDeferredLoading(loading && models.length === 0 && !error, 200)
+
   if (!configured) {
     return (
       <div className="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
@@ -174,8 +180,6 @@ export function ModelSearchSelect({
     )
   }
 
-  const visibleModels = value ? models.filter((model) => model.id !== value) : models
-
   return (
     <div className="flex flex-col gap-3">
       {value && (
@@ -204,22 +208,26 @@ export function ModelSearchSelect({
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
-      {loading && <p className="text-sm text-muted-foreground">Cargando modelos…</p>}
 
-      {!loading && !error && visibleModels.length === 0 && (
+      {showInitialSkeleton && <ModelListSkeleton />}
+
+      {!showInitialSkeleton && !error && !loading && visibleModels.length === 0 && (
         <p className="text-sm text-muted-foreground">Sin resultados.</p>
       )}
 
-      {visibleModels.length > 0 && (
-        <ul className="max-h-64 overflow-auto rounded-lg border border-border">
+      {!showInitialSkeleton && visibleModels.length > 0 && (
+        <ul
+          className={cn(
+            'max-h-64 overflow-auto rounded-lg border border-border',
+            loading && 'opacity-70'
+          )}
+        >
           {visibleModels.map((model) => (
             <li key={model.id}>
               <button
                 type="button"
                 disabled={disabled}
-                className={cn(
-                  'flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted/50'
-                )}
+                className="flex w-full flex-col items-start gap-0.5 border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted/50"
                 onClick={() => handleSelect(model)}
               >
                 <span className="text-foreground">{model.name}</span>

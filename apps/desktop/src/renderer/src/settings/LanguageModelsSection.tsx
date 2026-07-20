@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react'
-
-import type { GenerationPreferences, OpenRouterPublicStatus } from '@shared/generationPreferences'
+import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { useGenerationReadiness } from '@/core/hooks/useGenerationReadiness'
-
 import { ModelSearchSelect } from './ModelSearchSelect'
 import { ProviderAvailabilityWarning } from './ProviderAvailabilityWarning'
+import { useSettingsGeneration } from './SettingsGenerationContext'
+import { OpenRouterSettingsSkeleton } from './SettingsSkeletons'
 import type { SettingsSectionId } from './sections'
 
 interface LanguageModelsSectionProps {
@@ -51,52 +49,44 @@ function openRouterLlmWarningMessages(configured: boolean, textModelId: string |
 }
 
 export function LanguageModelsSection({ onNavigate }: LanguageModelsSectionProps) {
-  const {
-    readiness,
-    localAiMissing,
-    canUseOllama
-  } = useGenerationReadiness()
-  const [prefs, setPrefs] = useState<GenerationPreferences | null>(null)
-  const [status, setStatus] = useState<OpenRouterPublicStatus | null>(null)
+  const { prefs, status, readiness, hydrating, showSkeleton, setPrefs, refreshReadiness } =
+    useSettingsGeneration()
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<LlmSettingsTab>('openrouter')
 
-  useEffect(() => {
-    void Promise.all([
-      window.designfabric.getGenerationPreferences(),
-      window.designfabric.getOpenRouterStatus()
-    ]).then(([generationPrefs, openRouterStatus]) => {
-      setPrefs(generationPrefs)
-      setStatus(openRouterStatus)
-    })
-  }, [])
+  const ready = !hydrating && prefs !== null && status !== null && readiness !== null
 
   async function updateTextModel(modelId: string | null): Promise<void> {
     if (!prefs) return
     setSaving(true)
     try {
-      const next: GenerationPreferences = {
+      const next = {
         ...prefs,
         openrouter: { ...prefs.openrouter, textModelId: modelId }
       }
       const saved = await window.designfabric.setGenerationPreferences(next)
       setPrefs(saved)
+      await refreshReadiness()
     } finally {
       setSaving(false)
     }
   }
 
-  const ollamaMessages = ollamaWarningMessages({
-    localAiMissing,
-    canUseOllama,
-    host: readiness?.ollama.host ?? 'http://localhost:11434',
-    error: readiness?.ollama.error ?? null,
-    missingModules: readiness?.local_ai.missing ?? []
-  })
-  const openRouterMessages = openRouterLlmWarningMessages(
-    status?.configured ?? false,
-    prefs?.openrouter.textModelId ?? readiness?.openrouter?.text_model_id ?? null
-  )
+  const ollamaMessages =
+    ready && readiness
+      ? ollamaWarningMessages({
+          localAiMissing: !readiness.local_ai.available,
+          canUseOllama: readiness.providers.ollama,
+          host: readiness.ollama.host,
+          error: readiness.ollama.error,
+          missingModules: readiness.local_ai.missing
+        })
+      : []
+
+  const openRouterMessages =
+    ready && prefs && status
+      ? openRouterLlmWarningMessages(status.configured, prefs.openrouter.textModelId)
+      : []
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto px-6 py-5">
@@ -129,46 +119,58 @@ export function LanguageModelsSection({ onNavigate }: LanguageModelsSectionProps
         </TabsList>
 
         <TabsContent value="ollama" className="mt-0 flex max-w-xl flex-col gap-4">
-          <ProviderAvailabilityWarning messages={ollamaMessages} />
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              Provider local vía Ollama. El modelo concreto se elige en el formulario de generación
-              batch (lista de modelos instalados en el daemon).
-            </p>
-            {canUseOllama && readiness && (
-              <div className="rounded-lg border border-border px-3 py-2">
-                <p className="text-foreground">
-                  Host: <span className="font-mono text-xs">{readiness.ollama.host}</span>
+          {showSkeleton ? (
+            <OpenRouterSettingsSkeleton />
+          ) : ready && readiness ? (
+            <>
+              <ProviderAvailabilityWarning messages={ollamaMessages} />
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Provider local vía Ollama. El modelo concreto se elige en el formulario de
+                  generación batch (lista de modelos instalados en el daemon).
                 </p>
-                <p className="mt-1">
-                  Modelos instalados:{' '}
-                  {readiness.ollama.models.length > 0
-                    ? readiness.ollama.models.join(', ')
-                    : '(ninguno)'}
-                </p>
+                {readiness.providers.ollama && (
+                  <div className="rounded-lg border border-border px-3 py-2">
+                    <p className="text-foreground">
+                      Host: <span className="font-mono text-xs">{readiness.ollama.host}</span>
+                    </p>
+                    <p className="mt-1">
+                      Modelos instalados:{' '}
+                      {readiness.ollama.models.length > 0
+                        ? readiness.ollama.models.join(', ')
+                        : '(ninguno)'}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="openrouter" className="mt-0 flex max-w-xl flex-col gap-4">
-          <ProviderAvailabilityWarning
-            messages={openRouterMessages}
-            title={status?.configured ? 'Configuración incompleta' : 'Provider no disponible'}
-          />
-          <p className="text-sm text-muted-foreground">
-            Modelo usado cuando eliges OpenRouter como provider LLM en generación.
-          </p>
-          <ModelSearchSelect
-            modality="text"
-            value={prefs?.openrouter.textModelId ?? null}
-            onChange={(id) => {
-              void updateTextModel(id)
-            }}
-            disabled={saving || !prefs}
-            configured={status?.configured ?? false}
-            onGoToOpenRouter={() => onNavigate('openrouter')}
-          />
+          {showSkeleton ? (
+            <OpenRouterSettingsSkeleton />
+          ) : ready && prefs && status ? (
+            <>
+              <ProviderAvailabilityWarning
+                messages={openRouterMessages}
+                title={status.configured ? 'Configuración incompleta' : 'Provider no disponible'}
+              />
+              <p className="text-sm text-muted-foreground">
+                Modelo usado cuando eliges OpenRouter como provider LLM en generación.
+              </p>
+              <ModelSearchSelect
+                modality="text"
+                value={prefs.openrouter.textModelId}
+                onChange={(id) => {
+                  void updateTextModel(id)
+                }}
+                disabled={saving}
+                configured={status.configured}
+                onGoToOpenRouter={() => onNavigate('openrouter')}
+              />
+            </>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="test" className="mt-0 flex max-w-xl flex-col gap-3">

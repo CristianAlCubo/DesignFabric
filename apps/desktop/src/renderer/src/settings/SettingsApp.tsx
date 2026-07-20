@@ -17,6 +17,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { ImageModelsSection } from './ImageModelsSection'
 import { LanguageModelsSection } from './LanguageModelsSection'
 import { OpenRouterSection } from './OpenRouterSection'
+import { SettingsGenerationProvider } from './SettingsGenerationContext'
 import {
   getSettingsSection,
   SETTINGS_SECTIONS,
@@ -110,20 +111,22 @@ export default function SettingsApp() {
   return (
     <div className="h-full">
       <TooltipProvider>
-        <SidebarProvider
-          defaultOpen
-          className="h-full! min-h-0!"
-          style={
-            {
-              '--sidebar-width': '13.5rem'
-            } as CSSProperties
-          }
-        >
-          <SettingsSidebar activeSectionId={activeSectionId} onSelect={setActiveSectionId} />
-          <SidebarInset className="min-h-0 overflow-hidden">
-            <SettingsContent sectionId={activeSectionId} onNavigate={setActiveSectionId} />
-          </SidebarInset>
-        </SidebarProvider>
+        <SettingsGenerationProvider>
+          <SidebarProvider
+            defaultOpen
+            className="h-full! min-h-0!"
+            style={
+              {
+                '--sidebar-width': '13.5rem'
+              } as CSSProperties
+            }
+          >
+            <SettingsSidebar activeSectionId={activeSectionId} onSelect={setActiveSectionId} />
+            <SidebarInset className="min-h-0 overflow-hidden">
+              <SettingsContent sectionId={activeSectionId} onNavigate={setActiveSectionId} />
+            </SidebarInset>
+          </SidebarProvider>
+        </SettingsGenerationProvider>
       </TooltipProvider>
     </div>
   )

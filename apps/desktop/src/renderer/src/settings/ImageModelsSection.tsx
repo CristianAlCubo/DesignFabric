@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react'
-
-import type { GenerationPreferences, OpenRouterPublicStatus } from '@shared/generationPreferences'
+import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { useGenerationReadiness } from '@/core/hooks/useGenerationReadiness'
-
 import { ModelSearchSelect } from './ModelSearchSelect'
 import { ProviderAvailabilityWarning } from './ProviderAvailabilityWarning'
+import { useSettingsGeneration } from './SettingsGenerationContext'
+import { OpenRouterSettingsSkeleton } from './SettingsSkeletons'
 import type { SettingsSectionId } from './sections'
 
 interface ImageModelsSectionProps {
@@ -61,49 +59,45 @@ function openRouterImageWarningMessages(
 }
 
 export function ImageModelsSection({ onNavigate }: ImageModelsSectionProps) {
-  const { readiness, localAiMissing, canUseFlux } = useGenerationReadiness()
-  const [prefs, setPrefs] = useState<GenerationPreferences | null>(null)
-  const [status, setStatus] = useState<OpenRouterPublicStatus | null>(null)
+  const { prefs, status, readiness, hydrating, showSkeleton, setPrefs, refreshReadiness } =
+    useSettingsGeneration()
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<ImageSettingsTab>('openrouter')
 
-  useEffect(() => {
-    void Promise.all([
-      window.designfabric.getGenerationPreferences(),
-      window.designfabric.getOpenRouterStatus()
-    ]).then(([generationPrefs, openRouterStatus]) => {
-      setPrefs(generationPrefs)
-      setStatus(openRouterStatus)
-    })
-  }, [])
+  const ready = !hydrating && prefs !== null && status !== null && readiness !== null
 
   async function updateImageModel(modelId: string | null): Promise<void> {
     if (!prefs) return
     setSaving(true)
     try {
-      const next: GenerationPreferences = {
+      const next = {
         ...prefs,
         openrouter: { ...prefs.openrouter, imageModelId: modelId }
       }
       const saved = await window.designfabric.setGenerationPreferences(next)
       setPrefs(saved)
+      await refreshReadiness()
     } finally {
       setSaving(false)
     }
   }
 
-  const fluxMessages = fluxWarningMessages({
-    localAiMissing,
-    canUseFlux,
-    cudaAvailable: readiness?.cuda.available ?? false,
-    weightsPresent: readiness?.flux.weights_present ?? false,
-    modelId: readiness?.flux.model_id ?? 'black-forest-labs/FLUX.2-klein-4B',
-    missingModules: readiness?.local_ai.missing ?? []
-  })
-  const openRouterMessages = openRouterImageWarningMessages(
-    status?.configured ?? false,
-    prefs?.openrouter.imageModelId ?? readiness?.openrouter?.image_model_id ?? null
-  )
+  const fluxMessages =
+    ready && readiness
+      ? fluxWarningMessages({
+          localAiMissing: !readiness.local_ai.available,
+          canUseFlux: readiness.providers.flux,
+          cudaAvailable: readiness.cuda.available,
+          weightsPresent: readiness.flux.weights_present,
+          modelId: readiness.flux.model_id,
+          missingModules: readiness.local_ai.missing
+        })
+      : []
+
+  const openRouterMessages =
+    ready && prefs && status
+      ? openRouterImageWarningMessages(status.configured, prefs.openrouter.imageModelId)
+      : []
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto px-6 py-5">
@@ -136,48 +130,59 @@ export function ImageModelsSection({ onNavigate }: ImageModelsSectionProps) {
         </TabsList>
 
         <TabsContent value="flux" className="mt-0 flex max-w-xl flex-col gap-4">
-          <ProviderAvailabilityWarning messages={fluxMessages} />
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              Provider local de imagen (diffusers). El modelo está fijado en la app; no requiere
-              selector adicional.
-            </p>
-            {readiness && (
-              <div className="rounded-lg border border-border px-3 py-2 text-foreground">
+          {showSkeleton ? (
+            <OpenRouterSettingsSkeleton />
+          ) : ready && readiness ? (
+            <>
+              <ProviderAvailabilityWarning messages={fluxMessages} />
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <p>
-                  Modelo:{' '}
-                  <span className="font-mono text-xs">{readiness.flux.model_id}</span>
+                  Provider local de imagen (diffusers). El modelo está fijado en la app; no requiere
+                  selector adicional.
                 </p>
-                <p className="mt-1">
-                  Pesos en caché: {readiness.flux.weights_present ? 'sí' : 'no'}
-                  {readiness.flux.cache_hint ? ` (${readiness.flux.cache_hint})` : ''}
-                </p>
-                <p className="mt-1">
-                  CUDA: {readiness.cuda.available ? readiness.cuda.device_name ?? 'disponible' : 'no'}
-                </p>
+                <div className="rounded-lg border border-border px-3 py-2 text-foreground">
+                  <p>
+                    Modelo:{' '}
+                    <span className="font-mono text-xs">{readiness.flux.model_id}</span>
+                  </p>
+                  <p className="mt-1">
+                    Pesos en caché: {readiness.flux.weights_present ? 'sí' : 'no'}
+                    {readiness.flux.cache_hint ? ` (${readiness.flux.cache_hint})` : ''}
+                  </p>
+                  <p className="mt-1">
+                    CUDA:{' '}
+                    {readiness.cuda.available ? readiness.cuda.device_name ?? 'disponible' : 'no'}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
+            </>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="openrouter" className="mt-0 flex max-w-xl flex-col gap-4">
-          <ProviderAvailabilityWarning
-            messages={openRouterMessages}
-            title={status?.configured ? 'Configuración incompleta' : 'Provider no disponible'}
-          />
-          <p className="text-sm text-muted-foreground">
-            Modelo usado cuando eliges OpenRouter como provider de imagen en generación.
-          </p>
-          <ModelSearchSelect
-            modality="image"
-            value={prefs?.openrouter.imageModelId ?? null}
-            onChange={(id) => {
-              void updateImageModel(id)
-            }}
-            disabled={saving || !prefs}
-            configured={status?.configured ?? false}
-            onGoToOpenRouter={() => onNavigate('openrouter')}
-          />
+          {showSkeleton ? (
+            <OpenRouterSettingsSkeleton />
+          ) : ready && prefs && status ? (
+            <>
+              <ProviderAvailabilityWarning
+                messages={openRouterMessages}
+                title={status.configured ? 'Configuración incompleta' : 'Provider no disponible'}
+              />
+              <p className="text-sm text-muted-foreground">
+                Modelo usado cuando eliges OpenRouter como provider de imagen en generación.
+              </p>
+              <ModelSearchSelect
+                modality="image"
+                value={prefs.openrouter.imageModelId}
+                onChange={(id) => {
+                  void updateImageModel(id)
+                }}
+                disabled={saving}
+                configured={status.configured}
+                onGoToOpenRouter={() => onNavigate('openrouter')}
+              />
+            </>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="test" className="mt-0 flex max-w-xl flex-col gap-3">
