@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
+import { ArrowRight, Download, Eraser, ImagePlus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-
+import { AppButton } from '../../core/components/AppButton'
 import { TransparentImage } from '../../core/components/TransparentImage'
 import { StrategyList } from './StrategyList'
 import { useRemoveBackgroundStore } from './store'
@@ -34,14 +34,15 @@ export function RemoveBackgroundPanel() {
     <div className="columns" role="tabpanel" id="panel-remove" aria-labelledby="tab-remove">
       <section className="column panel">
         <h2 className="column__title">Entrada</h2>
-        <Button
+        <AppButton
           type="button"
           variant="outline"
+          icon={ImagePlus}
           onClick={() => void selectInputImage()}
           disabled={isProcessing}
         >
           Seleccionar imagen
-        </Button>
+        </AppButton>
         {inputPath ? <p className="path-hint">{inputPath}</p> : null}
         <TransparentImage
           src={inputPreview}
@@ -58,13 +59,14 @@ export function RemoveBackgroundPanel() {
           onSelect={setSelectedStrategyId}
           disabled={isProcessing}
         />
-        <Button
+        <AppButton
           type="button"
+          icon={Eraser}
           onClick={() => void processRemoval()}
           disabled={!canProcess}
         >
           {isProcessing ? 'Procesando…' : 'Procesar'}
-        </Button>
+        </AppButton>
         {error ? (
           <p className="error" role="alert">
             {error}
@@ -81,17 +83,18 @@ export function RemoveBackgroundPanel() {
           durationSeconds={outputDurationSeconds}
           actions={
             <>
-              <Button
+              <AppButton
                 type="button"
                 variant="outline"
+                icon={Download}
                 onClick={() => void exportOutput()}
                 disabled={isExporting}
               >
                 {isExporting ? 'Exportando…' : 'Exportar'}
-              </Button>
-              <Button type="button" variant="outline" onClick={sendToScale}>
+              </AppButton>
+              <AppButton type="button" variant="outline" icon={ArrowRight} onClick={sendToScale}>
                 Enviar a escalado
-              </Button>
+              </AppButton>
             </>
           }
         />

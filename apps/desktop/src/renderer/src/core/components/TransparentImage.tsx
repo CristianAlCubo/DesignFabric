@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
+import { Minus, Plus, Scan } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-
+import { AppButton } from './AppButton'
 import { useImageViewport } from '../hooks/useImageViewport'
 
 interface TransparentImageProps {
@@ -106,37 +106,36 @@ export function TransparentImage({
             onPointerDown={(event) => event.stopPropagation()}
             onDoubleClick={(event) => event.stopPropagation()}
           >
-            <Button
+            <AppButton
               type="button"
               variant="secondary"
               size="icon-xs"
+              icon={Minus}
               onClick={zoomOut}
               aria-label="Alejar"
               title="Alejar"
-            >
-              −
-            </Button>
-            <Button
+            />
+            <AppButton
               type="button"
               variant="secondary"
               size="xs"
+              icon={Scan}
               className="min-w-12 tabular-nums"
               onClick={resetView}
               aria-label="Ajustar a la vista"
               title="Ajustar a la vista"
             >
               {zoomPercent}%
-            </Button>
-            <Button
+            </AppButton>
+            <AppButton
               type="button"
               variant="secondary"
               size="icon-xs"
+              icon={Plus}
               onClick={zoomIn}
               aria-label="Acercar"
               title="Acercar"
-            >
-              +
-            </Button>
+            />
           </div>
         ) : null}
       </div>

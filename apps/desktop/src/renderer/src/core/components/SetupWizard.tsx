@@ -8,11 +8,11 @@
  */
 
 import { useState } from 'react'
+import { Clock, Download } from 'lucide-react'
 
 import type { SetupPreferences } from '@shared/setupPreferences'
 
-import { Button } from '@/components/ui/button'
-
+import { AppButton } from './AppButton'
 import { LogConsole } from './LogConsole'
 
 interface SetupWizardProps {
@@ -45,21 +45,23 @@ export function SetupWizard({ onCompleted }: SetupWizardProps) {
         </p>
         <p>¿Querés instalarlo ahora, o preferís hacerlo más adelante?</p>
         <div className="flex flex-wrap gap-3">
-          <Button
+          <AppButton
             type="button"
+            icon={Download}
             disabled={busy}
             onClick={() => void handleChoice('installed')}
           >
             Instalar ahora
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             type="button"
             variant="ghost"
+            icon={Clock}
             disabled={busy}
             onClick={() => void handleChoice('deferred')}
           >
             Más tarde
-          </Button>
+          </AppButton>
         </div>
         {error ? (
           <p className="error" role="alert">

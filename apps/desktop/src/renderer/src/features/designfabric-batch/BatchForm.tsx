@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Sparkles } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import {
   Field,
   FieldDescription,
@@ -12,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
+import { AppButton } from '../../core/components/AppButton'
 import { ModelSelector } from '../../core/components/ModelSelector'
 import { ProviderSelector } from '../../core/components/ProviderSelector'
 import { useGenerationProviders } from '../../core/hooks/useGenerationProviders'
@@ -121,10 +121,15 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
         />
       </FieldGroup>
 
-      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !catalog}>
-        <Sparkles data-icon="inline-start" />
+      <AppButton
+        type="submit"
+        size="lg"
+        className="w-full"
+        icon={Sparkles}
+        disabled={isSubmitting || !catalog}
+      >
         {isSubmitting ? 'Generando…' : 'Generar'}
-      </Button>
+      </AppButton>
     </form>
   )
 }

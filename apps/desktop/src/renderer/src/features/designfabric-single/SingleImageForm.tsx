@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Sparkles } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Field,
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 
+import { AppButton } from '../../core/components/AppButton'
 import { ProviderSelector } from '../../core/components/ProviderSelector'
 import { useGenerationProviders } from '../../core/hooks/useGenerationProviders'
 import type { ImageProviderId } from '../../core/api/types'
@@ -89,15 +89,15 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
         />
       </FieldGroup>
 
-      <Button
+      <AppButton
         type="submit"
         size="lg"
         className="w-full"
+        icon={Sparkles}
         disabled={isSubmitting || !prompt.trim() || !catalog}
       >
-        <Sparkles data-icon="inline-start" />
         {isSubmitting ? 'Generando…' : 'Generar'}
-      </Button>
+      </AppButton>
     </form>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
+import { ChevronDown, ChevronUp, Download, FileImage, Scaling } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,6 +14,7 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
+import { AppButton } from '../../core/components/AppButton'
 import { TransparentImage } from '../../core/components/TransparentImage'
 import type { ScaleFactor, SizeInputMode } from './store'
 import { useScaleStore } from './store'
@@ -89,14 +90,15 @@ export function ScalePanel() {
     <div className="columns columns--scale" role="tabpanel" id="panel-scale" aria-labelledby="tab-scale">
       <section className="column panel">
         <h2 className="column__title">Entrada PNG</h2>
-        <Button
+        <AppButton
           type="button"
           variant="outline"
+          icon={FileImage}
           onClick={() => void selectInputImage()}
           disabled={isScaling}
         >
           Seleccionar PNG
-        </Button>
+        </AppButton>
         {inputPath ? <p className="path-hint">{inputPath}</p> : null}
         <TransparentImage
           src={inputPreview}
@@ -124,6 +126,9 @@ export function ScalePanel() {
 
         <ToggleGroup
           type="single"
+          variant="outline"
+          spacing={0}
+          className="w-full"
           value={sizeInputMode}
           onValueChange={(value) => {
             if (value === 'factor' || value === 'manual') {
@@ -134,7 +139,7 @@ export function ScalePanel() {
           aria-label="Modo de tamaño"
         >
           {SIZE_MODE_OPTIONS.map((option) => (
-            <ToggleGroupItem key={option.id} value={option.id}>
+            <ToggleGroupItem key={option.id} value={option.id} className="flex-1">
               {option.label}
             </ToggleGroupItem>
           ))}
@@ -144,6 +149,9 @@ export function ScalePanel() {
           <>
             <ToggleGroup
               type="single"
+              variant="outline"
+              spacing={0}
+              className="w-full"
               value={String(scaleFactor)}
               onValueChange={(value) => {
                 if (value === '2' || value === '4') {
@@ -154,7 +162,7 @@ export function ScalePanel() {
               aria-label="Factor de escala"
             >
               {FACTOR_OPTIONS.map((factor) => (
-                <ToggleGroupItem key={factor} value={String(factor)}>
+                <ToggleGroupItem key={factor} value={String(factor)} className="flex-1">
                   {factor}x
                 </ToggleGroupItem>
               ))}
@@ -236,14 +244,15 @@ export function ScalePanel() {
               />
             </Field>
 
-            <Button
+            <AppButton
               type="button"
               variant="ghost"
+              icon={showAdvanced ? ChevronUp : ChevronDown}
               onClick={() => setShowAdvanced(!showAdvanced)}
               disabled={isScaling}
             >
               {showAdvanced ? 'Ocultar avanzado' : 'Mostrar avanzado'}
-            </Button>
+            </AppButton>
 
             {showAdvanced ? (
               <div className="advanced-fields">
@@ -315,9 +324,9 @@ export function ScalePanel() {
           </>
         ) : null}
 
-        <Button type="button" onClick={() => void runScale()} disabled={!canScale}>
+        <AppButton type="button" icon={Scaling} onClick={() => void runScale()} disabled={!canScale}>
           {isScaling ? 'Escalando…' : 'Escalar'}
-        </Button>
+        </AppButton>
         {error ? (
           <p className="error" role="alert">
             {error}
@@ -338,14 +347,15 @@ export function ScalePanel() {
           emptyLabel="El PNG a alta resolución aparecerá aquí"
           durationSeconds={outputDurationSeconds}
           actions={
-            <Button
+            <AppButton
               type="button"
               variant="outline"
+              icon={Download}
               onClick={() => void exportOutput()}
               disabled={isExporting}
             >
               {isExporting ? 'Exportando…' : 'Exportar'}
-            </Button>
+            </AppButton>
           }
         />
         {outputPath ? <p className="path-hint">{outputPath}</p> : null}

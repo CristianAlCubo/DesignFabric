@@ -7,9 +7,9 @@
  */
 
 import { useState } from 'react'
+import { Download } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-
+import { AppButton } from './AppButton'
 import { LogConsole } from './LogConsole'
 
 interface FeatureNotInstalledProps {
@@ -39,9 +39,14 @@ export function FeatureNotInstalled({ onInstalled }: FeatureNotInstalledProps) {
         Este módulo requiere instalar el entorno de generación por IA local (varios GB, requiere
         internet).
       </p>
-      <Button type="button" disabled={installing} onClick={() => void handleInstall()}>
+      <AppButton
+        type="button"
+        icon={Download}
+        disabled={installing}
+        onClick={() => void handleInstall()}
+      >
         {installing ? 'Instalando…' : 'Instalar ahora'}
-      </Button>
+      </AppButton>
       {installing ? <LogConsole /> : null}
       {error ? (
         <p className="error" role="alert">

@@ -4,11 +4,11 @@ import { useEffect, useState, type CSSProperties } from 'react'
 
 import type { SetupPreferences } from '@shared/setupPreferences'
 
-import { Button } from '@/components/ui/button'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import './features' // side-effect: cada feature se auto-registra al importarse
+import { AppButton } from './core/components/AppButton'
 import { AppSidebar } from './core/components/AppSidebar'
 import { ConsoleSheet } from './core/components/ConsoleSheet'
 import { SectionWorkspace } from './core/components/SectionWorkspace'
@@ -48,17 +48,17 @@ function AppShell() {
           <AppSidebar activeSectionId={activeSectionId} onSelect={setActiveSection} />
           <SidebarInset className="min-h-0 overflow-hidden">
             <header className="flex shrink-0 items-center justify-end gap-3 border-b border-border px-5 py-2.5">
-              <Button
+              <AppButton
                 type="button"
                 variant="outline"
                 size="sm"
+                icon={Terminal}
                 aria-expanded={showLogs}
                 aria-controls="console-sheet"
                 onClick={() => setShowLogs((value) => !value)}
               >
-                <Terminal data-icon="inline-start" aria-hidden />
                 {showLogs ? 'Ocultar registro' : 'Mostrar registro'}
-              </Button>
+              </AppButton>
             </header>
             <SectionWorkspace
               sectionId={activeSectionId}

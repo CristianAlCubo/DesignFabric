@@ -1,8 +1,8 @@
 import { CircleDashed, LoaderCircle, Play, Square } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 
+import { AppButton } from '../../core/components/AppButton'
 import type { BatchJobPhase } from './store'
 
 export interface BatchProgressDisplay {
@@ -136,20 +136,19 @@ export function BatchJobStrip({
 
       <div className="batch-job-strip__actions">
         {isRunning ? (
-          <Button type="button" variant="destructive" onClick={onCancel}>
-            <Square data-icon="inline-start" aria-hidden />
+          <AppButton type="button" variant="destructive" icon={Square} onClick={onCancel}>
             Cancelar
-          </Button>
+          </AppButton>
         ) : (
-          <Button
+          <AppButton
             type="button"
             className="batch-job-strip__run"
+            icon={Play}
             onClick={onRun}
             disabled={!canRun}
           >
-            <Play data-icon="inline-start" aria-hidden />
             Procesar lote
-          </Button>
+          </AppButton>
         )}
       </div>
     </section>

@@ -1,9 +1,9 @@
 import { Files, Folder, FolderOutput } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
+import { AppButton } from '../../core/components/AppButton'
 import { useJobProgress } from '../../core/hooks/useJobProgress'
 import { BatchJobStrip, type BatchProgressDisplay } from './BatchJobStrip'
 import { BatchQueue } from './BatchQueue'
@@ -123,6 +123,8 @@ export function BatchPanel() {
 
         <ToggleGroup
           type="single"
+          variant="outline"
+          spacing={0}
           value={batchInputMode}
           onValueChange={(value) => {
             if (value === 'folder' || value === 'files') {
@@ -131,11 +133,12 @@ export function BatchPanel() {
           }}
           disabled={isBatchRunning}
           aria-label="Estrategia de entrada"
+          className="w-full"
         >
           {INPUT_MODE_OPTIONS.map((option) => {
             const Icon = option.icon
             return (
-              <ToggleGroupItem key={option.id} value={option.id}>
+              <ToggleGroupItem key={option.id} value={option.id} className="flex-1">
                 <Icon data-icon="inline-start" aria-hidden />
                 {option.label}
               </ToggleGroupItem>
@@ -145,15 +148,15 @@ export function BatchPanel() {
 
         {batchInputMode === 'folder' ? (
           <>
-            <Button
+            <AppButton
               type="button"
               variant="outline"
+              icon={Folder}
               onClick={() => void selectBatchFolder()}
               disabled={isBatchRunning}
             >
-              <Folder data-icon="inline-start" aria-hidden />
               Seleccionar carpeta
-            </Button>
+            </AppButton>
             {batchInputDir ? (
               <p className="path-hint" title={batchInputDir}>
                 {batchInputDir}
@@ -163,15 +166,15 @@ export function BatchPanel() {
           </>
         ) : (
           <>
-            <Button
+            <AppButton
               type="button"
               variant="outline"
+              icon={Files}
               onClick={() => void selectBatchFiles()}
               disabled={isBatchRunning}
             >
-              <Files data-icon="inline-start" aria-hidden />
               Seleccionar archivos
-            </Button>
+            </AppButton>
             {batchInputFiles.length > 0 ? (
               <ul className="batch-file-list">
                 {batchInputFiles.map((filePath) => (
@@ -186,15 +189,15 @@ export function BatchPanel() {
         )}
 
         <h2 className="column__title">Salida</h2>
-        <Button
+        <AppButton
           type="button"
           variant="outline"
+          icon={FolderOutput}
           onClick={() => void selectBatchOutputDir()}
           disabled={isBatchRunning}
         >
-          <FolderOutput data-icon="inline-start" aria-hidden />
           Elegir carpeta de salida
-        </Button>
+        </AppButton>
         {batchOutputDir ? (
           <p className="path-hint" title={batchOutputDir}>
             {batchOutputDir}
@@ -228,6 +231,8 @@ export function BatchPanel() {
         <h2 className="column__title">Factor</h2>
         <ToggleGroup
           type="single"
+          variant="outline"
+          spacing={0}
           value={String(batchFactor)}
           onValueChange={(value) => {
             if (value === '2' || value === '4') {
@@ -236,9 +241,10 @@ export function BatchPanel() {
           }}
           disabled={isBatchRunning}
           aria-label="Factor de escala"
+          className="w-full"
         >
           {FACTOR_OPTIONS.map((factor) => (
-            <ToggleGroupItem key={factor} value={String(factor)}>
+            <ToggleGroupItem key={factor} value={String(factor)} className="flex-1">
               {factor}x
             </ToggleGroupItem>
           ))}
