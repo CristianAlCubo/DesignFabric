@@ -1,0 +1,64 @@
+[project]
+name = "designfabricv2"
+version = "0.1.0"
+description = "Fusión de ClearCut (eliminación de fondo + escalado) y DesignFabric (generación de stickers vía Ollama + FLUX.2 Klein), servida por un único backend FastAPI y consumida por una app de escritorio Electron."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "pillow>=12.3.0",
+    "pydantic-settings>=2.6.0",
+    "rich>=15.0.0",
+    "uvicorn[standard]>=0.32.0",
+    "websockets>=13.1",
+    # ClearCut (remove background / scale / vectorize)
+    "cairosvg>=2.9.0",
+    "numpy>=2.4.6",
+    "onnxruntime>=1.20.0",
+    "opencv-python>=5.0.0.93",
+    "vtracer>=0.6.15",
+]
+
+[project.optional-dependencies]
+local-ai = [
+    # DesignFabric (generación IA)
+    "accelerate>=1.14.0",
+    "diffusers>=0.39.0",
+    "langchain>=1.3.14",
+    "langchain-ollama>=1.1.0",
+    "ollama>=0.4.0",
+    "protobuf>=7.35.1",
+    "sentencepiece>=0.2.2",
+    "torch>=2.13.0",
+    "transformers>=5.14.1",
+]
+sr-gpu = [
+    "spandrel>=0.4.0",
+]
+dev = [
+    "httpx>=0.27.0",
+    "mypy>=2.3.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=0.24.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.15.22",
+    "pyinstaller>=6.11.0",
+]
+
+[project.scripts]
+clearcut = "designfabricv2.cli.main:clearcut_cli"
+designfabric = "designfabricv2.cli.main:designfabric_cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/designfabricv2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: tests that require AI models or CUDA",
+]

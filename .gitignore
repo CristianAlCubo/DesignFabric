@@ -1,0 +1,42 @@
+# Local / temporary outputs
+.local/
+tmp/
+salida/
+output/
+backend/output/
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Node / Electron
+node_modules/
+apps/desktop/out/
+apps/desktop/release/
+apps/desktop/.vite/
+packages/bridge/dist/
+*.log
+
+# Packaging / PyInstaller / release artifacts
+packaging/build/
+packaging/build-span/
+packaging/dist/
+packaging/release/
+packaging/vendor/
+dist-release/
+
+# Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Sample inputs (keep directory placeholder)
+samples/input/*
+!samples/input/.gitkeep
