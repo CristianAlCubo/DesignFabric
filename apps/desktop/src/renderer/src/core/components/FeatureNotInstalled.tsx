@@ -22,7 +22,7 @@ export function FeatureNotInstalled({ onInstalled }: FeatureNotInstalledProps) {
     setInstalling(true)
     setError(null)
     try {
-      await window.designfabricv2.installLocalAiLater()
+      await window.designfabric.installLocalAiLater()
       onInstalled()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo instalar el módulo de IA local.')

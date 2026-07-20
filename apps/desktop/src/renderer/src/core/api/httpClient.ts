@@ -1,5 +1,5 @@
 /**
- * Cliente HTTP mínimo hacia el backend local único de DesignFabricV2. La URL
+ * Cliente HTTP mínimo hacia el backend local único de DesignFabric. La URL
  * base se resuelve una sola vez (vía preload/IPC, ver `src/preload/index.ts`)
  * y se cachea en memoria para el resto de la sesión del renderer.
  */
@@ -9,7 +9,7 @@ let cachedBaseUrl: string | null = null
 /** URL base del backend (ej. `http://127.0.0.1:8756`), resuelta vía IPC y cacheada. */
 export async function getBackendBaseUrl(): Promise<string> {
   if (cachedBaseUrl) return cachedBaseUrl
-  cachedBaseUrl = await window.designfabricv2.getBackendBaseUrl()
+  cachedBaseUrl = await window.designfabric.getBackendBaseUrl()
   return cachedBaseUrl
 }
 

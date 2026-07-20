@@ -1,0 +1,138 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+DesignFabric is a monorepo fusing two former projects — **ClearCut** (background removal +
+upscaling/vectorization) and **DesignFabric** (sticker generation via Ollama + FLUX.2 Klein) —
+into one Electron desktop app backed by a single FastAPI backend. All tools live as tabs of one
+tabpane: background removal, scale/vectorize, ClearCut batch processing, AI batch generation, and
+AI single-image generation.
+
+## Commands
+
+```bash
+# Setup (backend uv sync + frontend npm install)
+npm run setup
+
+# Backend dev server (FastAPI, port 8756)
+cd backend && uv run uvicorn designfabric.api.app:app --reload --port 8756
+# or from repo root:
+npm run backend
+
+# Backend tests
+cd backend && uv run pytest -v          # or: npm run test:core / npm run test
+uv run pytest tests/api/test_jobs.py    # single file
+uv run pytest tests/api/test_jobs.py::test_name -v   # single test
+uv run pytest -m "not integration"      # skip tests needing AI models/CUDA
+
+# Backend lint/typecheck
+cd backend && uv run ruff check .
+cd backend && uv run mypy src
+
+# Frontend typecheck
+npm run typecheck   # runs tsc --noEmit for both node and web tsconfigs
+
+# Desktop app (spawns the backend automatically)
+npm run dev
+
+# Standalone CLIs (no Electron required)
+uv run clearcut remove ...
+uv run clearcut scale ...
+uv run designfabric --n 5
+
+# Versioning: VERSION file is the single source of truth
+npm run version:check   # verify package.json/pyproject.toml match VERSION
+npm run version:sync    # sync them
+
+# Packaging (produces .AppImage / portable .exe; AI deps installed on first launch)
+npm run build:app
+npm run release
+```
+
+## Architecture
+
+### Two processes, one contract
+
+The Electron app never talks to Python domain code directly — it spawns a FastAPI backend
+(`backend/src/designfabric/api/app.py`) as a child process and speaks HTTP + WebSocket to it
+(`apps/desktop/src/main/backend-process.ts` spawns `uv run uvicorn ...`, polls `/health`, and
+streams the child's stdout/stderr into the in-app log console). In dev, it uses the `uv` on PATH
+against the repo's `backend/`. In packaged builds, `pythonSetup.ts` copies `backend/` into
+`userData` and runs `uv sync` there on first launch (or after an update) so `backend/` stays a
+self-contained Python package with no path dependencies outside itself — this is also why
+`backend/README.md` exists standalone.
+
+The backend serves a `local-ai` optional dependency group (torch/diffusers/transformers/ollama —
+several GB) that is *not* bundled in the installer. `GET /features` reports whether it's
+installed; the desktop app shows a first-run wizard (`SetupWizard.tsx`) to install it then or
+defer, and the AI tabs render a "not installed" state via `FeatureNotInstalled.tsx` until it is.
+`api/registry.py` degrades gracefully: it `try/except ImportError`s the GPU-only routers
+(`batch_generation`, `single_image`) and sets `LOCAL_AI_AVAILABLE` accordingly — ClearCut's
+CPU-only tools keep working regardless.
+
+### Feature Registry pattern (both sides)
+
+Adding a new tool/tab means registering one module — no `if/else` or import scattered across
+switches:
+
+- **Backend** (`backend/src/designfabric/api/registry.py`): `FEATURE_REGISTRY` is a tuple of
+  `FeatureModule` entries, each bundling a name, an `APIRouter`, the `JobType`s it produces, its
+  `worker_affinity` (`"gpu"` or `"cpu"`), and a `build_handlers(settings, store)` factory.
+  `app.py`'s `create_app()` iterates the registry to mount routers and build each worker's handler
+  dict — it has zero feature-specific logic itself.
+- **Frontend** (`apps/desktop/src/renderer/src/core/registry/featureRegistry.ts`): a `Map`-backed
+  singleton that each feature module registers a `TabDescriptor` into on import (see
+  `features/index.ts`), so `App.tsx` never needs to know the feature list up front.
+
+### Async job system: GPU vs CPU worker pools
+
+All heavy work (background removal, upscaling, AI generation) runs as an async job, not inline in
+a request handler. `backend/src/designfabric/jobs/`:
+
+- `JobDispatcher` routes a submitted job to the GPU or CPU `JobQueue` based on the
+  `affinity_by_type` map built from `FEATURE_REGISTRY` in `app.py`.
+- `GpuJobWorker` runs a **single** daemon thread — Ollama and FLUX.2 share VRAM and cannot run
+  concurrently, so GPU jobs are strictly serialized.
+- `CpuJobWorker` runs a **pool** of `cpu_count() - 1` daemon threads — ClearCut's onnxruntime/CPU
+  work parallelizes fine.
+- Neither worker class knows about any specific feature: `JobHandler` callables are injected from
+  the registry's `build_handlers`, so a new job type never requires touching `worker.py`.
+- Progress updates flow back through `WebSocketProgressReporter` / `ProgressHub`
+  (`jobs/ws_reporter.py`), bound to the FastAPI event loop captured at `lifespan` startup (workers
+  run on plain threads, so this is how thread → asyncio-loop progress publishing works) and
+  consumed by the frontend via `useJobProgress.ts`.
+
+### Backend layout
+
+`backend/src/designfabric/`:
+- `api/` — FastAPI layer: `app.py` (factory), `registry.py` (feature registry), `routers/` (one
+  module per feature, each exposing a `router` + `build_handlers`), `dispatcher.py`,
+  `schemas.py`/`serializers.py`.
+- `core/` — domain logic, framework-agnostic: `imaging/` (background removal, upscaling
+  strategies incl. AI upscalers, vectorization via `vtracer`, batch processing pipeline) and
+  `generation/` (Ollama prompt generation + FLUX.2 Klein sticker pipeline).
+- `jobs/` — the queue/worker/dispatcher system described above.
+- `cli/` — standalone Typer/Rich-based CLIs (`clearcut`, `designfabric`) that call the same `core/`
+  domain code directly, independent of the API/Electron.
+
+### Frontend layout
+
+`apps/desktop/src/`:
+- `main/` — Electron main process: window management, backend process lifecycle
+  (`backend-process.ts`, `pythonSetup.ts`, `runtime.ts`), IPC setup, log store, preferences.
+- `preload/` — context-bridge IPC surface exposed to the renderer.
+- `renderer/src/core/` — shared infra: feature registry, API HTTP client, shared hooks
+  (`useJobProgress`, `useLocalAiAvailability`, ...), shared components (`TabPane`,
+  `JobProgressPanel`, `SetupWizard`, `FeatureNotInstalled`, ...).
+- `renderer/src/features/<feature>/` — one directory per tab (`remove-background`, `scale`,
+  `clearcut-batch`, `designfabric-batch`, `designfabric-single`), each self-registering into the
+  feature registry via its `index.ts`.
+
+### Tests
+
+Backend tests live in `backend/tests/`, mirroring `src/designfabric/` (`api/`, `core/imaging/`,
+`core/generation/`, `jobs/`, `cli/`). Tests needing actual AI models or CUDA are marked
+`integration` (`pytest -m "not integration"` to skip them). `backend/tests/api/conftest.py` sets up
+the FastAPI test client/fixtures.

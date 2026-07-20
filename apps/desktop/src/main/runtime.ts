@@ -31,7 +31,7 @@ export interface BackendRuntime {
  * (electron-vite compila `src/main` a `out/main`). En dev, el backend Python
  * vive en la raíz del monorepo, 4 niveles de `..` más arriba:
  *
- *   out/main (__dirname) -> out -> desktop -> apps -> DesignFabricV2 -> backend
+ *   out/main (__dirname) -> out -> desktop -> apps -> DesignFabric -> backend
  */
 const DEV_BACKEND_DIR = join(__dirname, '../../../../backend')
 

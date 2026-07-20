@@ -10,7 +10,7 @@ import { resolveBackendRuntime } from './runtime'
 let backendProcess: ChildProcessByStdio<null, Readable, Readable> | null = null
 
 /**
- * Lanza el backend FastAPI (`uv run uvicorn designfabricv2.api.app:app`) como
+ * Lanza el backend FastAPI (`uv run uvicorn designfabric.api.app:app`) como
  * proceso hijo.
  *
  * En dev usa el `uv` del PATH y el `backend/` del propio repo (sin cambios de
@@ -32,7 +32,7 @@ export async function spawnBackend(extras: string[] = []): Promise<void> {
 
   const child = spawn(
     runtime.uvBin,
-    ['run', 'uvicorn', 'designfabricv2.api.app:app', '--host', '127.0.0.1', '--port', String(backendPort)],
+    ['run', 'uvicorn', 'designfabric.api.app:app', '--host', '127.0.0.1', '--port', String(backendPort)],
     {
       cwd: runtime.projectDir,
       env: { ...process.env, DESIGNFABRIC_API_PORT: String(backendPort) },

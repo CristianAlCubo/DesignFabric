@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from designfabricv2.core.imaging.model_assets import ensure_models
-from designfabricv2.core.imaging.upscale_config import UpscaleConfig
+from designfabric.core.imaging.model_assets import ensure_models
+from designfabric.core.imaging.upscale_config import UpscaleConfig
 
 
 def test_ensure_models_downloads_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

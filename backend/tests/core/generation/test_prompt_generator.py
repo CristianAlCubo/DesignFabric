@@ -10,8 +10,8 @@ import pytest
 # `local-ai` instalado, ni siquiera se puede colectar el test file.
 pytest.importorskip("langchain_ollama")
 
-from designfabricv2.core.progress import Phase, ProgressEventType
-from designfabricv2.core.generation.prompt_generator import (
+from designfabric.core.progress import Phase, ProgressEventType
+from designfabric.core.generation.prompt_generator import (
     STYLE_SUFFIX,
     apply_style_suffix,
     generate_concepts,
@@ -24,7 +24,7 @@ def _mock_llm(mocker, contents: list[str]):
     responses = [MagicMock(content=c) for c in contents]
     llm_instance = MagicMock()
     llm_instance.invoke.side_effect = responses
-    mocker.patch("designfabricv2.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
+    mocker.patch("designfabric.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
     return llm_instance
 
 
@@ -49,7 +49,7 @@ def test_generate_concepts_happy_path(mocker, fake_reporter):
 def test_generate_concepts_retries_then_succeeds(mocker, fake_reporter):
     llm_instance = MagicMock()
     llm_instance.invoke.side_effect = [RuntimeError("timeout"), MagicMock(content="a grumpy owl")]
-    mocker.patch("designfabricv2.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
+    mocker.patch("designfabric.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
 
     prompts = generate_concepts(1, reporter=fake_reporter)
 
@@ -61,7 +61,7 @@ def test_generate_concepts_retries_then_succeeds(mocker, fake_reporter):
 def test_generate_concepts_raises_when_all_concepts_fail(mocker, fake_reporter):
     llm_instance = MagicMock()
     llm_instance.invoke.side_effect = RuntimeError("ollama down")
-    mocker.patch("designfabricv2.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
+    mocker.patch("designfabric.core.generation.prompt_generator.ChatOllama", return_value=llm_instance)
 
     with pytest.raises(RuntimeError, match="no generó ningún concepto"):
         generate_concepts(1, reporter=fake_reporter)
@@ -70,7 +70,7 @@ def test_generate_concepts_raises_when_all_concepts_fail(mocker, fake_reporter):
 
 
 def test_unload_ollama_swallows_errors_and_warns(mocker, fake_reporter):
-    mock_generate = mocker.patch("designfabricv2.core.generation.prompt_generator.ollama_client.generate")
+    mock_generate = mocker.patch("designfabric.core.generation.prompt_generator.ollama_client.generate")
     mock_generate.side_effect = RuntimeError("connection refused")
 
     unload_ollama(model="fake-model", reporter=fake_reporter)

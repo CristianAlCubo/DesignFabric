@@ -262,9 +262,9 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
   selectInputImage: async () => {
     set({ error: null, warning: null })
     try {
-      const path = await window.designfabricv2.openImageDialog()
+      const path = await window.designfabric.openImageDialog()
       if (!path) return
-      const preview = await window.designfabricv2.getImagePreview(path)
+      const preview = await window.designfabric.getImagePreview(path)
       const size = await probeImageSize(preview)
       set({
         inputPath: path,
@@ -401,7 +401,7 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
 
     set({ isExporting: true, error: null })
     try {
-      await window.designfabricv2.exportImage(outputPreview, 'escalado.png')
+      await window.designfabric.exportImage(outputPreview, 'escalado.png')
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'No se pudo exportar la imagen.' })
     } finally {

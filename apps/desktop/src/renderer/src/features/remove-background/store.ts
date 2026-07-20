@@ -114,9 +114,9 @@ export const useRemoveBackgroundStore = create<RemoveBackgroundState>((set, get)
   selectInputImage: async () => {
     set({ error: null })
     try {
-      const path = await window.designfabricv2.openImageDialog()
+      const path = await window.designfabric.openImageDialog()
       if (!path) return
-      const preview = await window.designfabricv2.getImagePreview(path)
+      const preview = await window.designfabric.getImagePreview(path)
       set({
         inputPath: path,
         inputPreview: preview,
@@ -163,7 +163,7 @@ export const useRemoveBackgroundStore = create<RemoveBackgroundState>((set, get)
 
     set({ isExporting: true, error: null })
     try {
-      await window.designfabricv2.exportImage(outputPreview, 'sin-fondo.png')
+      await window.designfabric.exportImage(outputPreview, 'sin-fondo.png')
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'No se pudo exportar la imagen.' })
     } finally {

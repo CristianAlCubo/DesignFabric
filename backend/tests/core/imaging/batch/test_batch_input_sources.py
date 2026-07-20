@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from designfabricv2.core.imaging.batch.input_sources import (
+from designfabric.core.imaging.batch.input_sources import (
     FilesInputSource,
     FolderInputSource,
     create_input_source,

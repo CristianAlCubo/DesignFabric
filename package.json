@@ -1,8 +1,8 @@
 {
-  "name": "designfabricv2",
+  "name": "designfabric",
   "private": true,
   "version": "0.1.0",
-  "description": "Monorepo de DesignFabricV2: backend Python único (dominio + jobs + API FastAPI) y app de escritorio Electron con las tools de ClearCut y DesignFabric unificadas en un tabpane.",
+  "description": "Monorepo de DesignFabric: backend Python único (dominio + jobs + API FastAPI) y app de escritorio Electron con las tools de ClearCut y DesignFabric unificadas en un tabpane.",
   "workspaces": [
     "apps/desktop"
   ],
@@ -10,10 +10,10 @@
     "setup": "npm run setup:backend && npm run setup:frontend",
     "setup:backend": "cd backend && uv sync --extra dev",
     "setup:frontend": "npm install",
-    "dev": "npm run dev -w @designfabricv2/desktop",
-    "build:app": "npm run build -w @designfabricv2/desktop",
-    "backend": "cd backend && uv run uvicorn designfabricv2.api.app:app --reload --port 8756",
-    "typecheck": "npm run typecheck -w @designfabricv2/desktop",
+    "dev": "npm run dev -w @designfabric/desktop",
+    "build:app": "npm run build -w @designfabric/desktop",
+    "backend": "cd backend && uv run uvicorn designfabric.api.app:app --reload --port 8756",
+    "typecheck": "npm run typecheck -w @designfabric/desktop",
     "test:core": "cd backend && uv run pytest -v",
     "test": "npm run test:core",
     "version:sync": "node packaging/version-sync.mjs",

@@ -1,4 +1,4 @@
-# DesignFabricV2
+# DesignFabric
 
 Fusión de **ClearCut** (eliminación de fondo de imágenes + escalado/vectorización) y
 **DesignFabric** (generación de stickers vía Ollama + FLUX.2 Klein) en una sola app de
@@ -23,7 +23,7 @@ npm run setup                  # backend (uv sync) + frontend (npm install)
 
 # Backend
 cd backend
-uv run uvicorn designfabricv2.api.app:app --reload --port 8756
+uv run uvicorn designfabric.api.app:app --reload --port 8756
 uv run pytest
 
 # CLIs standalone (no requieren Electron)

@@ -10,7 +10,7 @@ export function TabPane({ tabs, activeId, onChange }: TabPaneProps) {
   const orderedTabs = [...tabs].sort((a, b) => a.order - b.order)
 
   return (
-    <div className="tabpane" role="tablist" aria-label="Funciones de DesignFabricV2">
+    <div className="tabpane" role="tablist" aria-label="Funciones de DesignFabric">
       {orderedTabs.map((tab) => {
         const selected = tab.id === activeId
         return (

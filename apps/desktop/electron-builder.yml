@@ -1,7 +1,7 @@
-appId: com.designfabricv2.app
-productName: DesignFabricV2
-executableName: DesignFabricV2
-copyright: Copyright © DesignFabricV2
+appId: com.designfabric.app
+productName: DesignFabric
+executableName: DesignFabric
+copyright: Copyright © DesignFabric
 electronVersion: 36.9.5
 directories:
   output: ../../dist
@@ -27,18 +27,18 @@ linux:
   target:
     - AppImage
   category: Graphics
-  artifactName: DesignFabricV2-${version}-${arch}.AppImage
-  executableName: DesignFabricV2
+  artifactName: DesignFabric-${version}-${arch}.AppImage
+  executableName: DesignFabric
   extraResources:
     - from: ../../packaging/vendor/uv/linux-x64/uv
       to: uv/uv
 win:
   target:
     - portable
-  artifactName: DesignFabricV2-${version}-win-${arch}.exe
+  artifactName: DesignFabric-${version}-win-${arch}.exe
   extraResources:
     - from: ../../packaging/vendor/uv/win-x64/uv.exe
       to: uv/uv.exe
 portable:
-  artifactName: DesignFabricV2-${version}-win-${arch}.exe
+  artifactName: DesignFabric-${version}-win-${arch}.exe
 npmRebuild: false

@@ -159,7 +159,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
   selectBatchFolder: async () => {
     set({ batchError: null })
     try {
-      const directory = await window.designfabricv2.openDirectoryDialog()
+      const directory = await window.designfabric.openDirectoryDialog()
       if (!directory) return
       set({
         batchInputMode: 'folder',
@@ -175,7 +175,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
   selectBatchFiles: async () => {
     set({ batchError: null })
     try {
-      const paths = await window.designfabricv2.openImagesDialog()
+      const paths = await window.designfabric.openImagesDialog()
       if (paths.length === 0) return
       set({
         batchInputMode: 'files',
@@ -191,7 +191,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
   selectBatchOutputDir: async () => {
     set({ batchError: null })
     try {
-      const directory = await window.designfabricv2.openDirectoryDialog()
+      const directory = await window.designfabric.openDirectoryDialog()
       if (!directory) return
       set({ batchOutputDir: directory, batchReport: null })
     } catch (err) {
@@ -311,7 +311,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
     const { batchOutputDir } = get()
     if (!batchOutputDir) return
     try {
-      const error = await window.designfabricv2.openPath(batchOutputDir)
+      const error = await window.designfabric.openPath(batchOutputDir)
       if (error) set({ batchError: error })
     } catch (err) {
       set({ batchError: err instanceof Error ? err.message : 'No se pudo abrir la carpeta de salida.' })

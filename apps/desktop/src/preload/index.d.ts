@@ -5,7 +5,7 @@ import type { SetupPreferences } from '@shared/setupPreferences'
 
 declare global {
   interface Window {
-    designfabricv2: {
+    designfabric: {
       getBackendBaseUrl: () => Promise<string>
 
       /** Historial de logs acumulado (ring buffer de 2000 entradas) del proceso main + backend. */

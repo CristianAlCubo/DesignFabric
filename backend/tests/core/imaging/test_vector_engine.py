@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import pytest
 
-from designfabricv2.core.imaging.vector_engine import (
+from designfabric.core.imaging.vector_engine import (
     ExportConfig,
     TraceConfig,
     VectorEngine,

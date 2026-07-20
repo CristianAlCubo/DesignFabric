@@ -1,8 +1,8 @@
 {
-  "name": "@designfabricv2/desktop",
+  "name": "@designfabric/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "App de escritorio Electron de DesignFabricV2 (tabpane unificado de ClearCut + DesignFabric).",
+  "description": "App de escritorio Electron de DesignFabric (tabpane unificado de ClearCut + DesignFabric).",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "env -u ELECTRON_RUN_AS_NODE -u ELECTRON_SKIP_BINARY_DOWNLOAD electron-vite dev",

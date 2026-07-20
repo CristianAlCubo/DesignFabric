@@ -8,10 +8,10 @@ import cv2
 import numpy as np
 import pytest
 
-from designfabricv2.core.imaging.ai_upscalers.common import choose_model_scale_factor, resolve_target_size
-from designfabricv2.core.imaging.upscale_config import UpscaleConfig, load_upscale_config
-from designfabricv2.core.imaging.upscale_pipeline import ScaleOutcome, scale_image
-from designfabricv2.core.imaging.upscale_strategies import (
+from designfabric.core.imaging.ai_upscalers.common import choose_model_scale_factor, resolve_target_size
+from designfabric.core.imaging.upscale_config import UpscaleConfig, load_upscale_config
+from designfabric.core.imaging.upscale_pipeline import ScaleOutcome, scale_image
+from designfabric.core.imaging.upscale_strategies import (
     RealEsrganUpscaleStrategy,
     UpscaleError,
     UpscaleRequest,
@@ -20,7 +20,7 @@ from designfabricv2.core.imaging.upscale_strategies import (
     VectorUpscaleStrategy,
     create_upscale_strategy,
 )
-from designfabricv2.core.imaging.vector_engine import ExportConfig, TraceConfig
+from designfabric.core.imaging.vector_engine import ExportConfig, TraceConfig
 
 
 def _make_bgra(size: int = 64) -> np.ndarray:
@@ -95,7 +95,7 @@ def test_vector_strategy_honors_size() -> None:
 
 
 def test_pipeline_passthrough_when_all_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from designfabricv2.core.imaging import upscale_pipeline as pipeline
+    from designfabric.core.imaging import upscale_pipeline as pipeline
 
     input_path = _make_png(tmp_path / "in.png", size=48)
     output_path = tmp_path / "out.png"
@@ -169,7 +169,7 @@ def test_realesrgan_integration_if_model_present() -> None:
     if not model.is_file():
         pytest.skip("Modelo Real-ESRGAN no presente")
     pytest.importorskip("onnxruntime")
-    from designfabricv2.core.imaging.ai_upscalers.realesrgan import RealEsrganBackend
+    from designfabric.core.imaging.ai_upscalers.realesrgan import RealEsrganBackend
 
     backend = RealEsrganBackend(model)
     out = backend.upscale_to_factor(_make_bgra(32), 4)

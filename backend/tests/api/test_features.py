@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from starlette.testclient import TestClient
 
-from designfabricv2.api.registry import LOCAL_AI_AVAILABLE
+from designfabric.api.registry import LOCAL_AI_AVAILABLE
 
 
 def test_features_reports_local_ai_state(client):
@@ -22,9 +22,9 @@ def test_features_reports_local_ai_state(client):
 
 def test_features_reports_unavailable_when_local_ai_missing(monkeypatch, tmp_path):
     """Simula el entorno sin el extra `local-ai`: solo deberían quedar los 3 módulos CPU."""
-    from designfabricv2.api import registry
-    from designfabricv2.api.app import create_app
-    from designfabricv2.api.routers import features
+    from designfabric.api import registry
+    from designfabric.api.app import create_app
+    from designfabric.api.routers import features
 
     cpu_only = tuple(m for m in registry.FEATURE_REGISTRY if m.worker_affinity == "cpu")
 
@@ -35,7 +35,7 @@ def test_features_reports_unavailable_when_local_ai_missing(monkeypatch, tmp_pat
     monkeypatch.setattr(registry, "FEATURE_REGISTRY", cpu_only)
     monkeypatch.setattr(features, "LOCAL_AI_AVAILABLE", False)
     monkeypatch.setattr(features, "FEATURE_REGISTRY", cpu_only)
-    monkeypatch.setattr("designfabricv2.api.app.FEATURE_REGISTRY", cpu_only)
+    monkeypatch.setattr("designfabric.api.app.FEATURE_REGISTRY", cpu_only)
     monkeypatch.setenv("DESIGNFABRIC_OUTPUT_DIR", str(tmp_path / "output"))
 
     app = create_app()

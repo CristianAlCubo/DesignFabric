@@ -11,8 +11,8 @@ import pytest
 pytest.importorskip("torch")
 pytest.importorskip("diffusers")
 
-from designfabricv2.core.progress import Phase, ProgressEventType
-from designfabricv2.core.generation.sticker_generator import generate_stickers, slugify
+from designfabric.core.progress import Phase, ProgressEventType
+from designfabric.core.generation.sticker_generator import generate_stickers, slugify
 
 
 def _mock_pipeline(mocker, images: list[MagicMock]):
@@ -21,11 +21,11 @@ def _mock_pipeline(mocker, images: list[MagicMock]):
     También parchea `torch.Generator` (requiere CUDA real) para que los tests
     corran en cualquier máquina, con o sin GPU.
     """
-    mocker.patch("designfabricv2.core.generation.sticker_generator.torch.Generator")
+    mocker.patch("designfabric.core.generation.sticker_generator.torch.Generator")
     pipe_instance = MagicMock()
     pipe_instance.side_effect = [MagicMock(images=[img]) for img in images]
     mocker.patch(
-        "designfabricv2.core.generation.sticker_generator.Flux2KleinPipeline.from_pretrained",
+        "designfabric.core.generation.sticker_generator.Flux2KleinPipeline.from_pretrained",
         return_value=pipe_instance,
     )
     return pipe_instance
@@ -56,12 +56,12 @@ def test_generate_stickers_saves_each_image(tmp_path, mocker, fake_reporter):
 
 
 def test_generate_stickers_continues_after_individual_failure(tmp_path, mocker, fake_reporter):
-    mocker.patch("designfabricv2.core.generation.sticker_generator.torch.Generator")
+    mocker.patch("designfabric.core.generation.sticker_generator.torch.Generator")
     pipe_instance = MagicMock()
     good_image = MagicMock()
     pipe_instance.side_effect = [RuntimeError("OOM"), MagicMock(images=[good_image])]
     mocker.patch(
-        "designfabricv2.core.generation.sticker_generator.Flux2KleinPipeline.from_pretrained",
+        "designfabric.core.generation.sticker_generator.Flux2KleinPipeline.from_pretrained",
         return_value=pipe_instance,
     )
 

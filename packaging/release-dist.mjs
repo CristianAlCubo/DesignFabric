@@ -37,8 +37,8 @@ function readVersion() {
 
 function assertArtifacts(version) {
   const expected = [
-    `DesignFabricV2-${version}-x86_64.AppImage`,
-    `DesignFabricV2-${version}-win-x64.exe`,
+    `DesignFabric-${version}-x86_64.AppImage`,
+    `DesignFabric-${version}-win-x64.exe`,
   ];
   const missing = expected.filter((name) => !existsSync(path.join(distDir, name)));
   if (missing.length > 0) {
@@ -59,7 +59,7 @@ mkdirSync(distDir, { recursive: true });
 
 run("npm", ["run", "version:sync"]);
 const version = readVersion();
-console.log(`==> DesignFabricV2 ${version} → dist/`);
+console.log(`==> DesignFabric ${version} → dist/`);
 
 // Descarga (si hace falta) los binarios standalone de `uv` para Linux/Windows
 // que se bundlean en el instalador (ver electron-builder.yml → extraResources).

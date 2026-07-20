@@ -16,7 +16,7 @@ export function createMainWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 560,
     show: false,
-    title: 'DesignFabricV2',
+    title: 'DesignFabric',
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

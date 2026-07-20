@@ -1,6 +1,6 @@
-# designfabricv2 (backend)
+# designfabric (backend)
 
-Backend Python (FastAPI + jobs GPU/CPU) de DesignFabricV2: fusión del dominio
+Backend Python (FastAPI + jobs GPU/CPU) de DesignFabric: fusión del dominio
 de ClearCut (eliminación de fondo, escalado/vectorizado) y de DesignFabric
 (generación de stickers vía Ollama + FLUX.2 Klein).
 

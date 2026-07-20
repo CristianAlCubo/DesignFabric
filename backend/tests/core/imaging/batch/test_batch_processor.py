@@ -10,15 +10,15 @@ from typing import Any
 import numpy as np
 import pytest
 
-from designfabricv2.core.imaging.background_remover import RemovalConfig
-from designfabricv2.core.imaging.batch.input_sources import FilesInputSource, FolderInputSource
-from designfabricv2.core.imaging.batch.output_targets import DirectoryOutputTarget
-from designfabricv2.core.imaging.batch.processor import BatchProcessor, emit_item_line, run_batch
-from designfabricv2.core.imaging.batch.types import ITEM_PREFIX, BatchConfig, BatchItemResult
-from designfabricv2.core.imaging.silhouette_strategies import SilhouetteStrategy
-from designfabricv2.core.imaging.upscale_pipeline import ScaleOutcome
-from designfabricv2.core.imaging.upscale_strategies import UpscaleResult
-from designfabricv2.core.progress import Phase, ProgressEvent, ProgressEventType
+from designfabric.core.imaging.background_remover import RemovalConfig
+from designfabric.core.imaging.batch.input_sources import FilesInputSource, FolderInputSource
+from designfabric.core.imaging.batch.output_targets import DirectoryOutputTarget
+from designfabric.core.imaging.batch.processor import BatchProcessor, emit_item_line, run_batch
+from designfabric.core.imaging.batch.types import ITEM_PREFIX, BatchConfig, BatchItemResult
+from designfabric.core.imaging.silhouette_strategies import SilhouetteStrategy
+from designfabric.core.imaging.upscale_pipeline import ScaleOutcome
+from designfabric.core.imaging.upscale_strategies import UpscaleResult
+from designfabric.core.progress import Phase, ProgressEvent, ProgressEventType
 
 
 class FakeProgressReporter:

@@ -26,7 +26,7 @@ export function SetupWizard({ onCompleted }: SetupWizardProps) {
     setChoice(value)
     setError(null)
     try {
-      const prefs = await window.designfabricv2.completeWizard(value)
+      const prefs = await window.designfabric.completeWizard(value)
       onCompleted(prefs)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo completar la configuración.')
@@ -36,7 +36,7 @@ export function SetupWizard({ onCompleted }: SetupWizardProps) {
   return (
     <div className="wizard-overlay">
       <div className="wizard-card">
-        <h1>Bienvenido a DesignFabricV2</h1>
+        <h1>Bienvenido a DesignFabric</h1>
         <p>
           Esta app incluye generación de imágenes con IA local (Ollama + FLUX.2). Ese módulo pesa
           varios GB y requiere descarga desde internet.

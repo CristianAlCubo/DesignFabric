@@ -16,11 +16,11 @@ export function useAppLogs(): LogEntry[] {
   useEffect(() => {
     let cancelled = false
 
-    window.designfabricv2.getLogHistory().then((history) => {
+    window.designfabric.getLogHistory().then((history) => {
       if (!cancelled) setEntries(history)
     })
 
-    const unsubscribe = window.designfabricv2.onLog((entry) => {
+    const unsubscribe = window.designfabric.onLog((entry) => {
       setEntries((previous) => {
         const next = [...previous, entry]
         return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next

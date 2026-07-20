@@ -12,7 +12,7 @@ Primer release: fusión de **ClearCut** (eliminación de fondo y escalado/vector
 ### Added
 
 - App de escritorio Electron con un tabpane unificado (layout de ClearCut) y paleta de colores de DesignFabric, con 5 herramientas: Eliminación de fondo, Escalado, Lote (ClearCut), Generación por lotes (IA) e Imagen única (IA).
-- Backend único en FastAPI (`designfabricv2`) que expone las 5 herramientas vía HTTP + WebSocket, con un sistema de jobs asíncronos con dos pools de ejecución: `GpuJobWorker` (serializado, para Ollama/FLUX.2) y `CpuJobWorker` (paralelo, para ClearCut).
+- Backend único en FastAPI (`designfabric`) que expone las 5 herramientas vía HTTP + WebSocket, con un sistema de jobs asíncronos con dos pools de ejecución: `GpuJobWorker` (serializado, para Ollama/FLUX.2) y `CpuJobWorker` (paralelo, para ClearCut).
 - Feature Registry (backend y frontend): agregar una herramienta nueva es registrar un módulo, sin tocar switches ni imports dispersos.
 - CLIs standalone conservados: `clearcut` (remove/scale/batch/ensure-models) y `designfabric` (generación por lotes vía Ollama+FLUX.2), independientes de la app de escritorio.
 - Ventana siempre maximizada, con la topbar nativa del sistema operativo visible y sin la barra de menú por defecto de Electron.

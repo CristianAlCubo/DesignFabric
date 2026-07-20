@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import pytest
 
-from designfabricv2.core.imaging.background_remover import (
+from designfabric.core.imaging.background_remover import (
     RemovalConfig,
     StickerProcessor,
     apply_mask,
@@ -17,7 +17,7 @@ from designfabricv2.core.imaging.background_remover import (
     process_image,
     save_image,
 )
-from designfabricv2.core.imaging.silhouette_strategies import ColorBackgroundStrategy, WhiteBackgroundStrategy
+from designfabric.core.imaging.silhouette_strategies import ColorBackgroundStrategy, WhiteBackgroundStrategy
 
 
 def test_load_image_returns_bgr(synthetic_white_bg_path: Path) -> None:

@@ -41,6 +41,6 @@ const api = {
   installLocalAiLater: (): Promise<void> => ipcRenderer.invoke('setup:install-local-ai-later')
 }
 
-contextBridge.exposeInMainWorld('designfabricv2', api)
+contextBridge.exposeInMainWorld('designfabric', api)
 
-export type DesignFabricV2Api = typeof api
+export type DesignFabricApi = typeof api

@@ -407,7 +407,7 @@ wheels = [
 ]
 
 [[package]]
-name = "designfabricv2"
+name = "designfabric"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

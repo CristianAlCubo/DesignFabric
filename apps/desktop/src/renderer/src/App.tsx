@@ -33,7 +33,7 @@ function AppShell() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__brand">DesignFabricV2</h1>
+        <h1 className="app__brand">DesignFabric</h1>
         <button
           type="button"
           className="logs-toggle"
@@ -61,7 +61,7 @@ function AppGate() {
   const [prefs, setPrefs] = useState<SetupPreferences | null>(null)
 
   useEffect(() => {
-    window.designfabricv2.getSetupPreferences().then(setPrefs)
+    window.designfabric.getSetupPreferences().then(setPrefs)
   }, [])
 
   if (prefs === null) return null

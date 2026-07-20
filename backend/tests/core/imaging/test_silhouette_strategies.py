@@ -8,8 +8,8 @@ import cv2
 import numpy as np
 import pytest
 
-from designfabricv2.core.imaging.background_remover import load_image
-from designfabricv2.core.imaging.silhouette_strategies import (
+from designfabric.core.imaging.background_remover import load_image
+from designfabric.core.imaging.silhouette_strategies import (
     ColorBackgroundStrategy,
     WhiteBackgroundStrategy,
     create_silhouette_strategy,

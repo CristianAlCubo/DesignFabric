@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from designfabricv2.api.registry import LOCAL_AI_AVAILABLE
+from designfabric.api.registry import LOCAL_AI_AVAILABLE
 from tests.api.conftest import wait_until
 
 pytestmark = pytest.mark.skipif(
@@ -74,7 +74,7 @@ def test_cancel_queued_job_succeeds(client, mocker):
     # Ocupamos al worker con un primer job lento para que el segundo quede QUEUED
     # el tiempo suficiente como para poder cancelarlo antes de que se procese.
     mocker.patch(
-        "designfabricv2.api.routers.batch_generation.run_batch",
+        "designfabric.api.routers.batch_generation.run_batch",
         side_effect=lambda *a, **k: time.sleep(0.3) or None,
     )
 

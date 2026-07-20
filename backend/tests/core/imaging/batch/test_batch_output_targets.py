@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from designfabricv2.core.imaging.batch.output_targets import DirectoryOutputTarget, create_output_target
+from designfabric.core.imaging.batch.output_targets import DirectoryOutputTarget, create_output_target
 
 
 def test_directory_output_uses_stem(tmp_path: Path) -> None:

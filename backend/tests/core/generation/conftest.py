@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from designfabricv2.core.progress import ProgressEvent
+from designfabric.core.progress import ProgressEvent
 
 
 class FakeProgressReporter:

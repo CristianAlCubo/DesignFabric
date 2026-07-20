@@ -18,11 +18,11 @@ from typing import Any
 
 import pytest
 
-from designfabricv2.jobs.models import Job, JobStatus, JobType
-from designfabricv2.jobs.queue import JobQueue
-from designfabricv2.jobs.store import JobStore
-from designfabricv2.jobs.worker import CpuJobWorker, GpuJobWorker
-from designfabricv2.jobs.ws_reporter import ProgressHub, WebSocketProgressReporter
+from designfabric.jobs.models import Job, JobStatus, JobType
+from designfabric.jobs.queue import JobQueue
+from designfabric.jobs.store import JobStore
+from designfabric.jobs.worker import CpuJobWorker, GpuJobWorker
+from designfabric.jobs.ws_reporter import ProgressHub, WebSocketProgressReporter
 
 POLL_TIMEOUT = 5.0
 POLL_INTERVAL = 0.02

@@ -1,6 +1,6 @@
 /**
  * Tipos TypeScript espejo del contrato genérico de jobs expuesto por el
- * backend único (`backend/src/designfabricv2/api/schemas.py`), compartido
+ * backend único (`backend/src/designfabric/api/schemas.py`), compartido
  * por todas las features (ClearCut y DesignFabric) vía `GET/DELETE /api/jobs*`
  * y `WS /api/jobs/{id}/ws`. Mantener sincronizado a mano.
  */

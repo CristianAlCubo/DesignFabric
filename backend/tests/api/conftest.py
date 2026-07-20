@@ -29,16 +29,16 @@ import numpy as np
 import pytest
 from starlette.testclient import TestClient
 
-from designfabricv2.api.app import create_app
-from designfabricv2.api.registry import LOCAL_AI_AVAILABLE
+from designfabric.api.app import create_app
+from designfabric.api.registry import LOCAL_AI_AVAILABLE
 
 if LOCAL_AI_AVAILABLE:
     # Estos módulos importan `torch`/`diffusers`/`langchain` transitivamente:
     # sin el extra `local-ai` instalado no se pueden importar, así que el mock
     # del pipeline de generación IA (más abajo, en `client`) también queda
     # condicionado a `LOCAL_AI_AVAILABLE`.
-    from designfabricv2.core.generation.pipeline import BatchResult
-    from designfabricv2.core.generation.sticker_generator import StickerResult
+    from designfabric.core.generation.pipeline import BatchResult
+    from designfabric.core.generation.sticker_generator import StickerResult
 
 
 @pytest.fixture(autouse=True)
@@ -61,8 +61,8 @@ def client(tmp_path, monkeypatch, mocker) -> Iterator[TestClient]:
         )
         fast_single_result = StickerResult(prompt="a fake prompt", filename=fake_filename, success=True)
 
-        mocker.patch("designfabricv2.api.routers.batch_generation.run_batch", return_value=fast_batch_result)
-        mocker.patch("designfabricv2.api.routers.single_image.run_single_image", return_value=fast_single_result)
+        mocker.patch("designfabric.api.routers.batch_generation.run_batch", return_value=fast_batch_result)
+        mocker.patch("designfabric.api.routers.single_image.run_single_image", return_value=fast_single_result)
 
     app = create_app()
     with TestClient(app) as test_client:
