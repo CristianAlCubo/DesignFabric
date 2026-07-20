@@ -1,36 +1,47 @@
 /** Vista: genera una única imagen a partir de un prompt escrito por el usuario. */
 
-import { useState } from 'react'
-
 import { ErrorBanner } from '../../core/components/ErrorBanner'
 import { GenerationWorkspace } from '../../core/components/GenerationWorkspace'
 import { JobProgressPanel } from '../../core/components/JobProgressPanel'
 import { StickerStage } from '../../core/components/StickerStage'
 import type { StickerResult } from '../../core/api/types'
 import { useCreateSingleImageJob, useJob } from './api'
-import { SingleImageForm, type SingleImageFormValues } from './SingleImageForm'
+import { SingleImageForm } from './SingleImageForm'
 import { SingleImageResult } from './SingleImageResult'
+import { useGenerationSingleStore } from './store'
 import { useBackendBaseUrl } from './useBackendBaseUrl'
 
 export function SingleImageView() {
-  const [jobId, setJobId] = useState<string | null>(null)
+  const jobId = useGenerationSingleStore((s) => s.jobId)
+  const submitError = useGenerationSingleStore((s) => s.submitError)
+  const setJobId = useGenerationSingleStore((s) => s.setJobId)
+  const setSubmitError = useGenerationSingleStore((s) => s.setSubmitError)
+  const prompt = useGenerationSingleStore((s) => s.prompt)
+  const applyStyleSuffix = useGenerationSingleStore((s) => s.applyStyleSuffix)
+  const imageProvider = useGenerationSingleStore((s) => s.imageProvider)
+
   const createJob = useCreateSingleImageJob()
   const { data: job } = useJob(jobId)
   const backendBaseUrl = useBackendBaseUrl()
 
-  function handleSubmit(values: SingleImageFormValues): void {
+  function handleSubmit(): void {
+    setSubmitError(null)
     createJob.mutate(
       {
-        prompt: values.prompt,
-        apply_style_suffix: values.applyStyleSuffix,
-        image_provider: values.imageProvider,
+        prompt: prompt.trim(),
+        apply_style_suffix: applyStyleSuffix,
+        image_provider: imageProvider
       },
-      { onSuccess: (response) => setJobId(response.job_id) }
+      {
+        onSuccess: (response) => setJobId(response.job_id),
+        onError: (error) => setSubmitError(error.message || 'Error al encolar el job')
+      }
     )
   }
 
   const isSubmitting = createJob.isPending || job?.status === 'queued' || job?.status === 'running'
   const result = job?.status === 'succeeded' ? (job.result as StickerResult) : null
+  const enqueueError = submitError ?? (createJob.isError ? createJob.error?.message : null)
 
   return (
     <GenerationWorkspace
@@ -39,9 +50,7 @@ export function SingleImageView() {
       controls={
         <div className="flex flex-col gap-4">
           <SingleImageForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-          {createJob.isError && (
-            <ErrorBanner message={createJob.error?.message ?? 'Error al encolar el job'} />
-          )}
+          {enqueueError && <ErrorBanner message={enqueueError} />}
           {job?.status === 'failed' && (
             <ErrorBanner message={job.error ?? 'Error desconocido'} />
           )}

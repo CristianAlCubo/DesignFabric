@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, type FormEvent } from 'react'
 import { Sparkles } from 'lucide-react'
 
 import { Checkbox } from '@/components/ui/checkbox'
@@ -16,39 +16,39 @@ import { ProviderSelector } from '../../core/components/ProviderSelector'
 import { useGenerationReadiness } from '../../core/hooks/useGenerationReadiness'
 import type { ImageProviderId } from '../../core/api/types'
 
-export interface SingleImageFormValues {
-  prompt: string
-  applyStyleSuffix: boolean
-  imageProvider: ImageProviderId
-}
+import { useGenerationSingleStore } from './store'
 
 interface SingleImageFormProps {
-  onSubmit: (values: SingleImageFormValues) => void
+  onSubmit: () => void
   isSubmitting: boolean
 }
 
-/** Formulario: prompt libre + provider de imagen. */
+/** Formulario single: estado en Zustand (sobrevive a la navegación). */
 export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps) {
   const { catalog, isImageExecutable } = useGenerationReadiness()
-  const [prompt, setPrompt] = useState('')
-  const [applyStyleSuffix, setApplyStyleSuffix] = useState(true)
-  const [imageProvider, setImageProvider] = useState<ImageProviderId>('test')
+
+  const prompt = useGenerationSingleStore((s) => s.prompt)
+  const applyStyleSuffix = useGenerationSingleStore((s) => s.applyStyleSuffix)
+  const imageProvider = useGenerationSingleStore((s) => s.imageProvider)
+  const setPrompt = useGenerationSingleStore((s) => s.setPrompt)
+  const setApplyStyleSuffix = useGenerationSingleStore((s) => s.setApplyStyleSuffix)
+  const setImageProvider = useGenerationSingleStore((s) => s.setImageProvider)
+  const ensureImageProviderDefault = useGenerationSingleStore((s) => s.ensureImageProviderDefault)
 
   useEffect(() => {
     if (!catalog) return
     const preferred = catalog.image.find((p) => p.id === 'flux' && p.available)
     const fallback = catalog.image.find((p) => p.available)
-    setImageProvider((preferred?.id ?? fallback?.id ?? 'test') as ImageProviderId)
-  }, [catalog])
+    ensureImageProviderDefault((preferred?.id ?? fallback?.id ?? 'test') as ImageProviderId)
+  }, [catalog, ensureImageProviderDefault])
 
   const comboOk = isImageExecutable(imageProvider)
   const canSubmit = Boolean(catalog) && !isSubmitting && Boolean(prompt.trim()) && comboOk
 
   function handleSubmit(event: FormEvent): void {
     event.preventDefault()
-    const trimmed = prompt.trim()
-    if (!trimmed || !canSubmit) return
-    onSubmit({ prompt: trimmed, applyStyleSuffix, imageProvider })
+    if (!prompt.trim() || !canSubmit) return
+    onSubmit()
   }
 
   return (

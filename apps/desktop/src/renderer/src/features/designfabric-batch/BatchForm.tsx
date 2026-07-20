@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, type FormEvent } from 'react'
 import { Sparkles } from 'lucide-react'
 
 import {
@@ -17,49 +17,53 @@ import { ProviderSelector } from '../../core/components/ProviderSelector'
 import { useGenerationReadiness } from '../../core/hooks/useGenerationReadiness'
 import type { ImageProviderId, LlmProviderId } from '../../core/api/types'
 
-export interface BatchFormValues {
-  numImages: number
-  ollamaModel: string
-  llmProvider: LlmProviderId
-  imageProvider: ImageProviderId
-}
+import { useGenerationBatchStore } from './store'
 
 interface BatchFormProps {
-  onSubmit: (values: BatchFormValues) => void
+  onSubmit: () => void
   isSubmitting: boolean
 }
 
 const QUANTITY_PRESETS = ['1', '4', '8', '12'] as const
 
-function pickDefault(providers: { id: string; available: boolean }[], preferred: string, fallback: string): string {
+function pickDefault(
+  providers: { id: string; available: boolean }[],
+  preferred: string,
+  fallback: string
+): string {
   const preferredItem = providers.find((p) => p.id === preferred && p.available)
   if (preferredItem) return preferredItem.id
   const available = providers.find((p) => p.available)
   return available?.id ?? fallback
 }
 
-/** Formulario batch: providers + flags equivalentes al CLI. */
+/** Formulario batch: estado en Zustand (sobrevive a la navegación). */
 export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
   const { readiness, catalog, canUseOllama, hasOllamaModel, isLlmExecutable, isImageExecutable } =
     useGenerationReadiness()
-  const [numImages, setNumImages] = useState(1)
-  const [ollamaModel, setOllamaModel] = useState('gemma3:4b')
-  const [llmProvider, setLlmProvider] = useState<LlmProviderId>('test')
-  const [imageProvider, setImageProvider] = useState<ImageProviderId>('test')
+
+  const numImages = useGenerationBatchStore((s) => s.numImages)
+  const ollamaModel = useGenerationBatchStore((s) => s.ollamaModel)
+  const llmProvider = useGenerationBatchStore((s) => s.llmProvider)
+  const imageProvider = useGenerationBatchStore((s) => s.imageProvider)
+  const setNumImages = useGenerationBatchStore((s) => s.setNumImages)
+  const setOllamaModel = useGenerationBatchStore((s) => s.setOllamaModel)
+  const setLlmProvider = useGenerationBatchStore((s) => s.setLlmProvider)
+  const setImageProvider = useGenerationBatchStore((s) => s.setImageProvider)
+  const ensureProviderDefaults = useGenerationBatchStore((s) => s.ensureProviderDefaults)
+  const ensureOllamaModel = useGenerationBatchStore((s) => s.ensureOllamaModel)
 
   useEffect(() => {
     if (!catalog) return
-    setLlmProvider(pickDefault(catalog.llm, 'ollama', 'test') as LlmProviderId)
-    setImageProvider(pickDefault(catalog.image, 'flux', 'test') as ImageProviderId)
-  }, [catalog])
+    ensureProviderDefaults(
+      pickDefault(catalog.llm, 'ollama', 'test') as LlmProviderId,
+      pickDefault(catalog.image, 'flux', 'test') as ImageProviderId
+    )
+  }, [catalog, ensureProviderDefaults])
 
   useEffect(() => {
-    const models = readiness?.ollama.models ?? []
-    if (models.length === 0) return
-    if (!models.includes(ollamaModel)) {
-      setOllamaModel(models[0])
-    }
-  }, [readiness, ollamaModel])
+    ensureOllamaModel(readiness?.ollama.models ?? [])
+  }, [readiness, ensureOllamaModel])
 
   const modelOk = llmProvider !== 'ollama' || hasOllamaModel(ollamaModel)
   const comboOk =
@@ -70,7 +74,7 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
   function handleSubmit(event: FormEvent): void {
     event.preventDefault()
     if (!canSubmit) return
-    onSubmit({ numImages, ollamaModel, llmProvider, imageProvider })
+    onSubmit()
   }
 
   const llmProviders = catalog?.llm ?? []
