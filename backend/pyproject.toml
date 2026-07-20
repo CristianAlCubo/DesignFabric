@@ -1,6 +1,6 @@
 [project]
 name = "designfabric"
-version = "0.1.0"
+version = "0.2.0"
 description = "Fusión de ClearCut (eliminación de fondo + escalado) y DesignFabric (generación de stickers vía Ollama + FLUX.2 Klein), servida por un único backend FastAPI y consumida por una app de escritorio Electron."
 readme = "README.md"
 requires-python = ">=3.12"

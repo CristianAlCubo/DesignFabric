@@ -2,7 +2,7 @@ appId: com.designfabric.app
 productName: DesignFabric
 executableName: DesignFabric
 copyright: Copyright © DesignFabric
-electronVersion: 36.9.5
+electronVersion: 43.1.1
 directories:
   output: ../../dist
   buildResources: build
