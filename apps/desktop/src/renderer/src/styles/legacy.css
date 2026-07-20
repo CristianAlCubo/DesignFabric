@@ -514,8 +514,8 @@ input {
 }
 
 .strategy-option:has(input:checked) {
-  border-color: var(--border-strong);
-  background: var(--surface-active);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
 .strategy-option input {
