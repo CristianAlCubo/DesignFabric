@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     # Solo localhost: es un backend local para la app de escritorio, nunca se expone en red.
     api_host: str = "127.0.0.1"
 
+    # OpenRouter (bootstrap vía env; la app de escritorio sincroniza runtime vía API).
+    openrouter_api_key: str | None = None
+    openrouter_text_model: str | None = None
+    openrouter_image_model: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
 
 def get_settings() -> Settings:
     """Punto único de acceso a la configuración (facilita mockear en tests)."""

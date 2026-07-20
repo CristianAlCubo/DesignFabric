@@ -26,7 +26,7 @@ from designfabric.core.progress import (
     emit_warning,
 )
 
-ImageProviderName = Literal["flux", "test"]
+ImageProviderName = Literal["flux", "openrouter", "test"]
 
 FLUX_MODEL_ID = "black-forest-labs/FLUX.2-klein-4B"
 IMAGE_SIZE = 1024
@@ -133,8 +133,53 @@ class FluxImageProvider(ImageProvider):
         return results
 
 
+class OpenRouterImageProvider(ImageProvider):
+    """Generación de imagen vía OpenRouter; model id desde runtime config."""
+
+    def generate_images(
+        self,
+        prompts: list[str],
+        *,
+        output_dir: str,
+        reporter: ProgressReporter = NullProgressReporter(),
+    ) -> list[StickerResult]:
+        from designfabric.core.generation.openrouter.client import build_client_from_runtime
+        from designfabric.core.generation.openrouter.errors import OpenRouterConfigError
+        from designfabric.core.generation.openrouter.runtime_config import get_openrouter_runtime
+
+        snap = get_openrouter_runtime().snapshot()
+        model = (snap.image_model_id or "").strip()
+        if not model:
+            raise OpenRouterConfigError("Falta el modelo de imagen de OpenRouter.")
+
+        os.makedirs(output_dir, exist_ok=True)
+        client = build_client_from_runtime()
+        emit_phase_started(reporter, Phase.IMAGE_GENERATION, total=len(prompts))
+        results: list[StickerResult] = []
+        try:
+            for i, prompt in enumerate(prompts):
+                try:
+                    image_bytes = client.generate_image(prompt, model=model)
+                    filename = f"{output_dir}/sticker_{i + 1}_{slugify(prompt)}.png"
+                    with open(filename, "wb") as handle:
+                        handle.write(image_bytes)
+                    results.append(StickerResult(prompt=prompt, filename=filename, success=True))
+                    emit_phase_progress(reporter, Phase.IMAGE_GENERATION, i + 1, len(prompts), detail=filename)
+                except Exception as exc:
+                    results.append(StickerResult(prompt=prompt, filename=None, success=False, error=str(exc)))
+                    emit_warning(reporter, Phase.IMAGE_GENERATION, f"Error generando el sticker {i + 1}: {exc}")
+                    emit_phase_progress(reporter, Phase.IMAGE_GENERATION, i + 1, len(prompts))
+        except Exception as exc:
+            emit_phase_failed(reporter, Phase.IMAGE_GENERATION, str(exc))
+            raise
+        else:
+            emit_phase_completed(reporter, Phase.IMAGE_GENERATION)
+        return results
+
+
 _PROVIDERS: dict[ImageProviderName, type[ImageProvider]] = {
     "flux": FluxImageProvider,
+    "openrouter": OpenRouterImageProvider,
     "test": TestImageProvider,
 }
 

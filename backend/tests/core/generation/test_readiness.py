@@ -160,5 +160,7 @@ def test_generation_readiness_to_dict_shape() -> None:
         providers=readiness_mod.ProviderReadiness(ollama=True, flux=True),
     )
     data = ready.to_dict()
-    assert set(data.keys()) == {"local_ai", "ollama", "flux", "cuda", "providers"}
+    assert set(data.keys()) == {"local_ai", "ollama", "flux", "cuda", "providers", "openrouter"}
     assert data["providers"]["test_llm"] is True
+    assert data["providers"]["openrouter_llm"] is False
+    assert data["openrouter"]["configured"] is False

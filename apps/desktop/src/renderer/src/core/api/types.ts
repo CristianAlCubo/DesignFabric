@@ -32,8 +32,8 @@ export type JobType = 'batch' | 'single_image'
 
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
 
-export type LlmProviderId = 'ollama' | 'test'
-export type ImageProviderId = 'flux' | 'test'
+export type LlmProviderId = 'ollama' | 'openrouter' | 'test'
+export type ImageProviderId = 'flux' | 'openrouter' | 'test'
 
 export interface ProviderInfo {
   id: string
@@ -72,6 +72,13 @@ export interface GenerationReadiness {
     flux: boolean
     test_llm: boolean
     test_image: boolean
+    openrouter_llm?: boolean
+    openrouter_image?: boolean
+  }
+  openrouter?: {
+    configured: boolean
+    text_model_id: string | null
+    image_model_id: string | null
   }
 }
 

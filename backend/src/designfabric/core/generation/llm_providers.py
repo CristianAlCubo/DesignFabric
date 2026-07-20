@@ -18,7 +18,7 @@ from designfabric.core.progress import (
     emit_warning,
 )
 
-LlmProviderName = Literal["ollama", "test"]
+LlmProviderName = Literal["ollama", "openrouter", "test"]
 
 LLM_TEST_FIXED_TEXT = "a curious fox reading a map under a lantern"
 
@@ -113,8 +113,28 @@ class OllamaLlmProvider(LlmProvider):
             )
 
 
+class OpenRouterLlmProvider(LlmProvider):
+    """Completación de texto vía OpenRouter (cliente HTTP)."""
+
+    def generate_text(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        model: str,
+        host: str | None = None,
+    ) -> str:
+        from designfabric.core.generation.openrouter.client import build_client_from_runtime
+        from designfabric.core.generation.openrouter.errors import OpenRouterConfigError
+
+        if not model or not model.strip():
+            raise OpenRouterConfigError("Falta el modelo de texto de OpenRouter.")
+        client = build_client_from_runtime()
+        return client.chat_completion(messages, model=model)
+
+
 _PROVIDERS: dict[LlmProviderName, type[LlmProvider]] = {
     "ollama": OllamaLlmProvider,
+    "openrouter": OpenRouterLlmProvider,
     "test": LlmTestProvider,
 }
 

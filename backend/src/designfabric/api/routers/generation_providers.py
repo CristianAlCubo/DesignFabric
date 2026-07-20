@@ -16,22 +16,32 @@ router = APIRouter(prefix="/api/generation", tags=["generation-providers"])
 
 _LLM_CATALOG: tuple[tuple[str, str, bool], ...] = (
     ("ollama", "Ollama", True),
+    ("openrouter", "OpenRouter", False),
     ("test", "Test (texto fijo)", False),
 )
 
 _IMAGE_CATALOG: tuple[tuple[str, str, bool], ...] = (
     ("flux", "FLUX.2 Klein", True),
+    ("openrouter", "OpenRouter", False),
     ("test", "Test (imagen fija)", False),
 )
 
 
 def _providers_from_readiness(ready: GenerationReadiness) -> GenerationProvidersResponse:
     def llm_available(provider_id: str, requires_local_ai: bool) -> bool:
+        if provider_id == "openrouter":
+            return ready.providers.openrouter_llm
+        if provider_id == "test":
+            return ready.providers.test_llm
         if not requires_local_ai:
             return True
         return ready.providers.ollama if provider_id == "ollama" else False
 
     def image_available(provider_id: str, requires_local_ai: bool) -> bool:
+        if provider_id == "openrouter":
+            return ready.providers.openrouter_image
+        if provider_id == "test":
+            return ready.providers.test_image
         if not requires_local_ai:
             return True
         return ready.providers.flux if provider_id == "flux" else False

@@ -8,6 +8,8 @@ import { backendBaseUrl } from './config'
 import { readAppVersion } from './app-version'
 import { getLastImageDirectory, rememberImageDirectory } from './lastImageDirectory'
 import { getLogHistory, pushLog } from './log-store'
+import { registerOpenRouterSettingsIpc } from './openrouter-settings-ipc'
+import { syncOpenRouterToBackend } from './openrouter-sync'
 import { registerSetupIpc } from './setup-ipc'
 import { readSetupPreferences } from './setup-preferences'
 import { createMainWindow, openSettingsWindow } from './window'
@@ -137,15 +139,18 @@ function startBackendInBackground(extras: string[]): void {
   // Timeout generoso: en el primer arranque de una build empaquetada, `uv
   // sync` (torch/diffusers/etc.) puede tardar varios minutos y ocurre antes
   // de que uvicorn siquiera empiece a escuchar.
-  waitForBackendReady(15 * 60 * 1000).catch((err: unknown) => {
-    const line = `Backend did not become ready in time: ${String(err)}`
-    console.error(line)
-    pushLog({ source: 'main', stream: 'error', line })
-  })
+  waitForBackendReady(15 * 60 * 1000)
+    .then(() => syncOpenRouterToBackend())
+    .catch((err: unknown) => {
+      const line = `Backend did not become ready in time: ${String(err)}`
+      console.error(line)
+      pushLog({ source: 'main', stream: 'error', line })
+    })
 }
 
 function bootstrap(): void {
   registerSetupIpc()
+  registerOpenRouterSettingsIpc()
 
   if (!app.isPackaged) {
     // Dev: comportamiento idéntico a siempre, sin wizard de por medio (el

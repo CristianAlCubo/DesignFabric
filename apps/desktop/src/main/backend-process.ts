@@ -4,6 +4,7 @@ import type { Readable } from 'node:stream'
 
 import { backendBaseUrl, backendPort } from './config'
 import { pushLog } from './log-store'
+import { openRouterEnvBootstrap } from './openrouter-sync'
 import { ensurePythonEnvironment } from './pythonSetup'
 import { resolveBackendRuntime } from './runtime'
 
@@ -35,7 +36,11 @@ export async function spawnBackend(extras: string[] = []): Promise<void> {
     ['run', 'uvicorn', 'designfabric.api.app:app', '--host', '127.0.0.1', '--port', String(backendPort)],
     {
       cwd: runtime.projectDir,
-      env: { ...process.env, DESIGNFABRIC_API_PORT: String(backendPort) },
+      env: {
+        ...process.env,
+        DESIGNFABRIC_API_PORT: String(backendPort),
+        ...openRouterEnvBootstrap()
+      },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   )

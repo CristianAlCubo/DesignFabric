@@ -46,10 +46,10 @@ class BatchJobRequest(BaseModel):
 
     num_images: int = Field(gt=0, le=50, description="Número de stickers a generar")
     ollama_model: str = Field(default=OLLAMA_MODEL_DEFAULT, description="Modelo de Ollama a usar para los conceptos")
-    llm_provider: Literal["ollama", "test"] = Field(
+    llm_provider: Literal["ollama", "openrouter", "test"] = Field(
         default="ollama", description="Provider primitivo de texto para generar conceptos"
     )
-    image_provider: Literal["flux", "test"] = Field(
+    image_provider: Literal["flux", "openrouter", "test"] = Field(
         default="flux", description="Provider primitivo de imagen para renderizar prompts"
     )
 
@@ -61,7 +61,7 @@ class SingleImageJobRequest(BaseModel):
     apply_style_suffix: bool = Field(
         default=True, description="Si se concatena el STYLE_SUFFIX de sticker al prompt del usuario"
     )
-    image_provider: Literal["flux", "test"] = Field(
+    image_provider: Literal["flux", "openrouter", "test"] = Field(
         default="flux", description="Provider primitivo de imagen para renderizar el prompt"
     )
 
@@ -110,6 +110,14 @@ class ProviderReadinessSchema(BaseModel):
     flux: bool
     test_llm: bool = True
     test_image: bool = True
+    openrouter_llm: bool = False
+    openrouter_image: bool = False
+
+
+class OpenRouterStatusSchema(BaseModel):
+    configured: bool
+    text_model_id: str | None = None
+    image_model_id: str | None = None
 
 
 class GenerationReadinessResponse(BaseModel):
@@ -120,6 +128,36 @@ class GenerationReadinessResponse(BaseModel):
     flux: FluxStatusSchema
     cuda: CudaStatusSchema
     providers: ProviderReadinessSchema
+    openrouter: OpenRouterStatusSchema | None = None
+
+
+class OpenRouterSettingsUpdateRequest(BaseModel):
+    """Actualiza runtime config OpenRouter (key y/o modelos)."""
+
+    api_key: str | None = None
+    clear_api_key: bool = False
+    text_model_id: str | None = None
+    image_model_id: str | None = None
+    clear_text_model: bool = False
+    clear_image_model: bool = False
+
+
+class OpenRouterSettingsPublicResponse(BaseModel):
+    """Estado público (sin exponer la API key)."""
+
+    configured: bool
+    text_model_id: str | None = None
+    image_model_id: str | None = None
+
+
+class OpenRouterModelSchema(BaseModel):
+    id: str
+    name: str
+    output_modalities: list[str] = Field(default_factory=list)
+
+
+class OpenRouterModelsResponse(BaseModel):
+    models: list[OpenRouterModelSchema]
 
 
 class JobCreatedResponse(BaseModel):

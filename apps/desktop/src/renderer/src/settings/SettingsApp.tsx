@@ -14,6 +14,9 @@ import {
 } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
+import { ImageModelsSection } from './ImageModelsSection'
+import { LanguageModelsSection } from './LanguageModelsSection'
+import { OpenRouterSection } from './OpenRouterSection'
 import {
   getSettingsSection,
   SETTINGS_SECTIONS,
@@ -64,9 +67,8 @@ function SettingsSidebar({
   )
 }
 
-function SettingsContent({ sectionId }: { sectionId: SettingsSectionId }) {
-  const section = getSettingsSection(sectionId)
-
+function GeneralSection() {
+  const section = getSettingsSection('general')
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto px-6 py-5">
       <header className="mb-6 shrink-0">
@@ -78,6 +80,26 @@ function SettingsContent({ sectionId }: { sectionId: SettingsSectionId }) {
       </div>
     </div>
   )
+}
+
+function SettingsContent({
+  sectionId,
+  onNavigate
+}: {
+  sectionId: SettingsSectionId
+  onNavigate: (sectionId: SettingsSectionId) => void
+}) {
+  switch (sectionId) {
+    case 'openrouter':
+      return <OpenRouterSection />
+    case 'language-models':
+      return <LanguageModelsSection onNavigate={onNavigate} />
+    case 'image-models':
+      return <ImageModelsSection onNavigate={onNavigate} />
+    case 'general':
+    default:
+      return <GeneralSection />
+  }
 }
 
 export default function SettingsApp() {
@@ -99,7 +121,7 @@ export default function SettingsApp() {
         >
           <SettingsSidebar activeSectionId={activeSectionId} onSelect={setActiveSectionId} />
           <SidebarInset className="min-h-0 overflow-hidden">
-            <SettingsContent sectionId={activeSectionId} />
+            <SettingsContent sectionId={activeSectionId} onNavigate={setActiveSectionId} />
           </SidebarInset>
         </SidebarProvider>
       </TooltipProvider>

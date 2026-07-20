@@ -56,6 +56,15 @@ class ProviderReadiness:
     flux: bool
     test_llm: bool = True
     test_image: bool = True
+    openrouter_llm: bool = False
+    openrouter_image: bool = False
+
+
+@dataclass(frozen=True)
+class OpenRouterStatus:
+    configured: bool
+    text_model_id: str | None = None
+    image_model_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -67,6 +76,7 @@ class GenerationReadiness:
     flux: FluxStatus
     cuda: CudaStatus
     providers: ProviderReadiness
+    openrouter: OpenRouterStatus = OpenRouterStatus(configured=False)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -94,6 +104,13 @@ class GenerationReadiness:
                 "flux": self.providers.flux,
                 "test_llm": self.providers.test_llm,
                 "test_image": self.providers.test_image,
+                "openrouter_llm": self.providers.openrouter_llm,
+                "openrouter_image": self.providers.openrouter_image,
+            },
+            "openrouter": {
+                "configured": self.openrouter.configured,
+                "text_model_id": self.openrouter.text_model_id,
+                "image_model_id": self.openrouter.image_model_id,
             },
         }
 
@@ -182,9 +199,22 @@ def probe_readiness(settings: Settings | None = None) -> GenerationReadiness:
     )
     cuda = probe_cuda() if local_ai.available else CudaStatus(available=False)
 
+    from designfabric.core.generation.openrouter.runtime_config import get_openrouter_runtime
+
+    runtime = get_openrouter_runtime()
+    runtime.seed_from_settings(cfg)
+    or_snap = runtime.snapshot()
+    openrouter = OpenRouterStatus(
+        configured=or_snap.configured,
+        text_model_id=or_snap.text_model_id,
+        image_model_id=or_snap.image_model_id,
+    )
+
     providers = ProviderReadiness(
         ollama=local_ai.available and ollama.reachable,
         flux=local_ai.available and flux.weights_present and cuda.available,
+        openrouter_llm=or_snap.llm_ready,
+        openrouter_image=or_snap.image_ready,
     )
     return GenerationReadiness(
         local_ai=local_ai,
@@ -192,6 +222,7 @@ def probe_readiness(settings: Settings | None = None) -> GenerationReadiness:
         flux=flux,
         cuda=cuda,
         providers=providers,
+        openrouter=openrouter,
     )
 
 
@@ -203,6 +234,7 @@ __all__ = [
     "LOCAL_AI_MODULES",
     "LocalAiStatus",
     "OllamaStatus",
+    "OpenRouterStatus",
     "ProviderReadiness",
     "probe_readiness",
 ]

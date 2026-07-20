@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import type { LogEntry } from '@shared/logEntry'
+import type {
+  GenerationPreferences,
+  OpenRouterPublicStatus
+} from '@shared/generationPreferences'
 import type { SetupPreferences } from '@shared/setupPreferences'
 
 const api = {
@@ -47,7 +51,22 @@ const api = {
   installLocalAiLater: (): Promise<void> => ipcRenderer.invoke('setup:install-local-ai-later'),
 
   /** Abre (o enfoca) la ventana hija de configuración. */
-  openSettings: (): Promise<void> => ipcRenderer.invoke('settings:open')
+  openSettings: (): Promise<void> => ipcRenderer.invoke('settings:open'),
+
+  getOpenRouterStatus: (): Promise<OpenRouterPublicStatus> =>
+    ipcRenderer.invoke('settings:getOpenRouter'),
+
+  setOpenRouterKey: (apiKey: string): Promise<OpenRouterPublicStatus> =>
+    ipcRenderer.invoke('settings:setOpenRouterKey', apiKey),
+
+  clearOpenRouterKey: (): Promise<OpenRouterPublicStatus> =>
+    ipcRenderer.invoke('settings:clearOpenRouterKey'),
+
+  getGenerationPreferences: (): Promise<GenerationPreferences> =>
+    ipcRenderer.invoke('settings:getGenerationPreferences'),
+
+  setGenerationPreferences: (prefs: GenerationPreferences): Promise<GenerationPreferences> =>
+    ipcRenderer.invoke('settings:setGenerationPreferences', prefs)
 }
 
 contextBridge.exposeInMainWorld('designfabric', api)

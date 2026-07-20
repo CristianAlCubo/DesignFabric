@@ -1,5 +1,9 @@
 export {}
 
+import type {
+  GenerationPreferences,
+  OpenRouterPublicStatus
+} from '@shared/generationPreferences'
 import type { LogEntry } from '@shared/logEntry'
 import type { SetupPreferences } from '@shared/setupPreferences'
 
@@ -53,6 +57,12 @@ declare global {
 
       /** Abre (o enfoca) la ventana hija de configuración. */
       openSettings: () => Promise<void>
+
+      getOpenRouterStatus: () => Promise<OpenRouterPublicStatus>
+      setOpenRouterKey: (apiKey: string) => Promise<OpenRouterPublicStatus>
+      clearOpenRouterKey: () => Promise<OpenRouterPublicStatus>
+      getGenerationPreferences: () => Promise<GenerationPreferences>
+      setGenerationPreferences: (prefs: GenerationPreferences) => Promise<GenerationPreferences>
     }
   }
 }

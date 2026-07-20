@@ -1,6 +1,6 @@
-import { Info, type LucideIcon } from 'lucide-react'
+import { Brain, Image as ImageIcon, Info, KeyRound, type LucideIcon } from 'lucide-react'
 
-export type SettingsSectionId = 'general'
+export type SettingsSectionId = 'general' | 'openrouter' | 'language-models' | 'image-models'
 
 export interface SettingsSection {
   id: SettingsSectionId
@@ -15,6 +15,24 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: 'General',
     description: 'Preferencias generales de la aplicación.',
     icon: Info
+  },
+  {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    description: 'API key de la cuenta OpenRouter (texto e imagen).',
+    icon: KeyRound
+  },
+  {
+    id: 'language-models',
+    label: 'Modelos de lenguaje',
+    description: 'Configura el modelo de cada provider de texto.',
+    icon: Brain
+  },
+  {
+    id: 'image-models',
+    label: 'Modelos de imagen',
+    description: 'Configura el modelo de cada provider de imagen.',
+    icon: ImageIcon
   }
 ] as const
 

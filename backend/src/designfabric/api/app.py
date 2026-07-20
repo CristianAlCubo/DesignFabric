@@ -26,8 +26,10 @@ from designfabric.api.routers import features as features_router
 from designfabric.api.routers import generation_providers as generation_providers_router
 from designfabric.api.routers import health as health_router
 from designfabric.api.routers import jobs as jobs_router
+from designfabric.api.routers import openrouter_settings as openrouter_settings_router
 from designfabric.api.routers import progress_ws as progress_ws_router
 from designfabric.core.config import get_settings
+from designfabric.core.generation.openrouter.runtime_config import get_openrouter_runtime
 from designfabric.jobs.models import JobType
 from designfabric.jobs.queue import JobQueue
 from designfabric.jobs.store import JobStore
@@ -53,6 +55,7 @@ def create_app() -> FastAPI:
     """Construye la app de FastAPI con sus dependencias (store/colas/hub/workers) inyectadas en `app.state`."""
     _configure_logging()
     settings = get_settings()
+    get_openrouter_runtime().seed_from_settings(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -106,6 +109,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router.router)
     app.include_router(features_router.router)
     app.include_router(generation_providers_router.router)
+    app.include_router(openrouter_settings_router.router)
 
     return app
 

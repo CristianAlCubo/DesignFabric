@@ -317,13 +317,13 @@ def designfabric_cli() -> None:
     )
     parser.add_argument(
         "--llm-provider",
-        choices=("ollama", "test"),
+        choices=("ollama", "openrouter", "test"),
         default="ollama",
         help="Provider primitivo de texto (por defecto: ollama)",
     )
     parser.add_argument(
         "--image-provider",
-        choices=("flux", "test"),
+        choices=("flux", "openrouter", "test"),
         default="flux",
         help="Provider primitivo de imagen (por defecto: flux)",
     )

@@ -29,7 +29,7 @@ interface SingleImageFormProps {
 
 /** Formulario: prompt libre + provider de imagen. */
 export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps) {
-  const { catalog, canUseFlux } = useGenerationReadiness()
+  const { catalog, isImageExecutable } = useGenerationReadiness()
   const [prompt, setPrompt] = useState('')
   const [applyStyleSuffix, setApplyStyleSuffix] = useState(true)
   const [imageProvider, setImageProvider] = useState<ImageProviderId>('test')
@@ -41,7 +41,7 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
     setImageProvider((preferred?.id ?? fallback?.id ?? 'test') as ImageProviderId)
   }, [catalog])
 
-  const comboOk = imageProvider === 'test' || canUseFlux
+  const comboOk = isImageExecutable(imageProvider)
   const canSubmit = Boolean(catalog) && !isSubmitting && Boolean(prompt.trim()) && comboOk
 
   function handleSubmit(event: FormEvent): void {

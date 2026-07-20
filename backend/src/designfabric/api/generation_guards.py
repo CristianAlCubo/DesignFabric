@@ -59,4 +59,24 @@ def require_generation_ready(
                 detail = "El provider flux no está listo."
             raise HTTPException(status_code=503, detail=detail)
 
+    if llm_provider == "openrouter":
+        if not ready.providers.openrouter_llm:
+            if not ready.openrouter.configured:
+                detail = "OpenRouter no está configurado (falta API key). Configúralo en Ajustes."
+            elif not ready.openrouter.text_model_id:
+                detail = "Falta el modelo de lenguaje de OpenRouter. Configúralo en Ajustes."
+            else:
+                detail = "El provider OpenRouter (texto) no está listo."
+            raise HTTPException(status_code=503, detail=detail)
+
+    if image_provider == "openrouter":
+        if not ready.providers.openrouter_image:
+            if not ready.openrouter.configured:
+                detail = "OpenRouter no está configurado (falta API key). Configúralo en Ajustes."
+            elif not ready.openrouter.image_model_id:
+                detail = "Falta el modelo de imagen de OpenRouter. Configúralo en Ajustes."
+            else:
+                detail = "El provider OpenRouter (imagen) no está listo."
+            raise HTTPException(status_code=503, detail=detail)
+
     return ready

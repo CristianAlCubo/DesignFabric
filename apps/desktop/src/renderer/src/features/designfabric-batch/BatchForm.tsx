@@ -40,7 +40,8 @@ function pickDefault(providers: { id: string; available: boolean }[], preferred:
 
 /** Formulario batch: providers + flags equivalentes al CLI. */
 export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
-  const { readiness, catalog, canUseOllama, canUseFlux, hasOllamaModel } = useGenerationReadiness()
+  const { readiness, catalog, canUseOllama, hasOllamaModel, isLlmExecutable, isImageExecutable } =
+    useGenerationReadiness()
   const [numImages, setNumImages] = useState(1)
   const [ollamaModel, setOllamaModel] = useState('gemma3:4b')
   const [llmProvider, setLlmProvider] = useState<LlmProviderId>('test')
@@ -62,9 +63,7 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
 
   const modelOk = llmProvider !== 'ollama' || hasOllamaModel(ollamaModel)
   const comboOk =
-    (llmProvider === 'test' || canUseOllama) &&
-    (imageProvider === 'test' || canUseFlux) &&
-    modelOk
+    isLlmExecutable(llmProvider, ollamaModel) && isImageExecutable(imageProvider) && modelOk
 
   const canSubmit = Boolean(catalog) && !isSubmitting && comboOk
 
