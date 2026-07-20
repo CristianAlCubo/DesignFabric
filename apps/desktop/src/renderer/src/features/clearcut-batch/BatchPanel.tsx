@@ -1,11 +1,12 @@
 import { Files, Folder, FolderOutput } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { AppButton } from '../../core/components/AppButton'
 import { useJobProgress } from '../../core/hooks/useJobProgress'
-import { BatchJobStrip, type BatchProgressDisplay } from './BatchJobStrip'
+import { useStickyBatchProgress, useProgressAnchor } from './batchProgress'
+import { BatchJobStrip } from './BatchJobStrip'
 import { BatchQueue } from './BatchQueue'
 import type { BatchInputMode, ScaleFactor } from './store'
 import { useBatchStore } from './store'
@@ -29,6 +30,7 @@ export function BatchPanel() {
   const batchInputMode = useBatchStore((state) => state.batchInputMode)
   const batchInputDir = useBatchStore((state) => state.batchInputDir)
   const batchInputFiles = useBatchStore((state) => state.batchInputFiles)
+  const batchInputCount = useBatchStore((state) => state.batchInputCount)
   const batchOutputDir = useBatchStore((state) => state.batchOutputDir)
   const batchRemovalStrategyId = useBatchStore((state) => state.batchRemovalStrategyId)
   const batchScaleStrategyId = useBatchStore((state) => state.batchScaleStrategyId)
@@ -55,10 +57,11 @@ export function BatchPanel() {
 
   const [now, setNow] = useState(() => performance.now())
   const [startedAt, setStartedAt] = useState<number | null>(null)
-  const [itemCompletedAt, setItemCompletedAt] = useState<number[]>([])
   const finalizedRef = useRef(false)
 
-  const { latestEvent } = useJobProgress(jobId)
+  const { events, latestEvent } = useJobProgress(jobId)
+  const progress = useStickyBatchProgress(events)
+  const lastCompletedAt = useProgressAnchor(progress)
 
   useEffect(() => {
     void loadStrategies()
@@ -71,23 +74,15 @@ export function BatchPanel() {
     return () => window.clearInterval(id)
   }, [isBatchRunning])
 
-  // Reinicia el cronómetro local cuando arranca un nuevo job.
   useEffect(() => {
     if (jobId) {
       setStartedAt(performance.now())
-      setItemCompletedAt([])
       finalizedRef.current = false
     }
   }, [jobId])
 
-  // Traduce los eventos de progreso (WS) del job activo a marcas de tiempo
-  // por ítem, y detecta el fin del job para pedir el reporte final por HTTP.
   useEffect(() => {
     if (!latestEvent || !jobId) return
-
-    if (latestEvent.type === 'progress') {
-      setItemCompletedAt((previous) => [...previous, performance.now()])
-    }
 
     if (
       (latestEvent.type === 'completed' || latestEvent.type === 'failed') &&
@@ -98,23 +93,31 @@ export function BatchPanel() {
     }
   }, [latestEvent, jobId, finalizeJob])
 
-  const progress: BatchProgressDisplay | null =
-    latestEvent && latestEvent.current !== null && latestEvent.total !== null
-      ? {
-          current: latestEvent.current,
-          total: latestEvent.total,
-          path: latestEvent.detail ?? latestEvent.message ?? ''
-        }
-      : null
-
   const hasInput =
     batchInputMode === 'folder' ? Boolean(batchInputDir) : batchInputFiles.length > 0
-  const canRun =
-    hasInput &&
-    batchOutputDir.trim().length > 0 &&
-    Boolean(batchRemovalStrategyId) &&
-    Boolean(batchScaleStrategyId) &&
-    !isBatchRunning
+
+  const runBlockers = useMemo(() => {
+    const blockers: string[] = []
+    if (!hasInput) blockers.push('Selecciona una carpeta o archivos de entrada')
+    if (batchInputCount === 0) blockers.push('La entrada no contiene imágenes compatibles')
+    if (!batchOutputDir.trim()) blockers.push('Elige una carpeta de salida')
+    if (!batchRemovalStrategyId) blockers.push('Elige una estrategia de recorte')
+    if (!batchScaleStrategyId) blockers.push('Elige una estrategia de escalado')
+    return blockers
+  }, [
+    hasInput,
+    batchInputCount,
+    batchOutputDir,
+    batchRemovalStrategyId,
+    batchScaleStrategyId
+  ])
+
+  const canRun = runBlockers.length === 0 && !isBatchRunning
+
+  const removalLabel =
+    strategies.find((item) => item.id === batchRemovalStrategyId)?.label ?? '—'
+  const scaleLabel =
+    scaleStrategies.find((item) => item.id === batchScaleStrategyId)?.label ?? '—'
 
   return (
     <div className="batch-layout" role="tabpanel" id="panel-batch" aria-labelledby="tab-batch">
@@ -158,9 +161,16 @@ export function BatchPanel() {
               Seleccionar carpeta
             </AppButton>
             {batchInputDir ? (
-              <p className="path-hint" title={batchInputDir}>
-                {batchInputDir}
-              </p>
+              <div className="batch-input-summary">
+                <p className="batch-input-summary__title tabular-nums">
+                  {batchInputCount === null
+                    ? 'Carpeta seleccionada'
+                    : `${batchInputCount} imagen${batchInputCount === 1 ? '' : 'es'}`}
+                </p>
+                <p className="path-hint" title={batchInputDir}>
+                  {batchInputDir}
+                </p>
+              </div>
             ) : null}
             <p className="muted field-hint">Imágenes compatibles de la carpeta (sin subcarpetas).</p>
           </>
@@ -176,13 +186,16 @@ export function BatchPanel() {
               Seleccionar archivos
             </AppButton>
             {batchInputFiles.length > 0 ? (
-              <ul className="batch-file-list">
-                {batchInputFiles.map((filePath) => (
-                  <li key={filePath} className="path-hint" title={filePath}>
-                    {basename(filePath)}
-                  </li>
-                ))}
-              </ul>
+              <div className="batch-input-summary">
+                <p className="batch-input-summary__title tabular-nums">
+                  {batchInputFiles.length} archivo{batchInputFiles.length === 1 ? '' : 's'}{' '}
+                  seleccionado{batchInputFiles.length === 1 ? '' : 's'}
+                </p>
+                <p className="muted field-hint">
+                  Ej. {basename(batchInputFiles[0])}
+                  {batchInputFiles.length > 1 ? ` y ${batchInputFiles.length - 1} más` : ''}
+                </p>
+              </div>
             ) : null}
             <p className="muted field-hint">Solo se procesarán los archivos seleccionados.</p>
           </>
@@ -204,51 +217,63 @@ export function BatchPanel() {
           </p>
         ) : null}
 
-        <h2 className="column__title">Recorte</h2>
-        <StrategyList
-          strategies={strategies}
-          selectedId={batchRemovalStrategyId}
-          onSelect={setBatchRemovalStrategyId}
-          disabled={isBatchRunning}
-          name="batch-removal-strategy"
-          legend="Estrategia de recorte"
-        />
+        <details className="batch-setup-details" open={!isBatchRunning && !batchReport}>
+          <summary className="column__title batch-setup-details__summary">
+            Recorte y escalado
+          </summary>
+          <div className="batch-setup-details__body">
+            {(isBatchRunning || batchReport) && (
+              <p className="batch-setup-summary muted">
+                {removalLabel} · {scaleLabel} · {batchFactor}x
+              </p>
+            )}
+            <h2 className="column__title">Recorte</h2>
+            <StrategyList
+              strategies={strategies}
+              selectedId={batchRemovalStrategyId}
+              onSelect={setBatchRemovalStrategyId}
+              disabled={isBatchRunning}
+              name="batch-removal-strategy"
+              legend="Estrategia de recorte"
+            />
 
-        <h2 className="column__title">Escalado</h2>
-        <StrategyList
-          strategies={scaleStrategies}
-          selectedId={batchScaleStrategyId}
-          onSelect={(id) => {
-            if (id === 'vector' || id === 'realesrgan') {
-              setBatchScaleStrategyId(id)
-            }
-          }}
-          disabled={isBatchRunning}
-          name="batch-scale-strategy"
-          legend="Estrategia de escalado"
-        />
+            <h2 className="column__title">Escalado</h2>
+            <StrategyList
+              strategies={scaleStrategies}
+              selectedId={batchScaleStrategyId}
+              onSelect={(id) => {
+                if (id === 'vector' || id === 'realesrgan') {
+                  setBatchScaleStrategyId(id)
+                }
+              }}
+              disabled={isBatchRunning}
+              name="batch-scale-strategy"
+              legend="Estrategia de escalado"
+            />
 
-        <h2 className="column__title">Factor</h2>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          spacing={0}
-          value={String(batchFactor)}
-          onValueChange={(value) => {
-            if (value === '2' || value === '4') {
-              setBatchFactor(Number(value) as ScaleFactor)
-            }
-          }}
-          disabled={isBatchRunning}
-          aria-label="Factor de escala"
-          className="w-full"
-        >
-          {FACTOR_OPTIONS.map((factor) => (
-            <ToggleGroupItem key={factor} value={String(factor)} className="flex-1">
-              {factor}x
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+            <h2 className="column__title">Factor</h2>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              spacing={0}
+              value={String(batchFactor)}
+              onValueChange={(value) => {
+                if (value === '2' || value === '4') {
+                  setBatchFactor(Number(value) as ScaleFactor)
+                }
+              }}
+              disabled={isBatchRunning}
+              aria-label="Factor de escala"
+              className="w-full"
+            >
+              {FACTOR_OPTIONS.map((factor) => (
+                <ToggleGroupItem key={factor} value={String(factor)} className="flex-1">
+                  {factor}x
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+        </details>
 
         {batchError ? (
           <p className="error" role="alert">
@@ -262,25 +287,21 @@ export function BatchPanel() {
           phase={batchPhase}
           progress={progress}
           startedAt={startedAt}
-          itemCompletedAt={itemCompletedAt}
+          lastCompletedAt={lastCompletedAt}
           canRun={canRun}
+          runBlockers={runBlockers}
           isRunning={isBatchRunning}
+          inputCount={batchInputCount}
           now={now}
           onRun={() => void runBatch()}
           onCancel={() => void cancelBatch()}
         />
-        {/*
-          Limitación conocida de esta fase: el backend solo expone la lista
-          detallada de ítems (`items`) en el resultado final del job
-          (`GET /api/jobs/{id}`), no por evento WS individual. Por eso la
-          cola de ítems permanece vacía mientras el lote corre y se llena de
-          una sola vez al terminar, aunque la barra de progreso y el archivo
-          actual sí se actualizan en vivo vía `useJobProgress`.
-        */}
         <BatchQueue
           items={batchReport?.items ?? []}
           report={batchReport}
           outputDir={batchOutputDir || null}
+          isRunning={isBatchRunning}
+          progressEvents={events}
           onOpenOutput={() => void openBatchOutputDir()}
         />
       </div>

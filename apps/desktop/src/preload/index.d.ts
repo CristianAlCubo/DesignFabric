@@ -26,6 +26,9 @@ declare global {
       /** Diálogo nativo para elegir un directorio. `undefined` si el usuario cancela. */
       openDirectoryDialog: () => Promise<string | undefined>
 
+      /** Cuenta imágenes soportadas (png/jpg/jpeg/webp) en una carpeta, sin subcarpetas. */
+      countImagesInDirectory: (directoryPath: string) => Promise<number>
+
       /** Convierte una imagen local en disco a data URL (el CSP no permite `file://`). */
       getImagePreview: (filePath: string) => Promise<string>
 

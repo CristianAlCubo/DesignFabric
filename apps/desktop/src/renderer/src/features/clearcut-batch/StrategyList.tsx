@@ -17,9 +17,7 @@ export function StrategyList({
   name = 'strategy',
   legend = 'Estrategia de silueta'
 }: StrategyListProps) {
-  if (strategies.length === 0) {
-    return <p className="muted">Cargando estrategias…</p>
-  }
+  if (strategies.length === 0) return null
 
   return (
     <fieldset className="strategy-list" disabled={disabled}>

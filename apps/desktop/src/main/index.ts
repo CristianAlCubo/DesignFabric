@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
@@ -19,6 +19,9 @@ if (process.platform === 'linux') {
 }
 
 const IMAGE_FILTERS = [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
+
+/** Extensiones que el pipeline ClearCut acepta (alineado a `SUPPORTED_EXTENSIONS` del backend). */
+const BATCH_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp'])
 
 const MIME_BY_EXT: Record<string, string> = {
   '.png': 'image/png',
@@ -68,6 +71,14 @@ ipcMain.handle('dialog:openDirectory', async (): Promise<string | undefined> => 
   // una ruta ficticia *dentro* del directorio elegido para que lo recuerde tal cual.
   rememberImageDirectory(join(directoryPath, '.placeholder'))
   return directoryPath
+})
+
+/** Cuenta imágenes soportadas en una carpeta (sin subcarpetas), para preflight del lote. */
+ipcMain.handle('fs:countImagesInDirectory', async (_event, directoryPath: string): Promise<number> => {
+  const entries = await readdir(directoryPath, { withFileTypes: true })
+  return entries.filter(
+    (entry) => entry.isFile() && BATCH_IMAGE_EXTENSIONS.has(extname(entry.name).toLowerCase())
+  ).length
 })
 
 // Convierte una imagen local en disco a data URL — el CSP del renderer no

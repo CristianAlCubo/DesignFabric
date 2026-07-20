@@ -205,11 +205,24 @@ input {
   gap: 0.45rem;
 }
 
-.batch-job-strip__title {
-  margin: 0;
-  font-size: 1.05rem;
+.batch-job-strip__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.batch-job-strip__hero-value {
+  font-size: 1.5rem;
   font-weight: 650;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.batch-job-strip__hero-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .batch-job-strip__spinner {
@@ -217,9 +230,9 @@ input {
   animation: batch-spin 0.9s linear infinite;
 }
 
-.batch-job-strip__metrics {
+.batch-job-strip__meta-row {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
 }
 
@@ -239,10 +252,9 @@ input {
 }
 
 .batch-job-strip__metric-value {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .batch-progress {
@@ -278,14 +290,68 @@ input {
 
 .batch-job-strip__run {
   margin-top: 0;
+  width: 100%;
 }
 
 .batch-job-strip__actions [data-slot='button'] {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  width: 100%;
 }
 
+.batch-job-strip__blockers {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.batch-input-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.batch-input-summary__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.batch-setup-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.batch-setup-details__summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.batch-setup-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.batch-setup-details__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.batch-setup-summary {
+  margin: 0;
+  font-size: 0.8rem;
+}
 
 .batch-queue {
   flex: 1;
@@ -300,7 +366,7 @@ input {
 }
 
 .batch-queue--empty {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .batch-chips {
@@ -319,6 +385,7 @@ input {
   background: var(--surface-2);
   font-size: 0.78rem;
   color: var(--text-secondary);
+  cursor: pointer;
 }
 
 .batch-chip strong {
@@ -343,13 +410,28 @@ input {
   border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
 }
 
-.batch-queue__list {
+.batch-chip--active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--text-primary);
+}
+
+.batch-queue__section-label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.batch-queue__recent {
   margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
   overflow: auto;
   min-height: 0;
   flex: 1;
@@ -365,9 +447,20 @@ input {
   background: var(--surface-2);
 }
 
+.batch-queue__row--compact {
+  padding: 0.4rem 0.55rem;
+}
+
+.batch-queue__row--virtual {
+  height: 100%;
+  box-sizing: border-box;
+}
+
 .batch-queue__icon {
   flex-shrink: 0;
   margin-top: 0.1rem;
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .batch-queue__icon--ok {
@@ -390,7 +483,7 @@ input {
 }
 
 .batch-queue__name {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -398,31 +491,32 @@ input {
 }
 
 .batch-queue__error {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--error);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .batch-queue__warning {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--warning);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-queue__count {
+  margin: 0;
+  font-size: 0.75rem;
 }
 
 .batch-queue [data-slot='button'] {
-  align-self: flex-start;
+  align-self: stretch;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-}
-
-.batch-file-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-height: 8rem;
-  overflow: auto;
+  width: 100%;
 }
 
 @keyframes batch-spin {

@@ -22,6 +22,10 @@ const api = {
 
   openDirectoryDialog: (): Promise<string | undefined> => ipcRenderer.invoke('dialog:openDirectory'),
 
+  /** Cuenta imágenes soportadas (png/jpg/jpeg/webp) en una carpeta, sin subcarpetas. */
+  countImagesInDirectory: (directoryPath: string): Promise<number> =>
+    ipcRenderer.invoke('fs:countImagesInDirectory', directoryPath),
+
   /** Convierte una imagen local en disco a data URL (el CSP no permite `file://`). */
   getImagePreview: (filePath: string): Promise<string> => ipcRenderer.invoke('image:preview', filePath),
 

@@ -62,6 +62,8 @@ interface BatchState {
   batchInputMode: BatchInputMode
   batchInputDir: string | null
   batchInputFiles: string[]
+  /** Conteo de imágenes de entrada (carpeta escaneada o archivos seleccionados). */
+  batchInputCount: number | null
   batchOutputDir: string
   batchRemovalStrategyId: string | null
   batchScaleStrategyId: string | null
@@ -99,6 +101,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
   batchInputMode: 'folder',
   batchInputDir: null,
   batchInputFiles: [],
+  batchInputCount: null,
   batchOutputDir: '',
   batchRemovalStrategyId: null,
   batchScaleStrategyId: null,
@@ -152,6 +155,14 @@ export const useBatchStore = create<BatchState>((set, get) => ({
       batchInputMode: mode,
       batchInputDir: mode === 'folder' ? state.batchInputDir : null,
       batchInputFiles: mode === 'files' ? state.batchInputFiles : [],
+      batchInputCount:
+        mode === 'folder'
+          ? state.batchInputDir
+            ? state.batchInputCount
+            : null
+          : state.batchInputFiles.length > 0
+            ? state.batchInputFiles.length
+            : null,
       batchReport: null,
       batchError: null
     })),
@@ -161,10 +172,12 @@ export const useBatchStore = create<BatchState>((set, get) => ({
     try {
       const directory = await window.designfabric.openDirectoryDialog()
       if (!directory) return
+      const count = await window.designfabric.countImagesInDirectory(directory)
       set({
         batchInputMode: 'folder',
         batchInputDir: directory,
         batchInputFiles: [],
+        batchInputCount: count,
         batchReport: null
       })
     } catch (err) {
@@ -181,6 +194,7 @@ export const useBatchStore = create<BatchState>((set, get) => ({
         batchInputMode: 'files',
         batchInputFiles: paths,
         batchInputDir: null,
+        batchInputCount: paths.length,
         batchReport: null
       })
     } catch (err) {
@@ -218,6 +232,14 @@ export const useBatchStore = create<BatchState>((set, get) => ({
     if (!hasInput || !outputDir) {
       set({
         batchError: 'Selecciona una entrada y escribe una carpeta de salida antes de procesar.',
+        batchPhase: 'error'
+      })
+      return
+    }
+
+    if (state.batchInputCount === 0) {
+      set({
+        batchError: 'La entrada no contiene imágenes compatibles (png, jpg, jpeg, webp).',
         batchPhase: 'error'
       })
       return

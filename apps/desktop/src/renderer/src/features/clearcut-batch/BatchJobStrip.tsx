@@ -3,6 +3,7 @@ import { CircleDashed, LoaderCircle, Play, Square } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 import { AppButton } from '../../core/components/AppButton'
+import { estimateBatchRemainingMs } from './batchProgress'
 import type { BatchJobPhase } from './store'
 
 export interface BatchProgressDisplay {
@@ -15,9 +16,11 @@ interface BatchJobStripProps {
   phase: BatchJobPhase
   progress: BatchProgressDisplay | null
   startedAt: number | null
-  itemCompletedAt: number[]
+  lastCompletedAt: number | null
   canRun: boolean
+  runBlockers: string[]
   isRunning: boolean
+  inputCount: number | null
   now: number
   onRun: () => void
   onCancel: () => void
@@ -30,22 +33,6 @@ function formatDuration(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
-function estimateRemainingMs(
-  startedAt: number | null,
-  itemCompletedAt: number[],
-  progress: BatchProgressDisplay | null,
-  now: number
-): number | null {
-  if (!progress || progress.total <= 0 || itemCompletedAt.length === 0 || startedAt === null) {
-    return null
-  }
-  void now
-  const elapsed = itemCompletedAt[itemCompletedAt.length - 1] - startedAt
-  const avg = elapsed / itemCompletedAt.length
-  const remainingItems = Math.max(0, progress.total - itemCompletedAt.length)
-  return avg * remainingItems
-}
-
 function basename(filePath: string): string {
   const parts = filePath.split(/[/\\]/)
   return parts[parts.length - 1] || filePath
@@ -55,19 +42,23 @@ export function BatchJobStrip({
   phase,
   progress,
   startedAt,
-  itemCompletedAt,
+  lastCompletedAt,
   canRun,
+  runBlockers,
   isRunning,
+  inputCount,
   now,
   onRun,
   onCancel
 }: BatchJobStripProps) {
-  const current = progress?.current ?? itemCompletedAt.length
+  const completed = progress?.current ?? 0
   const total = progress?.total ?? 0
-  const ratio = total > 0 ? Math.min(1, current / total) : isRunning ? 0.05 : 0
+  const ratio = total > 0 ? Math.min(1, completed / total) : isRunning ? 0.05 : 0
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0
   const elapsedMs = startedAt !== null ? now - startedAt : 0
-  const etaMs = estimateRemainingMs(startedAt, itemCompletedAt, progress, now)
+  const etaMs = estimateBatchRemainingMs(startedAt, progress, now, lastCompletedAt)
   const currentName = progress?.path ? basename(progress.path) : null
+  const allDone = total > 0 && completed >= total
 
   const statusLabel =
     phase === 'running'
@@ -80,6 +71,19 @@ export function BatchJobStrip({
             ? 'Error'
             : 'En espera'
 
+  const runLabel =
+    inputCount !== null && inputCount > 0
+      ? `Procesar ${inputCount} imagen${inputCount === 1 ? '' : 'es'}`
+      : 'Procesar lote'
+
+  const fileLine = currentName
+    ? allDone || !isRunning
+      ? `Último archivo: ${currentName}`
+      : `Archivo actual: ${currentName}`
+    : isRunning
+      ? 'Preparando lote…'
+      : 'El progreso del lote aparecerá aquí.'
+
   return (
     <section className="batch-job-strip" aria-live="polite">
       <div className="batch-job-strip__head">
@@ -89,28 +93,14 @@ export function BatchJobStrip({
           ) : (
             <CircleDashed size={16} aria-hidden />
           )}
-          <h2 className="batch-job-strip__title">
-            <Badge variant={phase === 'error' ? 'destructive' : 'secondary'}>{statusLabel}</Badge>
-          </h2>
+          <Badge variant={phase === 'error' ? 'destructive' : 'secondary'}>{statusLabel}</Badge>
         </div>
-        <div className="batch-job-strip__metrics">
-          <span className="batch-job-strip__metric">
-            <span className="batch-job-strip__metric-label">Avance</span>
-            <span className="batch-job-strip__metric-value">
-              {total > 0 ? `${current} / ${total}` : '—'}
-            </span>
+        <div className="batch-job-strip__hero" aria-label="Avance del lote">
+          <span className="batch-job-strip__hero-value tabular-nums">
+            {total > 0 ? `${completed} / ${total}` : '—'}
           </span>
-          <span className="batch-job-strip__metric">
-            <span className="batch-job-strip__metric-label">Transcurrido</span>
-            <span className="batch-job-strip__metric-value">
-              {startedAt !== null ? formatDuration(elapsedMs) : '—'}
-            </span>
-          </span>
-          <span className="batch-job-strip__metric">
-            <span className="batch-job-strip__metric-label">ETA</span>
-            <span className="batch-job-strip__metric-value">
-              {etaMs !== null ? formatDuration(etaMs) : '—'}
-            </span>
+          <span className="batch-job-strip__hero-meta tabular-nums">
+            {total > 0 ? `${percent}% completado` : 'Sin lote activo'}
           </span>
         </div>
       </div>
@@ -120,19 +110,28 @@ export function BatchJobStrip({
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={total || 100}
-        aria-valuenow={current}
+        aria-valuenow={completed}
         aria-label="Progreso del lote"
       >
         <div className="batch-progress__fill" style={{ transform: `scaleX(${ratio})` }} />
       </div>
 
-      <p className="batch-job-strip__file">
-        {currentName
-          ? `Archivo actual: ${currentName}`
-          : isRunning
-            ? 'Preparando lote…'
-            : 'El progreso del lote aparecerá aquí.'}
-      </p>
+      <div className="batch-job-strip__meta-row">
+        <span className="batch-job-strip__metric">
+          <span className="batch-job-strip__metric-label">Transcurrido</span>
+          <span className="batch-job-strip__metric-value tabular-nums">
+            {startedAt !== null ? formatDuration(elapsedMs) : '—'}
+          </span>
+        </span>
+        <span className="batch-job-strip__metric">
+          <span className="batch-job-strip__metric-label">ETA</span>
+          <span className="batch-job-strip__metric-value tabular-nums">
+            {etaMs !== null ? formatDuration(etaMs) : '—'}
+          </span>
+        </span>
+      </div>
+
+      <p className="batch-job-strip__file">{fileLine}</p>
 
       <div className="batch-job-strip__actions">
         {isRunning ? (
@@ -140,15 +139,24 @@ export function BatchJobStrip({
             Cancelar
           </AppButton>
         ) : (
-          <AppButton
-            type="button"
-            className="batch-job-strip__run"
-            icon={Play}
-            onClick={onRun}
-            disabled={!canRun}
-          >
-            Procesar lote
-          </AppButton>
+          <div className="flex w-full flex-col gap-2">
+            <AppButton
+              type="button"
+              className="batch-job-strip__run"
+              icon={Play}
+              onClick={onRun}
+              disabled={!canRun}
+            >
+              {runLabel}
+            </AppButton>
+            {!canRun && runBlockers.length > 0 ? (
+              <ul className="batch-job-strip__blockers" aria-label="Requisitos pendientes">
+                {runBlockers.map((blocker) => (
+                  <li key={blocker}>{blocker}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         )}
       </div>
     </section>

@@ -335,13 +335,19 @@ def test_processor_reporter_emits_started_progress_completed(tmp_path: Path) -> 
     assert started[0].phase == Phase.CLEARCUT_BATCH
     assert started[0].total == 2
 
-    assert len(progress) == 2
-    assert progress[0].current == 1
+    assert len(progress) == 4
+    assert progress[0].current == 0
     assert progress[0].total == 2
     assert progress[0].detail == str(a)
-    assert progress[1].current == 2
+    assert progress[1].current == 1
     assert progress[1].total == 2
-    assert progress[1].detail == str(b)
+    assert progress[1].detail == str(a)
+    assert progress[2].current == 1
+    assert progress[2].total == 2
+    assert progress[2].detail == str(b)
+    assert progress[3].current == 2
+    assert progress[3].total == 2
+    assert progress[3].detail == str(b)
     assert all(e.phase == Phase.CLEARCUT_BATCH for e in progress)
 
     assert len(warnings) == 1
@@ -439,10 +445,13 @@ def test_processor_reporter_and_legacy_callbacks_coexist(tmp_path: Path) -> None
     assert legacy_items[0].status == "succeeded"
 
     progress_events = [e for e in reporter.events if e.type == ProgressEventType.PROGRESS]
-    assert len(progress_events) == 1
-    assert progress_events[0].current == 1
+    assert len(progress_events) == 2
+    assert progress_events[0].current == 0
     assert progress_events[0].total == 1
     assert progress_events[0].detail == str(path)
+    assert progress_events[1].current == 1
+    assert progress_events[1].total == 1
+    assert progress_events[1].detail == str(path)
 
 
 def test_processor_no_reporter_keeps_legacy_behavior_intact(tmp_path: Path) -> None:
@@ -513,6 +522,7 @@ def test_run_batch_functional_accepts_reporter(tmp_path: Path) -> None:
     types = [e.type for e in reporter.events]
     assert types == [
         ProgressEventType.STARTED,
+        ProgressEventType.PROGRESS,
         ProgressEventType.PROGRESS,
         ProgressEventType.COMPLETED,
     ]

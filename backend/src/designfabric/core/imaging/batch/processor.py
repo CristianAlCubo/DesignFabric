@@ -85,8 +85,16 @@ class BatchProcessor:
 
             if on_progress is not None:
                 on_progress(index, total, input_path)
+            # `current` = ítems ya terminados; `detail` = archivo que empieza ahora.
+            # Así la UI puede mostrar "archivo en curso" sin inflar el avance.
             if reporter is not None:
-                emit_phase_progress(reporter, Phase.CLEARCUT_BATCH, index, total, detail=str(input_path))
+                emit_phase_progress(
+                    reporter,
+                    Phase.CLEARCUT_BATCH,
+                    index - 1,
+                    total,
+                    detail=str(input_path),
+                )
 
             item = self._process_one(config, strategy, input_path, target)
             results.append(item)
@@ -94,6 +102,15 @@ class BatchProcessor:
                 on_item(item)
             if reporter is not None and item.warning is not None:
                 emit_warning(reporter, Phase.CLEARCUT_BATCH, item.warning)
+
+            if reporter is not None:
+                emit_phase_progress(
+                    reporter,
+                    Phase.CLEARCUT_BATCH,
+                    index,
+                    total,
+                    detail=str(input_path),
+                )
 
         if reporter is not None:
             emit_phase_completed(reporter, Phase.CLEARCUT_BATCH)
