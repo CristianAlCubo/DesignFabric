@@ -14,7 +14,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { AppButton } from '../../core/components/AppButton'
 import { ModelSelector } from '../../core/components/ModelSelector'
 import { ProviderSelector } from '../../core/components/ProviderSelector'
-import { useGenerationProviders } from '../../core/hooks/useGenerationProviders'
+import { useGenerationReadiness } from '../../core/hooks/useGenerationReadiness'
 import type { ImageProviderId, LlmProviderId } from '../../core/api/types'
 
 export interface BatchFormValues {
@@ -40,7 +40,7 @@ function pickDefault(providers: { id: string; available: boolean }[], preferred:
 
 /** Formulario batch: providers + flags equivalentes al CLI. */
 export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
-  const catalog = useGenerationProviders()
+  const { readiness, catalog, canUseOllama, canUseFlux, hasOllamaModel } = useGenerationReadiness()
   const [numImages, setNumImages] = useState(1)
   const [ollamaModel, setOllamaModel] = useState('gemma3:4b')
   const [llmProvider, setLlmProvider] = useState<LlmProviderId>('test')
@@ -52,8 +52,25 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
     setImageProvider(pickDefault(catalog.image, 'flux', 'test') as ImageProviderId)
   }, [catalog])
 
+  useEffect(() => {
+    const models = readiness?.ollama.models ?? []
+    if (models.length === 0) return
+    if (!models.includes(ollamaModel)) {
+      setOllamaModel(models[0])
+    }
+  }, [readiness, ollamaModel])
+
+  const modelOk = llmProvider !== 'ollama' || hasOllamaModel(ollamaModel)
+  const comboOk =
+    (llmProvider === 'test' || canUseOllama) &&
+    (imageProvider === 'test' || canUseFlux) &&
+    modelOk
+
+  const canSubmit = Boolean(catalog) && !isSubmitting && comboOk
+
   function handleSubmit(event: FormEvent): void {
     event.preventDefault()
+    if (!canSubmit) return
     onSubmit({ numImages, ollamaModel, llmProvider, imageProvider })
   }
 
@@ -111,7 +128,15 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
           onChange={(v) => setLlmProvider(v as LlmProviderId)}
           disabled={!catalog || isSubmitting}
         />
-        {llmProvider === 'ollama' && <ModelSelector value={ollamaModel} onChange={setOllamaModel} />}
+        {llmProvider === 'ollama' && (
+          <ModelSelector
+            value={ollamaModel}
+            onChange={setOllamaModel}
+            models={readiness?.ollama.models ?? []}
+            disabled={isSubmitting || !canUseOllama}
+            modelMissing={!modelOk}
+          />
+        )}
         <ProviderSelector
           label="Provider de imagen"
           value={imageProvider}
@@ -121,13 +146,7 @@ export function BatchForm({ onSubmit, isSubmitting }: BatchFormProps) {
         />
       </FieldGroup>
 
-      <AppButton
-        type="submit"
-        size="lg"
-        className="w-full"
-        icon={Sparkles}
-        disabled={isSubmitting || !catalog}
-      >
+      <AppButton type="submit" size="lg" className="w-full" icon={Sparkles} disabled={!canSubmit}>
         {isSubmitting ? 'Generando…' : 'Generar'}
       </AppButton>
     </form>

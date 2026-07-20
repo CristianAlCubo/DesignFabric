@@ -47,6 +47,34 @@ export interface GenerationProvidersResponse {
   image: ProviderInfo[]
 }
 
+export interface GenerationReadiness {
+  local_ai: {
+    available: boolean
+    missing: string[]
+  }
+  ollama: {
+    host: string
+    reachable: boolean
+    models: string[]
+    error: string | null
+  }
+  flux: {
+    model_id: string
+    weights_present: boolean
+    cache_hint: string | null
+  }
+  cuda: {
+    available: boolean
+    device_name: string | null
+  }
+  providers: {
+    ollama: boolean
+    flux: boolean
+    test_llm: boolean
+    test_image: boolean
+  }
+}
+
 export interface BatchJobRequest {
   num_images: number
   ollama_model?: string

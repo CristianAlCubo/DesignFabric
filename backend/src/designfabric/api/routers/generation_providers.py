@@ -1,11 +1,16 @@
-"""Catálogo de providers primitivos de generación (LLM e imagen)."""
+"""Catálogo de providers y readiness de generación IA."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from designfabric.api.local_ai import LOCAL_AI_AVAILABLE
-from designfabric.api.schemas import GenerationProvidersResponse, ProviderInfoSchema
+from designfabric.api.schemas import (
+    GenerationProvidersResponse,
+    GenerationReadinessResponse,
+    ProviderInfoSchema,
+)
+from designfabric.core.config import Settings, get_settings
+from designfabric.core.generation.readiness import GenerationReadiness, probe_readiness
 
 router = APIRouter(prefix="/api/generation", tags=["generation-providers"])
 
@@ -20,20 +25,50 @@ _IMAGE_CATALOG: tuple[tuple[str, str, bool], ...] = (
 )
 
 
-def _to_info(provider_id: str, label: str, requires_local_ai: bool) -> ProviderInfoSchema:
-    available = LOCAL_AI_AVAILABLE if requires_local_ai else True
-    return ProviderInfoSchema(
-        id=provider_id,
-        label=label,
-        available=available,
-        requires_local_ai=requires_local_ai,
+def _providers_from_readiness(ready: GenerationReadiness) -> GenerationProvidersResponse:
+    def llm_available(provider_id: str, requires_local_ai: bool) -> bool:
+        if not requires_local_ai:
+            return True
+        return ready.providers.ollama if provider_id == "ollama" else False
+
+    def image_available(provider_id: str, requires_local_ai: bool) -> bool:
+        if not requires_local_ai:
+            return True
+        return ready.providers.flux if provider_id == "flux" else False
+
+    return GenerationProvidersResponse(
+        llm=[
+            ProviderInfoSchema(
+                id=pid,
+                label=label,
+                available=llm_available(pid, requires),
+                requires_local_ai=requires,
+            )
+            for pid, label, requires in _LLM_CATALOG
+        ],
+        image=[
+            ProviderInfoSchema(
+                id=pid,
+                label=label,
+                available=image_available(pid, requires),
+                requires_local_ai=requires,
+            )
+            for pid, label, requires in _IMAGE_CATALOG
+        ],
     )
+
+
+@router.get("/readiness", response_model=GenerationReadinessResponse)
+def get_generation_readiness(
+    settings: Settings = Depends(get_settings),
+) -> GenerationReadinessResponse:
+    """Estado completo de readiness (deps, Ollama, pesos FLUX, CUDA). Solo reporte."""
+    return GenerationReadinessResponse.model_validate(probe_readiness(settings).to_dict())
 
 
 @router.get("/providers", response_model=GenerationProvidersResponse)
-def get_generation_providers() -> GenerationProvidersResponse:
-    """Lista providers LLM e imagen con su disponibilidad en este entorno."""
-    return GenerationProvidersResponse(
-        llm=[_to_info(pid, label, requires) for pid, label, requires in _LLM_CATALOG],
-        image=[_to_info(pid, label, requires) for pid, label, requires in _IMAGE_CATALOG],
-    )
+def get_generation_providers(
+    settings: Settings = Depends(get_settings),
+) -> GenerationProvidersResponse:
+    """Lista providers LLM e imagen; `available` deriva del probe de readiness."""
+    return _providers_from_readiness(probe_readiness(settings))

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Endpoint `GET /api/generation/readiness` como fuente de verdad del estado de generación IA (deps `local-ai`, Ollama reachable/modelos, pesos FLUX en caché HF, CUDA). La UI de generación deshabilita en los selectores los providers no ejecutables.
+- Nota: la remediación (instalar deps, pull de Ollama, predescarga de FLUX) queda para un futuro panel de configuración; este cambio solo reporta.
+
 ### Removed
 
 - Estrategia de escalado vectorial (VTracer + CairoSVG). Real-ESRGAN queda como única opción de escalado en Escalado, Lote, API y CLI.

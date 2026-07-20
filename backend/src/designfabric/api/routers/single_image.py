@@ -10,11 +10,11 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from designfabric.api.dependencies import get_job_dispatcher
 from designfabric.api.dispatcher import JobDispatcher
-from designfabric.api.local_ai import LOCAL_AI_AVAILABLE
+from designfabric.api.generation_guards import require_generation_ready
 from designfabric.api.schemas import JobCreatedResponse, SingleImageJobRequest
 from designfabric.core.config import Settings
 from designfabric.core.generation.pipeline import run_single_image
@@ -32,14 +32,7 @@ def create_single_image_job(
     dispatcher: JobDispatcher = Depends(get_job_dispatcher),
 ) -> JobCreatedResponse:
     """Encola un job de imagen única: bypasea el LLM y usa el image provider elegido."""
-    if payload.image_provider == "flux" and not LOCAL_AI_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "El provider flux requiere el extra 'local-ai'. "
-                "Usa image_provider=test, o instala local-ai."
-            ),
-        )
+    require_generation_ready(image_provider=payload.image_provider)
     job = Job.new(JobType.SINGLE_IMAGE, payload)
     dispatcher.submit(job)
     logger.info(

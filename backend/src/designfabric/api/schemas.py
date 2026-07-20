@@ -82,6 +82,46 @@ class GenerationProvidersResponse(BaseModel):
     image: list[ProviderInfoSchema]
 
 
+class LocalAiStatusSchema(BaseModel):
+    available: bool
+    missing: list[str] = Field(default_factory=list)
+
+
+class OllamaStatusSchema(BaseModel):
+    host: str
+    reachable: bool
+    models: list[str] = Field(default_factory=list)
+    error: str | None = None
+
+
+class FluxStatusSchema(BaseModel):
+    model_id: str
+    weights_present: bool
+    cache_hint: str | None = None
+
+
+class CudaStatusSchema(BaseModel):
+    available: bool
+    device_name: str | None = None
+
+
+class ProviderReadinessSchema(BaseModel):
+    ollama: bool
+    flux: bool
+    test_llm: bool = True
+    test_image: bool = True
+
+
+class GenerationReadinessResponse(BaseModel):
+    """Fuente de verdad de readiness de generación IA (solo reporte)."""
+
+    local_ai: LocalAiStatusSchema
+    ollama: OllamaStatusSchema
+    flux: FluxStatusSchema
+    cuda: CudaStatusSchema
+    providers: ProviderReadinessSchema
+
+
 class JobCreatedResponse(BaseModel):
     """Respuesta al encolar un job."""
 

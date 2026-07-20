@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 
 import { AppButton } from '../../core/components/AppButton'
 import { ProviderSelector } from '../../core/components/ProviderSelector'
-import { useGenerationProviders } from '../../core/hooks/useGenerationProviders'
+import { useGenerationReadiness } from '../../core/hooks/useGenerationReadiness'
 import type { ImageProviderId } from '../../core/api/types'
 
 export interface SingleImageFormValues {
@@ -29,7 +29,7 @@ interface SingleImageFormProps {
 
 /** Formulario: prompt libre + provider de imagen. */
 export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps) {
-  const catalog = useGenerationProviders()
+  const { catalog, canUseFlux } = useGenerationReadiness()
   const [prompt, setPrompt] = useState('')
   const [applyStyleSuffix, setApplyStyleSuffix] = useState(true)
   const [imageProvider, setImageProvider] = useState<ImageProviderId>('test')
@@ -41,10 +41,13 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
     setImageProvider((preferred?.id ?? fallback?.id ?? 'test') as ImageProviderId)
   }, [catalog])
 
+  const comboOk = imageProvider === 'test' || canUseFlux
+  const canSubmit = Boolean(catalog) && !isSubmitting && Boolean(prompt.trim()) && comboOk
+
   function handleSubmit(event: FormEvent): void {
     event.preventDefault()
     const trimmed = prompt.trim()
-    if (!trimmed) return
+    if (!trimmed || !canSubmit) return
     onSubmit({ prompt: trimmed, applyStyleSuffix, imageProvider })
   }
 
@@ -89,13 +92,7 @@ export function SingleImageForm({ onSubmit, isSubmitting }: SingleImageFormProps
         />
       </FieldGroup>
 
-      <AppButton
-        type="submit"
-        size="lg"
-        className="w-full"
-        icon={Sparkles}
-        disabled={isSubmitting || !prompt.trim() || !catalog}
-      >
+      <AppButton type="submit" size="lg" className="w-full" icon={Sparkles} disabled={!canSubmit}>
         {isSubmitting ? 'Generando…' : 'Generar'}
       </AppButton>
     </form>
