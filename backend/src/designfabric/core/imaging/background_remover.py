@@ -1,8 +1,8 @@
-"""Pipeline de eliminación de fondo para ilustraciones tipo sticker/clipart/DTF.
+"""Pipeline de eliminación de fondo para imágenes generales.
 
 Flujo orquestado por :func:`process_image`:
 
-    load_image -> strategy.generate_mask -> iterative_erode -> apply_mask -> save_image
+    load_image -> strategy.remove_background -> save_image
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from designfabric.core.imaging.silhouette_strategies import SilhouetteStrategy
+from designfabric.core.imaging.background_removal_strategies import BackgroundRemovalStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class RemovalConfig:
     """Configuración inmutable del pipeline de eliminación de fondo."""
 
     max_iterations: int = 5
-    """Número máximo de erosiones iterativas hasta estabilizar el área de la máscara."""
+    """Número máximo de erosiones iterativas (estrategias clásicas por silueta)."""
 
 
 def load_image(image_path: Path) -> np.ndarray:
@@ -44,30 +44,6 @@ def load_image(image_path: Path) -> np.ndarray:
     return img
 
 
-def iterative_erode(mask: np.ndarray, max_iterations: int = 5) -> np.ndarray:
-    """Erosiona la máscara hasta que el área se estabilice o se agoten las iteraciones."""
-    current_mask = mask
-    previous_area = cv2.countNonZero(current_mask)
-    kernel = np.ones((3, 3), np.uint8)
-
-    for _ in range(1, max_iterations + 1):
-        eroded_mask = cv2.erode(current_mask, kernel, iterations=1)
-        current_area = cv2.countNonZero(eroded_mask)
-
-        if current_area == 0 or (previous_area - current_area) < (previous_area * 0.005):
-            break
-        current_mask = eroded_mask
-        previous_area = current_area
-
-    return current_mask
-
-
-def apply_mask(img: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    """Combina la imagen BGR con la máscara en un array BGRA."""
-    b, g, r = cv2.split(img)
-    return cv2.merge([b, g, r, mask])
-
-
 def save_image(image: np.ndarray, output_path: Path) -> None:
     """Guarda una imagen BGRA como PNG, creando directorios de salida si hace falta."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,13 +51,13 @@ def save_image(image: np.ndarray, output_path: Path) -> None:
         raise OSError(f"No se pudo guardar la imagen: {output_path}")
 
 
-class StickerProcessor:
-    """Contexto del Strategy: aplica detección de silueta y postproceso de erosión."""
+class BackgroundRemover:
+    """Contexto del Strategy: carga, delega la eliminación de fondo y guarda el resultado."""
 
-    def __init__(self, strategy: SilhouetteStrategy) -> None:
+    def __init__(self, strategy: BackgroundRemovalStrategy) -> None:
         self.strategy = strategy
 
-    def set_strategy(self, strategy: SilhouetteStrategy) -> None:
+    def set_strategy(self, strategy: BackgroundRemovalStrategy) -> None:
         self.strategy = strategy
 
     def process(
@@ -90,12 +66,15 @@ class StickerProcessor:
         output_path: Path,
         config: RemovalConfig = RemovalConfig(),
     ) -> np.ndarray:
+        del config  # la erosión/postproceso vive dentro de cada estrategia
         img = load_image(image_path)
-        mask = self.strategy.generate_mask(img)
-        mask = iterative_erode(mask, config.max_iterations)
-        if not np.any(mask):
-            logger.warning("La máscara quedó completamente transparente para %s.", image_path)
-        result = apply_mask(img, mask)
+        result = self.strategy.remove_background(img)
+        if result.ndim != 3 or result.shape[2] != 4:
+            raise ValueError(
+                f"La estrategia debe devolver BGRA uint8; se obtuvo shape={result.shape}"
+            )
+        if not np.any(result[:, :, 3]):
+            logger.warning("El resultado quedó completamente transparente para %s.", image_path)
         save_image(result, output_path)
         return result
 
@@ -103,8 +82,8 @@ class StickerProcessor:
 def process_image(
     input_path: Path,
     output_path: Path,
-    strategy: SilhouetteStrategy,
+    strategy: BackgroundRemovalStrategy,
     config: RemovalConfig = RemovalConfig(),
 ) -> np.ndarray:
     """Orquesta el pipeline completo de eliminación de fondo y guarda el resultado."""
-    return StickerProcessor(strategy).process(input_path, output_path, config)
+    return BackgroundRemover(strategy).process(input_path, output_path, config)

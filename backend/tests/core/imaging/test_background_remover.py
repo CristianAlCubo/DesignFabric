@@ -8,16 +8,18 @@ import cv2
 import numpy as np
 import pytest
 
+from designfabric.core.imaging.background_removal_ops import apply_mask, iterative_erode
 from designfabric.core.imaging.background_remover import (
+    BackgroundRemover,
     RemovalConfig,
-    StickerProcessor,
-    apply_mask,
-    iterative_erode,
     load_image,
     process_image,
     save_image,
 )
-from designfabric.core.imaging.silhouette_strategies import ColorBackgroundStrategy, WhiteBackgroundStrategy
+from designfabric.core.imaging.background_removal_strategies import (
+    ColorBackgroundStrategy,
+    WhiteBackgroundStrategy,
+)
 
 
 def test_load_image_returns_bgr(synthetic_white_bg_path: Path) -> None:
@@ -107,7 +109,7 @@ def test_processor_set_strategy_switches_behavior(
     synthetic_color_bg_path: Path,
     tmp_path: Path,
 ) -> None:
-    processor = StickerProcessor(WhiteBackgroundStrategy())
+    processor = BackgroundRemover(WhiteBackgroundStrategy())
     out_white = tmp_path / "white.png"
     result_white = processor.process(synthetic_white_bg_path, out_white)
     assert out_white.is_file()

@@ -1,12 +1,17 @@
-"""ClearCut: pipeline de eliminación de fondo para ilustraciones tipo sticker/clipart/DTF."""
+"""ClearCut: pipeline de eliminación de fondo y escalado de imágenes."""
 
-from designfabric.core.imaging.background_remover import RemovalConfig, StickerProcessor, process_image
-from designfabric.core.imaging.silhouette_strategies import (
+from designfabric.core.imaging.background_remover import (
+    BackgroundRemover,
+    RemovalConfig,
+    process_image,
+)
+from designfabric.core.imaging.background_removal_strategies import (
+    BackgroundRemovalStrategy,
     ColorBackgroundStrategy,
-    SilhouetteStrategy,
+    RemovalModelPaths,
     StrategyName,
     WhiteBackgroundStrategy,
-    create_silhouette_strategy,
+    create_background_removal_strategy,
 )
 from designfabric.core.imaging.model_assets import EnsureModelsReport, ensure_models
 from designfabric.core.imaging.upscale_pipeline import ScaleOutcome, get_scale_defaults, scale_image
@@ -20,13 +25,14 @@ from designfabric.core.imaging.upscale_strategies import (
 
 __all__ = [
     "RemovalConfig",
-    "StickerProcessor",
+    "BackgroundRemover",
     "process_image",
-    "SilhouetteStrategy",
+    "BackgroundRemovalStrategy",
     "WhiteBackgroundStrategy",
     "ColorBackgroundStrategy",
+    "RemovalModelPaths",
     "StrategyName",
-    "create_silhouette_strategy",
+    "create_background_removal_strategy",
     "get_scale_defaults",
     "scale_image",
     "ScaleOutcome",

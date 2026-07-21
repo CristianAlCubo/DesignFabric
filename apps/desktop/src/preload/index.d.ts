@@ -5,6 +5,7 @@ import type {
   OpenRouterPublicStatus
 } from '@shared/generationPreferences'
 import type { LogEntry } from '@shared/logEntry'
+import type { ModelPathPreferences } from '@shared/modelPathPreferences'
 
 declare global {
   interface Window {
@@ -28,6 +29,9 @@ declare global {
 
       /** Diálogo nativo para elegir un directorio. `undefined` si el usuario cancela. */
       openDirectoryDialog: () => Promise<string | undefined>
+
+      /** Diálogo nativo para elegir un archivo ONNX. `undefined` si el usuario cancela. */
+      openOnnxFileDialog: () => Promise<string | undefined>
 
       /** Cuenta imágenes soportadas (png/jpg/jpeg/webp) en una carpeta, sin subcarpetas. */
       countImagesInDirectory: (directoryPath: string) => Promise<number>
@@ -56,6 +60,8 @@ declare global {
       clearOpenRouterKey: () => Promise<OpenRouterPublicStatus>
       getGenerationPreferences: () => Promise<GenerationPreferences>
       setGenerationPreferences: (prefs: GenerationPreferences) => Promise<GenerationPreferences>
+      getModelPaths: () => Promise<ModelPathPreferences>
+      setModelPaths: (prefs: ModelPathPreferences) => Promise<ModelPathPreferences>
     }
   }
 }

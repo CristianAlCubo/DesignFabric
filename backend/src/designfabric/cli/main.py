@@ -29,7 +29,11 @@ from designfabric.core.imaging.batch import (
     run_batch as run_clearcut_batch,
 )
 from designfabric.core.imaging.model_assets import ensure_models, report_to_json
-from designfabric.core.imaging.silhouette_strategies import StrategyName, create_silhouette_strategy
+from designfabric.core.imaging.background_removal_strategies import (
+    StrategyName,
+    create_background_removal_strategy,
+)
+from designfabric.core.imaging.model_path_runtime import get_model_path_runtime
 from designfabric.core.imaging.upscale_pipeline import WARNING_PREFIX, get_scale_defaults, scale_image
 from designfabric.core.imaging.upscale_strategies import UpscaleError, UpscaleStrategyName
 
@@ -50,9 +54,9 @@ def _add_remove_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentP
     parser.add_argument("--output", type=Path, required=True, help="Ruta del PNG de salida.")
     parser.add_argument(
         "--strategy",
-        choices=("white_background", "color_background"),
+        choices=("white_background", "color_background", "sam2_vitmatte", "isnet_general", "rembg_illustration", "birefnet_sam2_matte"),
         default="white_background",
-        help="Estrategia de detección de silueta (default: white_background).",
+        help="Estrategia de eliminación de fondo (default: white_background).",
     )
     parser.add_argument(
         "--max-iterations",
@@ -109,7 +113,7 @@ def _add_batch_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     parser.add_argument("--output-dir", type=Path, required=True, help="Carpeta donde se escribirán los PNG generados.")
     parser.add_argument(
         "--removal-strategy",
-        choices=("white_background", "color_background"),
+        choices=("white_background", "color_background", "sam2_vitmatte", "isnet_general", "rembg_illustration", "birefnet_sam2_matte"),
         default="white_background",
         help="Estrategia de recorte (default: white_background).",
     )
@@ -139,7 +143,13 @@ def _build_clearcut_arg_parser() -> argparse.ArgumentParser:
 
 def _handle_remove(args: argparse.Namespace) -> None:
     strategy_name: StrategyName = args.strategy
-    strategy = create_silhouette_strategy(strategy_name)
+    runtime = get_model_path_runtime()
+    runtime.seed_from_settings()
+    strategy = create_background_removal_strategy(
+        strategy_name,
+        model_paths=runtime.resolve_paths(),
+        max_iterations=args.max_iterations,
+    )
     config = RemovalConfig(max_iterations=args.max_iterations)
 
     logger.info("Procesando %s -> %s (strategy=%s)", args.input, args.output, strategy_name)

@@ -17,6 +17,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { ImageModelsSection } from './ImageModelsSection'
 import { LanguageModelsSection } from './LanguageModelsSection'
 import { LocalAiSection } from './LocalAiSection'
+import { LocalModelsSection } from './LocalModelsSection'
 import { OpenRouterSection } from './OpenRouterSection'
 import { SettingsGenerationProvider } from './SettingsGenerationContext'
 import {
@@ -98,6 +99,8 @@ function SettingsContent({
       return <LanguageModelsSection onNavigate={onNavigate} />
     case 'image-models':
       return <ImageModelsSection onNavigate={onNavigate} />
+    case 'local-models':
+      return <LocalModelsSection />
     case 'local-ai':
       return <LocalAiSection />
     case 'general':

@@ -11,7 +11,14 @@ def test_strategies_endpoint_lists_known_strategies(client):
     response = client.get("/api/clearcut/strategies")
     assert response.status_code == 200
     ids = {item["id"] for item in response.json()}
-    assert ids == {"white_background", "color_background"}
+    assert ids == {
+        "white_background",
+        "color_background",
+        "sam2_vitmatte",
+        "isnet_general",
+        "rembg_illustration",
+        "birefnet_sam2_matte",
+    }
 
 
 def test_remove_background_job_lifecycle_reaches_succeeded(client, synthetic_white_bg_path):

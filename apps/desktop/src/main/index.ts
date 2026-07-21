@@ -8,6 +8,8 @@ import { backendBaseUrl } from './config'
 import { readAppVersion } from './app-version'
 import { getLastImageDirectory, rememberImageDirectory } from './lastImageDirectory'
 import { getLogHistory, pushLog } from './log-store'
+import { registerModelPathSettingsIpc } from './model-path-settings-ipc'
+import { syncModelPathsToBackend } from './model-path-sync'
 import { registerOpenRouterSettingsIpc } from './openrouter-settings-ipc'
 import { syncOpenRouterToBackend } from './openrouter-sync'
 import { registerSetupIpc } from './setup-ipc'
@@ -21,6 +23,7 @@ if (process.platform === 'linux') {
 }
 
 const IMAGE_FILTERS = [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
+const ONNX_FILTERS = [{ name: 'Modelos ONNX', extensions: ['onnx'] }]
 
 /** Extensiones que el pipeline ClearCut acepta (alineado a `SUPPORTED_EXTENSIONS` del backend). */
 const BATCH_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp'])
@@ -73,6 +76,18 @@ ipcMain.handle('dialog:openDirectory', async (): Promise<string | undefined> => 
   // una ruta ficticia *dentro* del directorio elegido para que lo recuerde tal cual.
   rememberImageDirectory(join(directoryPath, '.placeholder'))
   return directoryPath
+})
+
+ipcMain.handle('dialog:openOnnxFile', async (): Promise<string | undefined> => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    defaultPath: getLastImageDirectory(),
+    filters: ONNX_FILTERS,
+  })
+  if (result.canceled || result.filePaths.length === 0) return undefined
+  const [filePath] = result.filePaths
+  rememberImageDirectory(filePath)
+  return filePath
 })
 
 /** Cuenta imágenes soportadas en una carpeta (sin subcarpetas), para preflight del lote. */
@@ -140,7 +155,10 @@ function startBackendInBackground(extras: string[]): void {
   // sync` (torch/diffusers/etc.) puede tardar varios minutos y ocurre antes
   // de que uvicorn siquiera empiece a escuchar.
   waitForBackendReady(15 * 60 * 1000)
-    .then(() => syncOpenRouterToBackend())
+    .then(async () => {
+      await syncOpenRouterToBackend()
+      await syncModelPathsToBackend()
+    })
     .catch((err: unknown) => {
       const line = `Backend did not become ready in time: ${String(err)}`
       console.error(line)
@@ -151,6 +169,7 @@ function startBackendInBackground(extras: string[]): void {
 function bootstrap(): void {
   registerSetupIpc()
   registerOpenRouterSettingsIpc()
+  registerModelPathSettingsIpc()
 
   if (!app.isPackaged) {
     // Dev: comportamiento idéntico a siempre, sin wizard de por medio (el

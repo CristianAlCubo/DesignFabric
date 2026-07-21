@@ -4,6 +4,7 @@ import type { Readable } from 'node:stream'
 
 import { backendBaseUrl, backendPort } from './config'
 import { pushLog } from './log-store'
+import { modelPathEnvBootstrap } from './model-path-sync'
 import { openRouterEnvBootstrap } from './openrouter-sync'
 import { ensurePythonEnvironment } from './pythonSetup'
 import { resolveBackendRuntime } from './runtime'
@@ -39,7 +40,8 @@ export async function spawnBackend(extras: string[] = []): Promise<void> {
       env: {
         ...process.env,
         DESIGNFABRIC_API_PORT: String(backendPort),
-        ...openRouterEnvBootstrap()
+        ...openRouterEnvBootstrap(),
+        ...modelPathEnvBootstrap()
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },

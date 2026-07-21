@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     openrouter_image_model: str | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
+    # Modelos locales ONNX para eliminación de fondo (rutas absolutas; sync vía Settings UI).
+    sam2_encoder_onnx: str | None = None
+    sam2_decoder_onnx: str | None = None
+    vitmatte_onnx: str | None = None
+    isnet_general_onnx: str | None = None
+
 
 def get_settings() -> Settings:
     """Punto único de acceso a la configuración (facilita mockear en tests)."""

@@ -22,7 +22,11 @@ from designfabric.core.imaging.batch.types import (
     BatchItemResult,
     BatchReport,
 )
-from designfabric.core.imaging.silhouette_strategies import SilhouetteStrategy, create_silhouette_strategy
+from designfabric.core.imaging.background_removal_strategies import (
+    BackgroundRemovalStrategy,
+    create_background_removal_strategy,
+)
+from designfabric.core.imaging.model_path_runtime import get_model_path_runtime
 from designfabric.core.imaging.upscale_pipeline import ScaleOutcome, scale_image
 from designfabric.core.progress import (
     Phase,
@@ -35,7 +39,7 @@ from designfabric.core.progress import (
 
 logger = logging.getLogger(__name__)
 
-RemoveFn = Callable[[Path, Path, SilhouetteStrategy, RemovalConfig], np.ndarray]
+RemoveFn = Callable[[Path, Path, BackgroundRemovalStrategy, RemovalConfig], np.ndarray]
 ScaleFn = Callable[..., ScaleOutcome]
 ProgressCallback = Callable[[int, int, Path], None]
 ItemCallback = Callable[[BatchItemResult], None]
@@ -71,7 +75,13 @@ class BatchProcessor:
         candidates = source.resolve()
         total = len(candidates)
         results: list[BatchItemResult] = []
-        strategy = create_silhouette_strategy(config.removal_strategy)
+        runtime = get_model_path_runtime()
+        runtime.seed_from_settings()
+        strategy = create_background_removal_strategy(
+            config.removal_strategy,
+            model_paths=runtime.resolve_paths(),
+            max_iterations=config.removal.max_iterations,
+        )
         cancelled = False
 
         if reporter is not None:
@@ -119,7 +129,7 @@ class BatchProcessor:
     def _process_one(
         self,
         config: BatchConfig,
-        strategy: SilhouetteStrategy,
+        strategy: BackgroundRemovalStrategy,
         input_path: Path,
         target: OutputTarget,
     ) -> BatchItemResult:

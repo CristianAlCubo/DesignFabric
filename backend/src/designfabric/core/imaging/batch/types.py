@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from designfabric.core.imaging.background_remover import RemovalConfig
-from designfabric.core.imaging.silhouette_strategies import StrategyName
+from designfabric.core.imaging.background_removal_strategies import StrategyName
 from designfabric.core.imaging.upscale_strategies import UpscaleStrategyName
 
 BatchItemStatus = Literal["succeeded", "failed", "skipped"]

@@ -5,6 +5,7 @@ import type {
   GenerationPreferences,
   OpenRouterPublicStatus
 } from '@shared/generationPreferences'
+import type { ModelPathPreferences } from '@shared/modelPathPreferences'
 
 const api = {
   getBackendBaseUrl: (): Promise<string> => ipcRenderer.invoke('get-backend-base-url'),
@@ -24,6 +25,8 @@ const api = {
   openImagesDialog: (): Promise<string[]> => ipcRenderer.invoke('dialog:openImages'),
 
   openDirectoryDialog: (): Promise<string | undefined> => ipcRenderer.invoke('dialog:openDirectory'),
+
+  openOnnxFileDialog: (): Promise<string | undefined> => ipcRenderer.invoke('dialog:openOnnxFile'),
 
   /** Cuenta imágenes soportadas (png/jpg/jpeg/webp) en una carpeta, sin subcarpetas. */
   countImagesInDirectory: (directoryPath: string): Promise<number> =>
@@ -58,7 +61,12 @@ const api = {
     ipcRenderer.invoke('settings:getGenerationPreferences'),
 
   setGenerationPreferences: (prefs: GenerationPreferences): Promise<GenerationPreferences> =>
-    ipcRenderer.invoke('settings:setGenerationPreferences', prefs)
+    ipcRenderer.invoke('settings:setGenerationPreferences', prefs),
+
+  getModelPaths: (): Promise<ModelPathPreferences> => ipcRenderer.invoke('settings:getModelPaths'),
+
+  setModelPaths: (prefs: ModelPathPreferences): Promise<ModelPathPreferences> =>
+    ipcRenderer.invoke('settings:setModelPaths', prefs)
 }
 
 contextBridge.exposeInMainWorld('designfabric', api)

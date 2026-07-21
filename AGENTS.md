@@ -104,14 +104,46 @@ a request handler. `backend/src/designfabric/jobs/`:
   run on plain threads, so this is how thread → asyncio-loop progress publishing works) and
   consumed by the frontend via `useJobProgress.ts`.
 
+### Background removal Strategy pattern
+
+Background removal is a general imaging concern (not sticker-only). The public contract is
+`BackgroundRemovalStrategy.remove_background(bgr) -> bgra` in
+`core/imaging/background_removal_strategies.py`. The orchestrator
+(`BackgroundRemover` / `process_image`) only loads, delegates, and saves — each strategy owns
+its full internal pipeline (including any silhouette detection, erosion, or neural matting).
+
+Registered strategies (`StrategyName` + `create_background_removal_strategy`):
+
+- `white_background` / `color_background` — classical OpenCV silhouette phases + erosion
+- `sam2_vitmatte` — SAM2 Tiny ONNX + ViTMatte ONNX + Guided Filter (`core/imaging/sam2_vitmatte/`);
+  matting pipeline tuned for photos (soft edges) — trimap + neural alpha blending
+- `isnet_general` — IS-Net general-use ONNX, single-pass saliency segmentation, no trimap/matting
+  (`core/imaging/isnet_strategy.py`); hard, consistent edges — the recommended default for flat
+  illustrations/stickers
+- `rembg_illustration` — IS-Net-anime via the `rembg` library (`core/imaging/rembg_strategy.py`),
+  trained specifically on anime/2D illustration art
+- `birefnet_sam2_matte` — BiRefNet (primary, via `rembg`) → SAM2 (optional refinement, only if
+  configured) → ViTMatte or BRIA RMBG (auto-selected: ViTMatte if configured, else BRIA via
+  `rembg`) → guided filter (`core/imaging/birefnet_sam2_matte_strategy.py`)
+
+Local ONNX paths for SAM2/ViTMatte/IS-Net general are configured in the desktop Settings →
+«Modelos locales» (SAM2 encoder + SAM2 decoder + ViTMatte + IS-Net general; persisted in
+`userData`, synced via env `DESIGNFABRIC_SAM2_ENCODER_ONNX` / `DESIGNFABRIC_SAM2_DECODER_ONNX` /
+`DESIGNFABRIC_VITMATTE_ONNX` / `DESIGNFABRIC_ISNET_GENERAL_ONNX` and `PUT /api/settings/model-paths`).
+`rembg_illustration` and `birefnet_sam2_matte` instead manage their own models (BiRefNet, BRIA
+RMBG, IS-Net-anime) via `rembg`, which downloads and caches them on first use (needs internet
+that first time; no path configuration needed) — `birefnet_sam2_matte` opportunistically reuses
+the SAM2/ViTMatte paths above when present. The UI strategy list comes from
+`GET /api/clearcut/strategies`.
+
 ### Backend layout
 
 `backend/src/designfabric/`:
 - `api/` — FastAPI layer: `app.py` (factory), `registry.py` (feature registry), `routers/` (one
   module per feature, each exposing a `router` + `build_handlers`), `dispatcher.py`,
   `schemas.py`/`serializers.py`.
-- `core/` — domain logic, framework-agnostic: `imaging/` (background removal, upscaling
-  strategies incl. AI upscalers, batch processing pipeline) and
+- `core/` — domain logic, framework-agnostic: `imaging/` (background removal strategies,
+  upscaling strategies incl. AI upscalers, batch processing pipeline) and
   `generation/` (Ollama prompt generation + FLUX.2 Klein sticker pipeline).
 - `jobs/` — the queue/worker/dispatcher system described above.
 - `cli/` — standalone Typer/Rich-based CLIs (`clearcut`, `designfabric`) that call the same `core/`

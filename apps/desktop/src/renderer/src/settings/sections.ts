@@ -1,10 +1,11 @@
-import { Brain, Cpu, Image as ImageIcon, Info, KeyRound, type LucideIcon } from 'lucide-react'
+import { Box, Brain, Cpu, Image as ImageIcon, Info, KeyRound, type LucideIcon } from 'lucide-react'
 
 export type SettingsSectionId =
   | 'general'
   | 'openrouter'
   | 'language-models'
   | 'image-models'
+  | 'local-models'
   | 'local-ai'
 
 export interface SettingsSection {
@@ -38,6 +39,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: 'Modelos de imagen',
     description: 'Configura el modelo de cada provider de imagen.',
     icon: ImageIcon
+  },
+  {
+    id: 'local-models',
+    label: 'Modelos locales',
+    description: 'Rutas a modelos ONNX locales (SAM2 encoder/decoder, ViTMatte).',
+    icon: Box
   },
   {
     id: 'local-ai',

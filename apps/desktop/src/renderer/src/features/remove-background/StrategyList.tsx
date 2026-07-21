@@ -1,3 +1,15 @@
+import { Info } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger
+} from '@/components/ui/popover'
+
 import type { StrategyInfo } from './store'
 
 interface StrategyListProps {
@@ -33,8 +45,30 @@ export function StrategyList({
           />
           <span className="strategy-option__body">
             <span className="strategy-option__label">{strategy.label}</span>
-            <span className="strategy-option__description">{strategy.description}</span>
           </span>
+          {strategy.description ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="strategy-option__info"
+                  disabled={disabled}
+                  aria-label={`Más información sobre ${strategy.label}`}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Info />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end">
+                <PopoverHeader>
+                  <PopoverTitle>{strategy.label}</PopoverTitle>
+                </PopoverHeader>
+                <PopoverDescription>{strategy.description}</PopoverDescription>
+              </PopoverContent>
+            </Popover>
+          ) : null}
         </label>
       ))}
     </fieldset>

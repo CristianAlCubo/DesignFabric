@@ -594,17 +594,18 @@ input {
   flex-direction: column;
   gap: 0.65rem;
   margin: 0;
-  padding: 0;
+  padding: 0 0.15rem 0 0;
   border: none;
   min-height: 0;
   flex: 1;
+  overflow-y: auto;
 }
 
 .strategy-option {
   display: flex;
   gap: 0.65rem;
-  align-items: flex-start;
-  padding: 0.7rem 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.5rem 0.55rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
@@ -624,14 +625,13 @@ input {
 }
 
 .strategy-option input {
-  margin-top: 0.2rem;
   accent-color: var(--primary);
 }
 
 .strategy-option__body {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .strategy-option__label {
@@ -639,10 +639,9 @@ input {
   color: var(--text-primary);
 }
 
-.strategy-option__description {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  line-height: 1.35;
+.strategy-option__info {
+  flex-shrink: 0;
+  color: var(--text-muted);
 }
 
 .image-viewer {

@@ -206,7 +206,14 @@ class RemoveBackgroundJobRequest(BaseModel):
     """Payload para recortar el fondo de una única imagen."""
 
     input_path: str
-    strategy: Literal["white_background", "color_background"]
+    strategy: Literal[
+        "white_background",
+        "color_background",
+        "sam2_vitmatte",
+        "isnet_general",
+        "rembg_illustration",
+        "birefnet_sam2_matte",
+    ]
 
 
 class RemoveBackgroundResultSchema(BaseModel):
@@ -252,7 +259,14 @@ class ClearcutBatchJobRequest(BaseModel):
 
     input: ClearcutBatchInputSchema
     output_dir: str
-    removal_strategy: Literal["white_background", "color_background"]
+    removal_strategy: Literal[
+        "white_background",
+        "color_background",
+        "sam2_vitmatte",
+        "isnet_general",
+        "rembg_illustration",
+        "birefnet_sam2_matte",
+    ]
     scale_strategy: Literal["realesrgan"]
     factor: Literal[2, 4]
 
@@ -296,3 +310,25 @@ class JobStatusResponse(BaseModel):
         | None
     ) = None
     error: str | None = None
+
+
+class ModelPathsPublicResponse(BaseModel):
+    """Rutas locales a modelos ONNX de eliminación de fondo."""
+
+    sam2_encoder_onnx: str | None = None
+    sam2_decoder_onnx: str | None = None
+    vitmatte_onnx: str | None = None
+    isnet_general_onnx: str | None = None
+
+
+class ModelPathsUpdateRequest(BaseModel):
+    """Actualización parcial de rutas a modelos ONNX."""
+
+    sam2_encoder_onnx: str | None = None
+    sam2_decoder_onnx: str | None = None
+    vitmatte_onnx: str | None = None
+    isnet_general_onnx: str | None = None
+    clear_sam2_encoder: bool = False
+    clear_sam2_decoder: bool = False
+    clear_vitmatte: bool = False
+    clear_isnet_general: bool = False

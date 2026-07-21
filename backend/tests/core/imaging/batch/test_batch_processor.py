@@ -15,7 +15,7 @@ from designfabric.core.imaging.batch.input_sources import FilesInputSource, Fold
 from designfabric.core.imaging.batch.output_targets import DirectoryOutputTarget
 from designfabric.core.imaging.batch.processor import BatchProcessor, emit_item_line, run_batch
 from designfabric.core.imaging.batch.types import ITEM_PREFIX, BatchConfig, BatchItemResult
-from designfabric.core.imaging.silhouette_strategies import SilhouetteStrategy
+from designfabric.core.imaging.background_removal_strategies import BackgroundRemovalStrategy
 from designfabric.core.imaging.upscale_pipeline import ScaleOutcome
 from designfabric.core.imaging.upscale_strategies import UpscaleResult
 from designfabric.core.progress import Phase, ProgressEvent, ProgressEventType
@@ -60,7 +60,7 @@ def test_processor_success_and_factor_dimensions(tmp_path: Path) -> None:
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
@@ -105,7 +105,7 @@ def test_processor_continues_after_failure(tmp_path: Path) -> None:
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         if input_path.name == "bad.png":
@@ -144,7 +144,7 @@ def test_processor_skips_unsupported(tmp_path: Path) -> None:
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
@@ -205,7 +205,7 @@ def test_processor_progress_callback(tmp_path: Path) -> None:
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
@@ -242,7 +242,7 @@ def test_processor_cancels_between_items(tmp_path: Path) -> None:
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         calls["n"] += 1
@@ -297,7 +297,7 @@ def test_processor_reporter_emits_started_progress_completed(tmp_path: Path) -> 
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
@@ -371,7 +371,7 @@ def test_processor_reporter_completed_even_when_cancelled(tmp_path: Path) -> Non
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
@@ -412,7 +412,7 @@ def test_processor_reporter_and_legacy_callbacks_coexist(tmp_path: Path) -> None
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
@@ -462,7 +462,7 @@ def test_processor_no_reporter_keeps_legacy_behavior_intact(tmp_path: Path) -> N
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
@@ -494,7 +494,7 @@ def test_run_batch_functional_accepts_reporter(tmp_path: Path) -> None:
     def remove_fn(
         input_path: Path,
         output_path: Path,
-        _strategy: SilhouetteStrategy,
+        _strategy: BackgroundRemovalStrategy,
         _config: RemovalConfig,
     ) -> np.ndarray:
         output_path.write_bytes(b"cut")
