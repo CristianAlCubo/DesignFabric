@@ -22,6 +22,7 @@ class JobType(str, Enum):
     REMOVE_BACKGROUND = "remove_background"
     SCALE = "scale"
     CLEARCUT_BATCH = "clearcut_batch"
+    MULTI_EXPORT = "multi_export"
 
 
 class JobStatus(str, Enum):

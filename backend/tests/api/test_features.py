@@ -13,10 +13,11 @@ def test_features_reports_local_ai_state(client):
     assert response.status_code == 200
     body = response.json()
     assert body["local_ai_available"] is LOCAL_AI_AVAILABLE
-    assert len(body["modules"]) == 5
+    assert len(body["modules"]) == 6
     assert "remove-background" in body["modules"]
     assert "scale" in body["modules"]
     assert "clearcut-batch" in body["modules"]
+    assert "multi-export" in body["modules"]
     assert "designfabric-batch" in body["modules"]
     assert "designfabric-single" in body["modules"]
 
@@ -39,5 +40,5 @@ def test_features_keeps_generation_modules_when_local_ai_flag_false(monkeypatch,
     assert response.status_code == 200
     body = response.json()
     assert body["local_ai_available"] is False
-    assert len(body["modules"]) == 5
+    assert len(body["modules"]) == 6
     assert "designfabric-batch" in body["modules"]

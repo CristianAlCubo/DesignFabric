@@ -14,7 +14,14 @@ from typing import Callable, Literal
 from fastapi import APIRouter
 
 from designfabric.api.local_ai import LOCAL_AI_AVAILABLE
-from designfabric.api.routers import batch_generation, clearcut_batch, remove_background, scale, single_image
+from designfabric.api.routers import (
+    batch_generation,
+    clearcut_batch,
+    multi_export,
+    remove_background,
+    scale,
+    single_image,
+)
 from designfabric.core.config import Settings
 from designfabric.jobs.models import JobType
 from designfabric.jobs.store import JobStore
@@ -50,6 +57,13 @@ _cpu_modules: tuple[FeatureModule, ...] = (
         (JobType.CLEARCUT_BATCH,),
         "cpu",
         clearcut_batch.build_handlers,
+    ),
+    FeatureModule(
+        "multi-export",
+        multi_export.router,
+        (JobType.MULTI_EXPORT,),
+        "cpu",
+        multi_export.build_handlers,
     ),
 )
 

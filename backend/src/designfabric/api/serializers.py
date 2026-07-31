@@ -9,6 +9,8 @@ from designfabric.api.schemas import (
     ClearcutBatchItemResultSchema,
     ClearcutBatchResultSchema,
     JobStatusResponse,
+    MultiExportItemResultSchema,
+    MultiExportResultSchema,
     RemoveBackgroundResultSchema,
     ScaleResultSchema,
     StickerResultSchema,
@@ -67,6 +69,7 @@ def job_to_schema(job: Job, settings: Settings) -> JobStatusResponse:
         | RemoveBackgroundResultSchema
         | ScaleResultSchema
         | ClearcutBatchResultSchema
+        | MultiExportResultSchema
         | None
     ) = None
 
@@ -104,6 +107,15 @@ def job_to_schema(job: Job, settings: Settings) -> JobStatusResponse:
             skipped=job.result["skipped"],
             cancelled=job.result["cancelled"],
             items=[ClearcutBatchItemResultSchema(**item) for item in job.result["items"]],
+        )
+    elif job.result is not None and job.type is JobType.MULTI_EXPORT:
+        zip_path = job.result["zip_path"]
+        result_schema = MultiExportResultSchema(
+            zip_path=zip_path,
+            zip_url=_image_url(zip_path, settings) or "",
+            expected=job.result["expected"],
+            produced=job.result["produced"],
+            items=[MultiExportItemResultSchema(**item) for item in job.result["items"]],
         )
 
     return JobStatusResponse(

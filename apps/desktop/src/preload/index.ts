@@ -6,6 +6,7 @@ import type {
   OpenRouterPublicStatus
 } from '@shared/generationPreferences'
 import type { ModelPathPreferences } from '@shared/modelPathPreferences'
+import type { MultiExportPreset, SizeRow } from '@shared/multiExportPresets'
 
 const api = {
   getBackendBaseUrl: (): Promise<string> => ipcRenderer.invoke('get-backend-base-url'),
@@ -66,7 +67,34 @@ const api = {
   getModelPaths: (): Promise<ModelPathPreferences> => ipcRenderer.invoke('settings:getModelPaths'),
 
   setModelPaths: (prefs: ModelPathPreferences): Promise<ModelPathPreferences> =>
-    ipcRenderer.invoke('settings:setModelPaths', prefs)
+    ipcRenderer.invoke('settings:setModelPaths', prefs),
+
+  /** Guarda el .zip generado por un job de exportación multi-tamaño en una ruta elegida por el usuario. */
+  downloadMultiExportZip: (sourceUrl: string, suggestedName: string): Promise<string | undefined> =>
+    ipcRenderer.invoke('multiExport:downloadZip', { sourceUrl, suggestedName }),
+
+  listMultiExportPresets: (): Promise<MultiExportPreset[]> =>
+    ipcRenderer.invoke('multiExport:presets:list'),
+
+  createMultiExportPreset: (input: { name: string; sizes: SizeRow[] }): Promise<MultiExportPreset> =>
+    ipcRenderer.invoke('multiExport:presets:create', input),
+
+  updateMultiExportPreset: (
+    id: string,
+    patch: { name?: string; sizes?: SizeRow[] }
+  ): Promise<MultiExportPreset> => ipcRenderer.invoke('multiExport:presets:update', id, patch),
+
+  deleteMultiExportPreset: (id: string): Promise<void> =>
+    ipcRenderer.invoke('multiExport:presets:delete', id),
+
+  duplicateMultiExportPreset: (id: string): Promise<MultiExportPreset> =>
+    ipcRenderer.invoke('multiExport:presets:duplicate', id),
+
+  exportMultiExportPresetsToFile: (presets: MultiExportPreset[]): Promise<string | undefined> =>
+    ipcRenderer.invoke('multiExport:presets:exportToFile', presets),
+
+  importMultiExportPresetsFromFile: (): Promise<MultiExportPreset[] | undefined> =>
+    ipcRenderer.invoke('multiExport:presets:importFromFile')
 }
 
 contextBridge.exposeInMainWorld('designfabric', api)

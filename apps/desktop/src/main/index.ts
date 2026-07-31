@@ -10,6 +10,7 @@ import { getLastImageDirectory, rememberImageDirectory } from './lastImageDirect
 import { getLogHistory, pushLog } from './log-store'
 import { registerModelPathSettingsIpc } from './model-path-settings-ipc'
 import { syncModelPathsToBackend } from './model-path-sync'
+import { registerMultiExportPresetsIpc } from './multi-export-presets-ipc'
 import { registerOpenRouterSettingsIpc } from './openrouter-settings-ipc'
 import { syncOpenRouterToBackend } from './openrouter-sync'
 import { registerSetupIpc } from './setup-ipc'
@@ -24,6 +25,7 @@ if (process.platform === 'linux') {
 
 const IMAGE_FILTERS = [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
 const ONNX_FILTERS = [{ name: 'Modelos ONNX', extensions: ['onnx'] }]
+const ZIP_FILTERS = [{ name: 'Archivo ZIP', extensions: ['zip'] }]
 
 /** Extensiones que el pipeline ClearCut acepta (alineado a `SUPPORTED_EXTENSIONS` del backend). */
 const BATCH_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp'])
@@ -131,6 +133,28 @@ ipcMain.handle(
   }
 )
 
+// Descarga el .zip generado por un job de exportación multi-tamaño (servido por el
+// backend en `sourceUrl`) a una ruta elegida por el usuario. Mismo patrón que `image:export`.
+ipcMain.handle(
+  'multiExport:downloadZip',
+  async (_event, payload: { sourceUrl: string; suggestedName: string }): Promise<string | undefined> => {
+    const result = await dialog.showSaveDialog({
+      defaultPath: join(getLastImageDirectory() ?? app.getPath('pictures'), payload.suggestedName),
+      filters: ZIP_FILTERS
+    })
+    if (result.canceled || !result.filePath) return undefined
+
+    const response = await fetch(payload.sourceUrl)
+    if (!response.ok) {
+      throw new Error(`No se pudo leer el zip a exportar (${response.status}).`)
+    }
+    const buffer = Buffer.from(await response.arrayBuffer())
+    await writeFile(result.filePath, buffer)
+    rememberImageDirectory(result.filePath)
+    return result.filePath
+  }
+)
+
 // Abre una ruta (archivo o carpeta) en el explorador de archivos del SO.
 ipcMain.handle('shell:openPath', async (_event, targetPath: string): Promise<string> => {
   return shell.openPath(targetPath)
@@ -170,6 +194,7 @@ function bootstrap(): void {
   registerSetupIpc()
   registerOpenRouterSettingsIpc()
   registerModelPathSettingsIpc()
+  registerMultiExportPresetsIpc()
 
   if (!app.isPackaged) {
     // Dev: comportamiento idéntico a siempre, sin wizard de por medio (el

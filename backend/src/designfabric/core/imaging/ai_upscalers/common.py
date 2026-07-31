@@ -83,3 +83,9 @@ def resolve_target_size(
         return target_width, max(1, round(target_width / aspect))
     assert target_width is not None and target_height is not None
     return target_width, target_height
+
+
+def resolve_percent_size(src_width: int, src_height: int, percent: float) -> tuple[int, int]:
+    """Calcula el tamaño destino como porcentaje de las dimensiones propias de la imagen."""
+    factor = percent / 100.0
+    return max(1, round(src_width * factor)), max(1, round(src_height * factor))

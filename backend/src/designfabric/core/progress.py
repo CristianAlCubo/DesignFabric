@@ -30,6 +30,7 @@ class Phase(str, Enum):
     PROMPT_GENERATION = "prompt_generation"
     IMAGE_GENERATION = "image_generation"
     CLEARCUT_BATCH = "clearcut_batch"
+    MULTI_EXPORT = "multi_export"
 
 
 @dataclass(frozen=True, slots=True)

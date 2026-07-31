@@ -6,6 +6,7 @@ import type {
 } from '@shared/generationPreferences'
 import type { LogEntry } from '@shared/logEntry'
 import type { ModelPathPreferences } from '@shared/modelPathPreferences'
+import type { MultiExportPreset, SizeRow } from '@shared/multiExportPresets'
 
 declare global {
   interface Window {
@@ -62,6 +63,28 @@ declare global {
       setGenerationPreferences: (prefs: GenerationPreferences) => Promise<GenerationPreferences>
       getModelPaths: () => Promise<ModelPathPreferences>
       setModelPaths: (prefs: ModelPathPreferences) => Promise<ModelPathPreferences>
+
+      /**
+       * Guarda vía diálogo nativo el .zip generado por un job de exportación multi-tamaño
+       * (URL local del backend). `undefined` si el usuario cancela.
+       */
+      downloadMultiExportZip: (sourceUrl: string, suggestedName: string) => Promise<string | undefined>
+
+      /** Lista los presets de exportación multi-tamaño (built-in + de usuario). */
+      listMultiExportPresets: () => Promise<MultiExportPreset[]>
+      createMultiExportPreset: (input: { name: string; sizes: SizeRow[] }) => Promise<MultiExportPreset>
+      updateMultiExportPreset: (
+        id: string,
+        patch: { name?: string; sizes?: SizeRow[] }
+      ) => Promise<MultiExportPreset>
+      deleteMultiExportPreset: (id: string) => Promise<void>
+      duplicateMultiExportPreset: (id: string) => Promise<MultiExportPreset>
+
+      /** Exporta uno o más presets a un archivo `.json` elegido por el usuario. */
+      exportMultiExportPresetsToFile: (presets: MultiExportPreset[]) => Promise<string | undefined>
+
+      /** Importa presets desde un archivo `.json` elegido por el usuario, validando su formato. */
+      importMultiExportPresetsFromFile: () => Promise<MultiExportPreset[] | undefined>
     }
   }
 }

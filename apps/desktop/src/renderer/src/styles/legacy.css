@@ -907,3 +907,74 @@ input {
   text-align: center;
   color: var(--text-secondary);
 }
+
+.multi-export-image-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 9rem;
+  overflow: auto;
+}
+
+.multi-export-image-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+
+.multi-export-image-list__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.multi-export-run-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.multi-export-run-row__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.multi-export-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.multi-export-result-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+}
+
+.multi-export-result-item--failed {
+  border-color: color-mix(in srgb, var(--error) 35%, var(--border));
+  color: var(--error);
+}
+

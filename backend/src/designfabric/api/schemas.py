@@ -292,6 +292,46 @@ class ClearcutBatchResultSchema(BaseModel):
     items: list[ClearcutBatchItemResultSchema]
 
 
+class SizeRowSchema(BaseModel):
+    """Una fila de tamaño de un preset de exportación multi-tamaño."""
+
+    label: str = Field(min_length=1)
+    mode: Literal["px", "percent"]
+    prefix: str = ""
+    width: int | None = Field(default=None, gt=0)
+    height: int | None = Field(default=None, gt=0)
+    percent: float | None = Field(default=None, gt=0)
+    template: str | None = None
+
+
+class MultiExportJobRequest(BaseModel):
+    """Payload para exportar N imágenes contra una lista de tamaños, empaquetado en un zip."""
+
+    image_paths: list[str] = Field(min_length=1)
+    sizes: list[SizeRowSchema] = Field(min_length=1)
+    output_name: str | None = None
+
+
+class MultiExportItemResultSchema(BaseModel):
+    """Resultado de una combinación (imagen, fila de tamaño) individual."""
+
+    input: str | None
+    size_label: str
+    status: Literal["succeeded", "failed"]
+    archive_member: str | None = None
+    error: str | None = None
+
+
+class MultiExportResultSchema(BaseModel):
+    """Resultado completo de un job de exportación multi-tamaño."""
+
+    zip_path: str
+    zip_url: str
+    expected: int
+    produced: int
+    items: list[MultiExportItemResultSchema]
+
+
 class JobStatusResponse(BaseModel):
     """Estado y, si terminó, resultado de un job."""
 
@@ -307,6 +347,7 @@ class JobStatusResponse(BaseModel):
         | RemoveBackgroundResultSchema
         | ScaleResultSchema
         | ClearcutBatchResultSchema
+        | MultiExportResultSchema
         | None
     ) = None
     error: str | None = None
