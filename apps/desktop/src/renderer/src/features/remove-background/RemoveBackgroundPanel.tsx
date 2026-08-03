@@ -31,7 +31,7 @@ export function RemoveBackgroundPanel() {
   const canProcess = Boolean(inputPath && selectedStrategyId) && !isProcessing
 
   return (
-    <div className="columns" role="tabpanel" id="panel-remove" aria-labelledby="tab-remove">
+    <div className="columns">
       <section className="column panel">
         <h2 className="column__title">Entrada</h2>
         <AppButton

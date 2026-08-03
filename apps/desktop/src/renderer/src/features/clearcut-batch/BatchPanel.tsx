@@ -161,7 +161,7 @@ export function BatchPanel() {
   const outputLabel = outputEmpty ? 'Elegir carpeta de salida' : basename(batchOutputDir)
 
   return (
-    <div className="batch-layout" role="tabpanel" id="panel-batch" aria-labelledby="tab-batch">
+    <div className="batch-layout">
       <aside className="batch-setup panel panel--form">
         <h2 className="column__title">Entrada</h2>
 

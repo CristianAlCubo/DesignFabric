@@ -2,7 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { Terminal } from 'lucide-react'
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import './features' // side-effect: cada feature se auto-registra al importarse
@@ -16,9 +16,7 @@ import { useNavigationStore } from './core/state/navigationStore'
 import { queryClient } from './core/state/queryClient'
 
 function AppShell() {
-  const activeSectionId = useNavigationStore((state) => state.activeSectionId)
   const activeTabId = useNavigationStore((state) => state.activeTabId)
-  const setActiveSection = useNavigationStore((state) => state.setActiveSection)
   const setActiveTab = useNavigationStore((state) => state.setActiveTab)
   const ensureDefaults = useNavigationStore((state) => state.ensureDefaults)
 
@@ -36,13 +34,14 @@ function AppShell() {
           className="h-full! min-h-0!"
           style={
             {
-              '--sidebar-width': '15.5rem'
+              '--sidebar-width': '19rem'
             } as CSSProperties
           }
         >
-          <AppSidebar activeSectionId={activeSectionId} onSelect={setActiveSection} />
+          <AppSidebar activeTabId={activeTabId} onSelectTab={setActiveTab} />
           <SidebarInset className="min-h-0 overflow-hidden">
-            <header className="flex shrink-0 items-center justify-end gap-3 border-b border-border px-5 py-2.5">
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-2.5">
+              <SidebarTrigger />
               <AppButton
                 type="button"
                 variant="outline"
@@ -55,11 +54,7 @@ function AppShell() {
                 {showLogs ? 'Ocultar registro' : 'Mostrar registro'}
               </AppButton>
             </header>
-            <SectionWorkspace
-              sectionId={activeSectionId}
-              activeTabId={activeTabId}
-              onTabChange={setActiveTab}
-            />
+            <SectionWorkspace activeTabId={activeTabId} />
           </SidebarInset>
           <ConsoleSheet open={showLogs} onClose={() => setShowLogs(false)} />
         </SidebarProvider>

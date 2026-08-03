@@ -1,3 +1,5 @@
+import { Eraser } from 'lucide-react'
+
 import { featureRegistry } from '../../core/registry/featureRegistry'
 import { RemoveBackgroundPanel } from './RemoveBackgroundPanel'
 
@@ -6,5 +8,6 @@ featureRegistry.register({
   label: 'Eliminación de fondo',
   order: 0,
   sectionId: 'retouch',
+  icon: Eraser,
   Panel: RemoveBackgroundPanel
 })

@@ -313,12 +313,7 @@ export function ImageConvertPanel() {
   const setMode = useImageConvertStore((state) => state.setMode)
 
   return (
-    <div
-      role="tabpanel"
-      id="panel-image-convert"
-      aria-labelledby="tab-image-convert"
-      className="flex h-full min-h-0 flex-col gap-3"
-    >
+    <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex-none">
         <ToggleGroup
           type="single"

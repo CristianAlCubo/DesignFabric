@@ -98,7 +98,7 @@ export function MultiExportPanel() {
     images.length > 0 && activeSizes.length > 0 && activeSizes.every(isSizeRowValid) && !isRunning
 
   return (
-    <div className="batch-layout" role="tabpanel" id="panel-multi-export" aria-labelledby="tab-multi-export">
+    <div className="batch-layout">
       <aside className="batch-setup panel panel--form">
         <h2 className="column__title">Imágenes de entrada</h2>
         <AppButton

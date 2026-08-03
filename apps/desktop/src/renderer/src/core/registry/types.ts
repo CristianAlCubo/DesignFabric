@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentType } from 'react'
 
-export type SectionId = 'generation' | 'retouch' | 'batches' | 'utilities'
+export type SectionId = 'create' | 'retouch' | 'batch-export'
 
 export interface SectionDescriptor {
   id: SectionId
@@ -10,11 +10,12 @@ export interface SectionDescriptor {
   icon: LucideIcon
 }
 
-/** Describe un tab del tabpane unificado; cada feature registra el suyo. */
+/** Describe una herramienta del árbol de navegación; cada feature registra la suya. */
 export interface TabDescriptor {
   id: string
   label: string
   order: number
   sectionId: SectionId
+  icon: LucideIcon
   Panel: ComponentType
 }

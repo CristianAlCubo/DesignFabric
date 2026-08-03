@@ -54,7 +54,7 @@ export function ScalePanel() {
     inputHeight !== null && sizeInputMode === 'factor' ? inputHeight * scaleFactor : null
 
   return (
-    <div className="columns columns--scale" role="tabpanel" id="panel-scale" aria-labelledby="tab-scale">
+    <div className="columns columns--scale">
       <section className="column panel">
         <h2 className="column__title">Entrada PNG</h2>
         <AppButton
