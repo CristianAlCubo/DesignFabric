@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Herramienta «Multi-tamaño» en la sección Lotes: exporta una o varias imágenes contra una lista de tamaños (fijos en píxeles o porcentuales relativos a las dimensiones de cada imagen), generando un archivo por cada combinación imagen×tamaño y empaquetándolos en un `.zip`, con plantillas de nombre por fila (`{name}`/`{width}`/`{height}`/`{percent}`/`{prefix}`), subcarpeta por imagen, progreso por ítem y resiliencia a fallos parciales — usa redimensionado clásico en CPU, sin invocar el escalado por IA. Incluye presets de tamaños reutilizables: crear/editar/duplicar/eliminar, presets de fábrica de solo lectura, y exportación/importación a `.json` con validación.
+- Sección «Utilidades» en el sidebar con la herramienta «Conversión de imágenes»: convierte entre JPEG, JPG, PNG y WEBP con Pillow (job asíncrono con afinidad de CPU), en dos modos independientes dentro de un mismo tab — Individual (con previsualización y exportación vía diálogo nativo) y Lote (varias imágenes a un único formato destino, empaquetadas en un `.zip` descargable, resiliente a fallos parciales con reporte por ítem). Incluye control de calidad para JPEG/WEBP, opción WEBP sin pérdida (lossless), PNG optimizado y aplanado de transparencia sobre blanco al convertir a JPEG.
+
 ## [0.2.0] - 2026-07-20
 
 ### Added
