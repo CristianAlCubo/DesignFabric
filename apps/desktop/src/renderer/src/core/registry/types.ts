@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentType } from 'react'
 
-export type SectionId = 'generation' | 'retouch' | 'batches'
+export type SectionId = 'generation' | 'retouch' | 'batches' | 'utilities'
 
 export interface SectionDescriptor {
   id: SectionId

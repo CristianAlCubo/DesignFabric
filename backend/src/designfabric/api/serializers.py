@@ -8,6 +8,9 @@ from designfabric.api.schemas import (
     BatchJobResultSchema,
     ClearcutBatchItemResultSchema,
     ClearcutBatchResultSchema,
+    ConvertBatchItemResultSchema,
+    ConvertBatchResultSchema,
+    ConvertResultSchema,
     JobStatusResponse,
     MultiExportItemResultSchema,
     MultiExportResultSchema,
@@ -70,6 +73,8 @@ def job_to_schema(job: Job, settings: Settings) -> JobStatusResponse:
         | ScaleResultSchema
         | ClearcutBatchResultSchema
         | MultiExportResultSchema
+        | ConvertResultSchema
+        | ConvertBatchResultSchema
         | None
     ) = None
 
@@ -117,6 +122,23 @@ def job_to_schema(job: Job, settings: Settings) -> JobStatusResponse:
             produced=job.result["produced"],
             items=[MultiExportItemResultSchema(**item) for item in job.result["items"]],
         )
+    elif job.result is not None and job.type is JobType.CONVERT:
+        # Un mismo JobType.CONVERT cubre individual (dict con `output_path`) y lote
+        # (dict con `zip_path`): la forma del dict de resultado distingue ambos modos.
+        if "zip_path" in job.result:
+            convert_zip = job.result["zip_path"]
+            result_schema = ConvertBatchResultSchema(
+                zip_path=convert_zip,
+                zip_url=_image_url(convert_zip, settings) or "",
+                expected=job.result["expected"],
+                produced=job.result["produced"],
+                items=[ConvertBatchItemResultSchema(**item) for item in job.result["items"]],
+            )
+        else:
+            result_schema = ConvertResultSchema(
+                output_path=job.result["output_path"],
+                image_url=_image_url(job.result["output_path"], settings) or "",
+            )
 
     return JobStatusResponse(
         id=job.id,

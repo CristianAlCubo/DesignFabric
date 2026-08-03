@@ -332,6 +332,55 @@ class MultiExportResultSchema(BaseModel):
     items: list[MultiExportItemResultSchema]
 
 
+# `JPG` y `JPEG` son el mismo codec (ver `convert_pipeline`); ambos se ofrecen en la UI.
+ConvertTargetFormat = Literal["JPEG", "JPG", "PNG", "WEBP"]
+
+
+class ConvertJobRequest(BaseModel):
+    """Payload para convertir una única imagen a otro formato."""
+
+    input_path: str
+    target_format: ConvertTargetFormat
+    quality: int = Field(default=90, ge=0, le=100)
+    webp_lossless: bool = False
+
+
+class ConvertResultSchema(BaseModel):
+    """Resultado de convertir una imagen individual."""
+
+    output_path: str
+    image_url: str
+
+
+class ConvertBatchJobRequest(BaseModel):
+    """Payload para convertir N imágenes al mismo formato destino, empaquetadas en un zip."""
+
+    image_paths: list[str] = Field(min_length=1)
+    target_format: ConvertTargetFormat
+    quality: int = Field(default=90, ge=0, le=100)
+    webp_lossless: bool = False
+    output_name: str | None = None
+
+
+class ConvertBatchItemResultSchema(BaseModel):
+    """Resultado de convertir una imagen individual del lote."""
+
+    input: str | None
+    status: Literal["succeeded", "failed"]
+    archive_member: str | None = None
+    error: str | None = None
+
+
+class ConvertBatchResultSchema(BaseModel):
+    """Resultado completo de una conversión en lote."""
+
+    zip_path: str
+    zip_url: str
+    expected: int
+    produced: int
+    items: list[ConvertBatchItemResultSchema]
+
+
 class JobStatusResponse(BaseModel):
     """Estado y, si terminó, resultado de un job."""
 
@@ -348,6 +397,8 @@ class JobStatusResponse(BaseModel):
         | ScaleResultSchema
         | ClearcutBatchResultSchema
         | MultiExportResultSchema
+        | ConvertResultSchema
+        | ConvertBatchResultSchema
         | None
     ) = None
     error: str | None = None

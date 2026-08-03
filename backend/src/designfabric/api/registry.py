@@ -17,6 +17,7 @@ from designfabric.api.local_ai import LOCAL_AI_AVAILABLE
 from designfabric.api.routers import (
     batch_generation,
     clearcut_batch,
+    convert,
     multi_export,
     remove_background,
     scale,
@@ -64,6 +65,13 @@ _cpu_modules: tuple[FeatureModule, ...] = (
         (JobType.MULTI_EXPORT,),
         "cpu",
         multi_export.build_handlers,
+    ),
+    FeatureModule(
+        "image-convert",
+        convert.router,
+        (JobType.CONVERT,),
+        "cpu",
+        convert.build_handlers,
     ),
 )
 

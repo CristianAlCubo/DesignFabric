@@ -23,6 +23,7 @@ class JobType(str, Enum):
     SCALE = "scale"
     CLEARCUT_BATCH = "clearcut_batch"
     MULTI_EXPORT = "multi_export"
+    CONVERT = "convert"
 
 
 class JobStatus(str, Enum):

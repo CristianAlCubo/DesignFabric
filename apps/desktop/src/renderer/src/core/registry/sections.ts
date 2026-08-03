@@ -1,4 +1,4 @@
-import { Images, Layers, Sparkles } from 'lucide-react'
+import { Images, Layers, Sparkles, Wrench } from 'lucide-react'
 
 import type { SectionDescriptor } from './types'
 
@@ -9,7 +9,8 @@ import type { SectionDescriptor } from './types'
 export const SECTIONS: readonly SectionDescriptor[] = [
   { id: 'generation', label: 'Generación', order: 0, icon: Sparkles },
   { id: 'retouch', label: 'Retocado', order: 1, icon: Layers },
-  { id: 'batches', label: 'Lotes', order: 2, icon: Images }
+  { id: 'batches', label: 'Lotes', order: 2, icon: Images },
+  { id: 'utilities', label: 'Utilidades', order: 3, icon: Wrench }
 ]
 
 export function listSections(): SectionDescriptor[] {

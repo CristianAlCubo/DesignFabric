@@ -7,5 +7,6 @@ import "./remove-background";
 import "./scale";
 import "./clearcut-batch";
 import "./multi-export";
+import "./image-convert";
 import "./designfabric-batch";
 import "./designfabric-single";
