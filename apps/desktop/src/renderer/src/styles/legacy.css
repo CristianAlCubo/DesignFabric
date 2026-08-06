@@ -79,7 +79,7 @@ input {
 
 .columns {
   display: grid;
-  grid-template-columns: 1fr 280px 1fr;
+  grid-template-columns: minmax(0, 1fr) 320px minmax(0, 1fr);
   gap: 1.25rem;
   height: 100%;
   min-height: 0;

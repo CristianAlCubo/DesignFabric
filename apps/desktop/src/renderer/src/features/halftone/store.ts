@@ -125,6 +125,7 @@ interface HalftoneState {
   error: string | null
 
   setParam: <K extends keyof HalftoneParams>(key: K, value: HalftoneParams[K]) => void
+  resetParam: <K extends keyof HalftoneParams>(key: K) => void
   selectInputImage: () => Promise<void>
   refreshPreview: () => Promise<void>
   saveFullRes: () => Promise<void>
@@ -146,6 +147,8 @@ export const useHalftoneStore = create<HalftoneState>((set, get) => ({
   error: null,
 
   setParam: (key, value) => set((state) => ({ params: { ...state.params, [key]: value } })),
+  resetParam: (key) =>
+    set((state) => ({ params: { ...state.params, [key]: DEFAULT_PARAMS[key] } })),
   setError: (error) => set({ error }),
 
   selectInputImage: async () => {

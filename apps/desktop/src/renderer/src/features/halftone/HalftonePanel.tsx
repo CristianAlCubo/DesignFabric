@@ -1,15 +1,17 @@
-import { useEffect } from 'react'
-import { Download, FileImage, Info, Loader2 } from 'lucide-react'
+import { useEffect, type ReactNode } from 'react'
+import { CircleHelp, Download, FileImage, Info, Loader2, RotateCcw } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Field, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { AppButton } from '../../core/components/AppButton'
 import { TransparentImage } from '../../core/components/TransparentImage'
 import {
+  DEFAULT_PARAMS,
   useHalftoneStore,
   type DotShape,
   type HalftoneMethod,
@@ -19,122 +21,208 @@ import {
 /** Debounce (ms) del preview en vivo ante cambios de control. */
 const PREVIEW_DEBOUNCE_MS = 300
 
-/** Controles que replican 1:1 el panel del Gradio original, con sus tooltips traducidos. */
+/** Encabezado de sección: mismo tratamiento que los títulos de columna (uppercase muted). */
+function SectionHeading({ children }: { children: ReactNode }) {
+  return (
+    <h3 className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+      {children}
+    </h3>
+  )
+}
+
+/** Icono "?" que revela la explicación del control en un tooltip. */
+function HelpHint({ children }: { children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="Ayuda"
+          className="relative inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring after:absolute after:-inset-2"
+        >
+          <CircleHelp className="size-3.5" aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="max-w-xs text-pretty">
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Botón que restaura el valor predeterminado del control. */
+function ResetButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="Restablecer valor predeterminado"
+          onClick={onClick}
+          className="relative inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring after:absolute after:-inset-2"
+        >
+          <RotateCcw className="size-3.5" aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top">Restablecer</TooltipContent>
+    </Tooltip>
+  )
+}
+
+interface SliderFieldProps {
+  label: string
+  value: number
+  defaultValue: number
+  min: number
+  max: number
+  step: number
+  disabled?: boolean
+  help?: ReactNode
+  format?: (value: number) => string
+  onChange: (value: number) => void
+  className?: string
+}
+
+/** Slider con label, readout numérico a la derecha, ayuda y reset a default. */
+function SliderField({
+  label,
+  value,
+  defaultValue,
+  min,
+  max,
+  step,
+  disabled,
+  help,
+  format,
+  onChange,
+  className
+}: SliderFieldProps) {
+  const isDirty = value !== defaultValue
+
+  return (
+    <Field className={className}>
+      <div className="flex w-full items-center gap-1">
+        <FieldLabel>{label}</FieldLabel>
+        {help ? <HelpHint>{help}</HelpHint> : null}
+        <span className="ml-auto shrink-0 text-sm tabular-nums text-muted-foreground">
+          {format ? format(value) : value}
+        </span>
+        {isDirty && !disabled ? <ResetButton onClick={() => onChange(defaultValue)} /> : null}
+      </div>
+      <Slider
+        min={min}
+        max={max}
+        step={step}
+        value={[value]}
+        onValueChange={(v) => onChange(v[0] ?? value)}
+        disabled={disabled}
+      />
+    </Field>
+  )
+}
+
+/** Los 10 controles del Gradio original, reagrupados por flujo de trabajo. */
 function Controls({ disabled }: { disabled: boolean }) {
   const params = useHalftoneStore((state) => state.params)
   const setParam = useHalftoneStore((state) => state.setParam)
+  const resetParam = useHalftoneStore((state) => state.resetParam)
 
   const tramDisabled = disabled || params.method === 'diffusion'
+  const cropDisabled = disabled || !params.cropBlackBackground
 
   const set = <K extends keyof HalftoneParams>(key: K) => (value: HalftoneParams[K]) =>
     setParam(key, value)
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* --- Recorte --- */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold">Recorte</h3>
-        <label className="flex items-center gap-2 text-sm">
+    <div className="flex flex-col gap-6">
+      {/* --- Preparación --- */}
+      <section className="flex flex-col gap-3">
+        <SectionHeading>Preparación</SectionHeading>
+        <Field orientation="horizontal">
           <Checkbox
+            id="halftone-crop-black"
             checked={params.cropBlackBackground}
             onCheckedChange={(value) => set('cropBlackBackground')(value === true)}
             disabled={disabled}
           />
-          Recortar fondo negro
-        </label>
-        <p className="muted field-hint">
-          Elimina automáticamente los bordes casi-negros alrededor de la imagen (útil para
-          imágenes generadas por IA con relleno oscuro).
-        </p>
-        <Field>
-          <FieldLabel>Umbral de recorte: {params.cropBlackThreshold}</FieldLabel>
-          <Slider
-            min={0}
-            max={255}
-            step={1}
-            value={[params.cropBlackThreshold]}
-            onValueChange={(v) => set('cropBlackThreshold')(v[0] ?? params.cropBlackThreshold)}
-            disabled={disabled || !params.cropBlackBackground}
-          />
-          <p className="muted field-hint">
-            Los píxeles cuyos canales RGB están todos por debajo de este valor se tratan como
-            fondo negro. Más alto = recorte más agresivo.
-          </p>
+          <div className="flex flex-1 flex-col gap-0.5">
+            <FieldLabel htmlFor="halftone-crop-black">Recortar fondo negro</FieldLabel>
+            <FieldDescription>
+              Elimina automáticamente los bordes casi-negros alrededor de la imagen (útil para
+              imágenes generadas por IA con relleno oscuro).
+            </FieldDescription>
+          </div>
+          {params.cropBlackBackground !== DEFAULT_PARAMS.cropBlackBackground && !disabled ? (
+            <ResetButton onClick={() => resetParam('cropBlackBackground')} />
+          ) : null}
         </Field>
-      </div>
+        <SliderField
+          label="Umbral de recorte"
+          value={params.cropBlackThreshold}
+          defaultValue={DEFAULT_PARAMS.cropBlackThreshold}
+          min={0}
+          max={255}
+          step={1}
+          disabled={cropDisabled}
+          help="Los píxeles cuyos canales RGB están todos por debajo de este valor se tratan como fondo negro. Más alto = recorte más agresivo."
+          onChange={set('cropBlackThreshold')}
+          className="pl-5"
+        />
+      </section>
 
-      {/* --- Curva tonal (Niveles) --- */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold">Curva tonal (Niveles)</h3>
-        <Field>
-          <FieldLabel>Punto negro: {params.blackPoint}</FieldLabel>
-          <Slider
-            min={0}
-            max={255}
-            step={1}
-            value={[params.blackPoint]}
-            onValueChange={(v) => set('blackPoint')(v[0] ?? params.blackPoint)}
-            disabled={disabled}
-          />
-          <p className="muted field-hint">
-            Las sombras más oscuras que este valor se vuelven negro puro (transparente). Súbelo
-            para profundizar sombras y quitar ruido tenue.
-          </p>
-        </Field>
-        <Field>
-          <FieldLabel>Punto blanco: {params.whitePoint}</FieldLabel>
-          <Slider
-            min={0}
-            max={255}
-            step={1}
-            value={[params.whitePoint]}
-            onValueChange={(v) => set('whitePoint')(v[0] ?? params.whitePoint)}
-            disabled={disabled}
-          />
-          <p className="muted field-hint">
-            Los brillos más claros que este valor se vuelven blanco puro (totalmente opaco).
-            Bájalo para aclarar la imagen en general.
-          </p>
-        </Field>
-        <Field>
-          <FieldLabel>Gamma: {params.gamma.toFixed(1)}</FieldLabel>
-          <Slider
-            min={0.1}
-            max={3.0}
-            step={0.1}
-            value={[params.gamma]}
-            onValueChange={(v) => set('gamma')(v[0] ?? params.gamma)}
-            disabled={disabled}
-          />
-          <p className="muted field-hint">
-            Controla el brillo de los medios tonos. &lt;1 = medios más oscuros, &gt;1 = medios
-            más claros. Funciona como el deslizador central de Niveles en Photoshop.
-          </p>
-        </Field>
-      </div>
-
-      {/* --- Modo de salida --- */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold">Modo de salida</h3>
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={params.invertForDarkShirt}
-            onCheckedChange={(value) => set('invertForDarkShirt')(value === true)}
-            disabled={disabled}
-          />
-          Invertir para prenda oscura
-        </label>
-        <p className="muted field-hint">
-          Invierte los valores tonales para que el diseño imprima correctamente sobre tela
-          oscura (tinta clara sobre fondo oscuro).
-        </p>
-      </div>
+      {/* --- Tonalidad --- */}
+      <section className="flex flex-col gap-3">
+        <SectionHeading>Tonalidad</SectionHeading>
+        <SliderField
+          label="Punto negro"
+          value={params.blackPoint}
+          defaultValue={DEFAULT_PARAMS.blackPoint}
+          min={0}
+          max={255}
+          step={1}
+          disabled={disabled}
+          help="Las sombras más oscuras que este valor se vuelven negro puro (transparente). Súbelo para profundizar sombras y quitar ruido tenue."
+          onChange={set('blackPoint')}
+        />
+        <SliderField
+          label="Gamma"
+          value={params.gamma}
+          defaultValue={DEFAULT_PARAMS.gamma}
+          min={0.1}
+          max={3.0}
+          step={0.1}
+          disabled={disabled}
+          format={(value) => value.toFixed(1)}
+          help="Controla el brillo de los medios tonos. Menor que 1 = medios más oscuros, mayor que 1 = medios más claros. Funciona como el deslizador central de Niveles en Photoshop."
+          onChange={set('gamma')}
+        />
+        <SliderField
+          label="Punto blanco"
+          value={params.whitePoint}
+          defaultValue={DEFAULT_PARAMS.whitePoint}
+          min={0}
+          max={255}
+          step={1}
+          disabled={disabled}
+          help="Los brillos más claros que este valor se vuelven blanco puro (totalmente opaco). Bájalo para aclarar la imagen en general."
+          onChange={set('whitePoint')}
+        />
+      </section>
 
       {/* --- Semitonos --- */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold">Semitonos</h3>
+      <section className="flex flex-col gap-3">
+        <SectionHeading>Semitonos</SectionHeading>
         <Field>
-          <FieldLabel>Método</FieldLabel>
+          <div className="flex w-full items-center gap-1">
+            <FieldLabel>Método</FieldLabel>
+            <HelpHint>
+              «Trama» usa un patrón clásico de puntos. «Difusión» usa difusión de error
+              Floyd–Steinberg para una textura más orgánica, tipo grano.
+            </HelpHint>
+            {params.method !== DEFAULT_PARAMS.method && !disabled ? (
+              <ResetButton onClick={() => resetParam('method')} />
+            ) : null}
+          </div>
           <ToggleGroup
             type="single"
             variant="outline"
@@ -154,46 +242,44 @@ function Controls({ disabled }: { disabled: boolean }) {
               Difusión
             </ToggleGroupItem>
           </ToggleGroup>
-          <p className="muted field-hint">
-            «Trama» usa un patrón clásico de puntos. «Difusión» usa difusión de error
-            Floyd–Steinberg para una textura más orgánica, tipo grano.
-          </p>
         </Field>
-
+        <FieldDescription>
+          La frecuencia, el ángulo y la forma del punto solo aplican al método «Trama».
+        </FieldDescription>
+        <SliderField
+          label="Frecuencia de trama (LPI)"
+          value={params.screenFrequency}
+          defaultValue={DEFAULT_PARAMS.screenFrequency}
+          min={5}
+          max={100}
+          step={1}
+          disabled={tramDisabled}
+          help="Líneas por pulgada — controla la densidad del punto. Más bajo = puntos más grandes y visibles. 25–45 es típico para estampado de prendas."
+          onChange={set('screenFrequency')}
+        />
+        <SliderField
+          label="Ángulo de trama (°)"
+          value={params.screenAngle}
+          defaultValue={DEFAULT_PARAMS.screenAngle}
+          min={0}
+          max={90}
+          step={0.5}
+          disabled={tramDisabled}
+          format={(value) => value.toFixed(1)}
+          help="Rotación de la grilla de puntos. 22.5° o 45° son elecciones comunes para evitar muaré."
+          onChange={set('screenAngle')}
+        />
         <Field>
-          <FieldLabel>Frecuencia de trama (LPI): {params.screenFrequency}</FieldLabel>
-          <Slider
-            min={5}
-            max={100}
-            step={1}
-            value={[params.screenFrequency]}
-            onValueChange={(v) => set('screenFrequency')(v[0] ?? params.screenFrequency)}
-            disabled={tramDisabled}
-          />
-          <p className="muted field-hint">
-            Líneas por pulgada — controla la densidad del punto. Más bajo = puntos más grandes y
-            visibles. 25–45 es típico para estampado de prendas. Solo aplica al método «Trama».
-          </p>
-        </Field>
-
-        <Field>
-          <FieldLabel>Ángulo de trama (°): {params.screenAngle.toFixed(1)}</FieldLabel>
-          <Slider
-            min={0}
-            max={90}
-            step={0.5}
-            value={[params.screenAngle]}
-            onValueChange={(v) => set('screenAngle')(v[0] ?? params.screenAngle)}
-            disabled={tramDisabled}
-          />
-          <p className="muted field-hint">
-            Rotación de la grilla de puntos. 22.5° o 45° son elecciones comunes para evitar
-            muaré. Solo aplica al método «Trama».
-          </p>
-        </Field>
-
-        <Field>
-          <FieldLabel>Forma del punto</FieldLabel>
+          <div className="flex w-full items-center gap-1">
+            <FieldLabel>Forma del punto</FieldLabel>
+            <HelpHint>
+              «Redondo» produce puntos circulares clásicos. «Línea» produce tramado de líneas
+              paralelas (aspecto de grabado).
+            </HelpHint>
+            {params.dotShape !== DEFAULT_PARAMS.dotShape && !tramDisabled ? (
+              <ResetButton onClick={() => resetParam('dotShape')} />
+            ) : null}
+          </div>
           <ToggleGroup
             type="single"
             variant="outline"
@@ -213,12 +299,31 @@ function Controls({ disabled }: { disabled: boolean }) {
               Línea
             </ToggleGroupItem>
           </ToggleGroup>
-          <p className="muted field-hint">
-            «Redondo» produce puntos circulares clásicos. «Línea» produce tramado de líneas
-            paralelas (aspecto de grabado). Solo aplica al método «Trama».
-          </p>
         </Field>
-      </div>
+      </section>
+
+      {/* --- Salida --- */}
+      <section className="flex flex-col gap-3">
+        <SectionHeading>Salida</SectionHeading>
+        <Field orientation="horizontal">
+          <Checkbox
+            id="halftone-invert-dark"
+            checked={params.invertForDarkShirt}
+            onCheckedChange={(value) => set('invertForDarkShirt')(value === true)}
+            disabled={disabled}
+          />
+          <div className="flex flex-1 flex-col gap-0.5">
+            <FieldLabel htmlFor="halftone-invert-dark">Invertir para prenda oscura</FieldLabel>
+            <FieldDescription>
+              Invierte los valores tonales para que el diseño imprima correctamente sobre tela
+              oscura (tinta clara sobre fondo oscuro).
+            </FieldDescription>
+          </div>
+          {params.invertForDarkShirt !== DEFAULT_PARAMS.invertForDarkShirt && !disabled ? (
+            <ResetButton onClick={() => resetParam('invertForDarkShirt')} />
+          ) : null}
+        </Field>
+      </section>
     </div>
   )
 }
