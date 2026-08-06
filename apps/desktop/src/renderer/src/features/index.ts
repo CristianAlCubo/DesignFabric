@@ -5,6 +5,7 @@
 // tocar en `App.tsx` ni en `AppSidebar`.
 import "./remove-background";
 import "./scale";
+import "./halftone";
 import "./clearcut-batch";
 import "./multi-export";
 import "./image-convert";

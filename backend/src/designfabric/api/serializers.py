@@ -11,6 +11,7 @@ from designfabric.api.schemas import (
     ConvertBatchItemResultSchema,
     ConvertBatchResultSchema,
     ConvertResultSchema,
+    HalftoneResultSchema,
     JobStatusResponse,
     MultiExportItemResultSchema,
     MultiExportResultSchema,
@@ -75,6 +76,7 @@ def job_to_schema(job: Job, settings: Settings) -> JobStatusResponse:
         | MultiExportResultSchema
         | ConvertResultSchema
         | ConvertBatchResultSchema
+        | HalftoneResultSchema
         | None
     ) = None
 
@@ -139,6 +141,11 @@ def job_to_schema(job: Job, settings: Settings) -> JobStatusResponse:
                 output_path=job.result["output_path"],
                 image_url=_image_url(job.result["output_path"], settings) or "",
             )
+    elif job.result is not None and job.type is JobType.HALFTONE:
+        result_schema = HalftoneResultSchema(
+            output_path=job.result["output_path"],
+            image_url=_image_url(job.result["output_path"], settings) or "",
+        )
 
     return JobStatusResponse(
         id=job.id,

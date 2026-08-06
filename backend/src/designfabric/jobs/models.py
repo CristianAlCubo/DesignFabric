@@ -24,6 +24,7 @@ class JobType(str, Enum):
     CLEARCUT_BATCH = "clearcut_batch"
     MULTI_EXPORT = "multi_export"
     CONVERT = "convert"
+    HALFTONE = "halftone"
 
 
 class JobStatus(str, Enum):

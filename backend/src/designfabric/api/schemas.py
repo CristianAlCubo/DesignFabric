@@ -381,6 +381,60 @@ class ConvertBatchResultSchema(BaseModel):
     items: list[ConvertBatchItemResultSchema]
 
 
+# ---------------------------------------------------------------------------
+# Halftone (semitonos): nuevo en esta fase. Replica 1:1 las 10 opciones del
+# Space `halftone-converter` (Gradio), con rangos/defaults idénticos. La
+# resolución/DPI de salida son fijos (4500×5400 @300) y no se exponen acá.
+# ---------------------------------------------------------------------------
+
+
+HalftoneMethodLiteral = Literal["halftone", "diffusion"]
+DotShapeLiteral = Literal["round", "line"]
+
+
+class HalftoneParams(BaseModel):
+    """Los 10 controles del Gradio original, con sus rangos/pasos/defaults exactos."""
+
+    crop_black_background: bool = True
+    crop_black_threshold: int = Field(default=25, ge=0, le=255)
+    black_point: int = Field(default=16, ge=0, le=255)
+    white_point: int = Field(default=100, ge=0, le=255)
+    gamma: float = Field(default=1.0, ge=0.1, le=3.0)
+    invert_for_dark_shirt: bool = False
+    halftone_method: HalftoneMethodLiteral = "halftone"
+    screen_frequency: int = Field(default=35, ge=5, le=100)
+    screen_angle: float = Field(default=23.5, ge=0.0, le=90.0)
+    dot_shape: DotShapeLiteral = "round"
+
+
+class HalftoneJobRequest(HalftoneParams):
+    """Payload para exportar el halftone full-res de una única imagen."""
+
+    input_path: str
+
+
+class HalftonePreviewRequest(HalftoneParams):
+    """Payload para la previsualización rápida (baja resolución)."""
+
+    input_path: str
+    preview_max_side: int = Field(default=1080, ge=64, le=2048)
+
+
+class HalftoneResultSchema(BaseModel):
+    """Resultado de exportar un halftone: PNG RGBA transparente."""
+
+    output_path: str
+    image_url: str
+
+
+class HalftonePreviewResponse(BaseModel):
+    """Previsualización devuelta como data URL PNG (mismo patrón que `getImagePreview`)."""
+
+    image_data_url: str
+    width: int
+    height: int
+
+
 class JobStatusResponse(BaseModel):
     """Estado y, si terminó, resultado de un job."""
 
@@ -399,6 +453,7 @@ class JobStatusResponse(BaseModel):
         | MultiExportResultSchema
         | ConvertResultSchema
         | ConvertBatchResultSchema
+        | HalftoneResultSchema
         | None
     ) = None
     error: str | None = None
