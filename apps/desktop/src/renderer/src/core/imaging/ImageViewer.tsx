@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import { Minus, Plus, Scan } from 'lucide-react'
 
-import { AppButton } from './AppButton'
+import { AppButton } from '../components/AppButton'
 import { useImageViewport } from '../hooks/useImageViewport'
 
-interface TransparentImageProps {
+interface ImageViewerProps {
   src: string | null
   alt: string
   emptyLabel: string
@@ -22,14 +22,14 @@ function formatDuration(seconds: number): string {
   return `(${seconds.toFixed(2)} s)`
 }
 
-/** Visor de imagen con zoom/pan (compartido entre remove-background y scale). */
-export function TransparentImage({
+/** Visor de imagen con zoom/pan (base compartida de todas las pantallas de imagen). */
+export function ImageViewer({
   src,
   alt,
   emptyLabel,
   durationSeconds = null,
   actions
-}: TransparentImageProps) {
+}: ImageViewerProps) {
   const [size, setSize] = useState<{ width: number; height: number; src: string } | null>(null)
 
   const visibleSize = src && size?.src === src ? size : null

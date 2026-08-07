@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { ArrowRight, Download, Eraser, ImagePlus } from 'lucide-react'
+import { Eraser } from 'lucide-react'
 
 import { AppButton } from '../../core/components/AppButton'
-import { TransparentImage } from '../../core/components/TransparentImage'
+import { ImageInputZone } from '../../core/imaging/ImageInputZone'
+import { ImageResultView } from '../../core/imaging/ImageResultView'
 import { StrategyList } from './StrategyList'
 import { useRemoveBackgroundStore } from './store'
 
@@ -11,18 +12,17 @@ export function RemoveBackgroundPanel() {
   const selectedStrategyId = useRemoveBackgroundStore((state) => state.selectedStrategyId)
   const inputPath = useRemoveBackgroundStore((state) => state.inputPath)
   const inputPreview = useRemoveBackgroundStore((state) => state.inputPreview)
+  const outputPath = useRemoveBackgroundStore((state) => state.outputPath)
   const outputPreview = useRemoveBackgroundStore((state) => state.outputPreview)
   const outputDurationSeconds = useRemoveBackgroundStore((state) => state.durationSeconds)
   const error = useRemoveBackgroundStore((state) => state.error)
   const isProcessing = useRemoveBackgroundStore((state) => state.isProcessing)
-  const isExporting = useRemoveBackgroundStore((state) => state.isExporting)
 
   const loadStrategies = useRemoveBackgroundStore((state) => state.loadStrategies)
   const setSelectedStrategyId = useRemoveBackgroundStore((state) => state.setSelectedStrategyId)
-  const selectInputImage = useRemoveBackgroundStore((state) => state.selectInputImage)
+  const setInputSource = useRemoveBackgroundStore((state) => state.setInputSource)
+  const setError = useRemoveBackgroundStore((state) => state.setError)
   const processRemoval = useRemoveBackgroundStore((state) => state.processRemoval)
-  const exportOutput = useRemoveBackgroundStore((state) => state.exportOutput)
-  const sendToScale = useRemoveBackgroundStore((state) => state.sendToScale)
 
   useEffect(() => {
     void loadStrategies()
@@ -34,20 +34,15 @@ export function RemoveBackgroundPanel() {
     <div className="columns">
       <section className="column panel">
         <h2 className="column__title">Entrada</h2>
-        <AppButton
-          type="button"
-          variant="outline"
-          icon={ImagePlus}
-          onClick={() => void selectInputImage()}
+        <ImageInputZone
+          path={inputPath}
+          previewUrl={inputPreview}
+          onSource={setInputSource}
+          onError={setError}
           disabled={isProcessing}
-        >
-          Seleccionar imagen
-        </AppButton>
-        {inputPath ? <p className="path-hint">{inputPath}</p> : null}
-        <TransparentImage
-          src={inputPreview}
+          tabId="remove-background"
           alt="Imagen de entrada"
-          emptyLabel="Selecciona una imagen PNG, JPG o WEBP"
+          emptyLabel="Selecciona, pega (Ctrl+V) o arrastra una imagen PNG, JPG o WEBP"
         />
       </section>
 
@@ -76,27 +71,15 @@ export function RemoveBackgroundPanel() {
 
       <section className="column panel">
         <h2 className="column__title">Resultado</h2>
-        <TransparentImage
+        <ImageResultView
           src={outputPreview}
           alt="Imagen procesada"
           emptyLabel="El PNG con transparencia aparecerá aquí"
           durationSeconds={outputDurationSeconds}
-          actions={
-            <>
-              <AppButton
-                type="button"
-                variant="outline"
-                icon={Download}
-                onClick={() => void exportOutput()}
-                disabled={isExporting}
-              >
-                {isExporting ? 'Exportando…' : 'Exportar'}
-              </AppButton>
-              <AppButton type="button" variant="outline" icon={ArrowRight} onClick={sendToScale}>
-                Enviar a escalado
-              </AppButton>
-            </>
-          }
+          exportName="sin-fondo.png"
+          onExportError={setError}
+          sourcePath={outputPath}
+          sendTargets={['scale', 'halftone', 'image-convert']}
         />
       </section>
     </div>

@@ -9,7 +9,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { AppButton } from '../../core/components/AppButton'
-import { TransparentImage } from '../../core/components/TransparentImage'
+import { ImageInputZone } from '../../core/imaging/ImageInputZone'
+import { ImageViewer } from '../../core/imaging/ImageViewer'
 import {
   DEFAULT_PARAMS,
   useHalftoneStore,
@@ -338,7 +339,8 @@ export function HalftonePanel() {
   const savedPath = useHalftoneStore((state) => state.savedPath)
   const error = useHalftoneStore((state) => state.error)
 
-  const selectInputImage = useHalftoneStore((state) => state.selectInputImage)
+  const setInputSource = useHalftoneStore((state) => state.setInputSource)
+  const setError = useHalftoneStore((state) => state.setError)
   const refreshPreview = useHalftoneStore((state) => state.refreshPreview)
   const saveFullRes = useHalftoneStore((state) => state.saveFullRes)
 
@@ -362,20 +364,17 @@ export function HalftonePanel() {
       <div className="columns columns--scale min-h-0 flex-1">
         <section className="column panel">
           <h2 className="column__title">Imagen de entrada</h2>
-          <AppButton
-            type="button"
-            variant="outline"
-            icon={FileImage}
-            onClick={() => void selectInputImage()}
+          <ImageInputZone
+            path={inputPath}
+            previewUrl={inputPreview}
+            onSource={setInputSource}
+            onError={setError}
             disabled={isSaving}
-          >
-            Seleccionar imagen
-          </AppButton>
-          {inputPath ? <p className="path-hint">{inputPath}</p> : null}
-          <TransparentImage
-            src={inputPreview}
+            tabId="halftone"
+            selectLabel="Seleccionar imagen"
+            selectIcon={FileImage}
             alt="Imagen de entrada para semitonos"
-            emptyLabel="Selecciona una imagen (JPEG, PNG o WEBP)"
+            emptyLabel="Selecciona, pega (Ctrl+V) o arrastra una imagen (JPEG, PNG o WEBP)"
           />
         </section>
 
@@ -391,7 +390,7 @@ export function HalftonePanel() {
               <Loader2 className="ml-2 inline size-4 animate-spin align-[-2px]" />
             ) : null}
           </h2>
-          <TransparentImage
+          <ImageViewer
             src={previewSrc}
             alt="Previsualización del halftone"
             emptyLabel="La previsualización aparecerá aquí"

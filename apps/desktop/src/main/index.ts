@@ -15,6 +15,12 @@ import { registerOpenRouterSettingsIpc } from './openrouter-settings-ipc'
 import { syncOpenRouterToBackend } from './openrouter-sync'
 import { registerSetupIpc } from './setup-ipc'
 import { readSetupPreferences } from './setup-preferences'
+import {
+  cleanupAllTempImages,
+  disposeTempImage,
+  sweepTempImages,
+  writeTempImage
+} from './temp-images'
 import { createMainWindow, openSettingsWindow } from './window'
 
 // Workaround de renderizado en Linux (mismo que ClearCut original): evita problemas de
@@ -108,6 +114,21 @@ ipcMain.handle('image:preview', async (_event, filePath: string): Promise<string
   const mime = MIME_BY_EXT[ext] ?? 'application/octet-stream'
   const buffer = await readFile(filePath)
   return `data:${mime};base64,${buffer.toString('base64')}`
+})
+
+// Materializa bytes (del portapapeles o de un archivo soltado) en un archivo
+// temporal en disco, para que el backend —que solo procesa rutas— pueda leerlo.
+// Devuelve `null` si los bytes no son una imagen soportada: la UI no hace nada.
+ipcMain.handle(
+  'image:writeTemp',
+  async (_event, bytes: ArrayBuffer): Promise<{ path: string; previewUrl: string } | null> => {
+    return writeTempImage(bytes)
+  }
+)
+
+// Borra un temporal creado por `image:writeTemp`. No-op para rutas ajenas al registro.
+ipcMain.handle('image:disposeTemp', async (_event, filePath: string): Promise<void> => {
+  await disposeTempImage(filePath)
 })
 
 // Exporta el resultado de una feature (servido por el backend en una URL
@@ -217,6 +238,9 @@ function bootstrap(): void {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null)
+  // Barrido de arranque: elimina temporales de imágenes que hayan quedado de una
+  // sesión anterior cerrada abruptamente (red de seguridad ante crash).
+  sweepTempImages()
   bootstrap()
 
   app.on('activate', () => {
@@ -234,4 +258,6 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   killBackend()
+  // Borra todos los temporales de imágenes aún vivos antes de salir.
+  cleanupAllTempImages()
 })

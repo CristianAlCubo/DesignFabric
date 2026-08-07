@@ -17,6 +17,10 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 
+import {
+  StickerResultView,
+  suggestedStickerName
+} from '../../core/imaging/StickerResultView'
 import type { StickerResult } from '../../core/api/types'
 
 interface ResultsGalleryProps {
@@ -79,13 +83,11 @@ export function ResultsGallery({ results, backendBaseUrl }: ResultsGalleryProps)
             <DialogDescription className="text-pretty">{focused?.prompt}</DialogDescription>
           </DialogHeader>
           {focused?.success && focused.image_url ? (
-            <div className="overflow-hidden rounded-lg border border-border bg-checker-a">
-              <img
-                src={`${backendBaseUrl}${focused.image_url}`}
-                alt={focused.prompt}
-                className="mx-auto block max-h-[70vh] w-auto max-w-full object-contain"
-              />
-            </div>
+            <StickerResultView
+              imageUrl={`${backendBaseUrl}${focused.image_url}`}
+              alt={focused.prompt}
+              exportName={suggestedStickerName(focused.prompt, focused.image_url)}
+            />
           ) : null}
         </DialogContent>
       </Dialog>

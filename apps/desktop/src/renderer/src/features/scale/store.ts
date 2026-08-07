@@ -4,14 +4,15 @@
  *
  * Reemplaza `window.clearcut.*` (IPC) por HTTP: `POST /api/clearcut/scale`
  * devuelve `job_id`, que se sondea vía `GET /api/jobs/{id}` hasta terminar.
- * La selección/exportación de imágenes usa diálogos nativos (IPC), y
- * `setInputFromExternal` es el punto de entrada que usa `remove-background`
- * para el botón "Enviar a escalado" (única acoplación intencional entre
- * ambas features, documentada en `remove-background/store.ts`).
+ * La adquisición de la entrada (diálogo / portapapeles / arrastrar / transferida
+ * desde otra pestaña) y la exportación viven en `core/imaging/`: el store solo
+ * guarda la entrada recibida vía `setInputSource` (que además mide su tamaño).
  */
 import { create } from 'zustand'
 
 import { apiGet, apiPost, getBackendBaseUrl } from '../../core/api/httpClient'
+import { waitForJob } from '../../core/api/waitForJob'
+import type { ImageSource } from '../../core/imaging/imageSource'
 
 export type ScaleStrategyId = 'realesrgan'
 export type SizeInputMode = 'factor' | 'manual'
@@ -21,17 +22,6 @@ export interface ScaleDefaults {
   default_strategy?: string
   strategies?: { id: string; label: string; description?: string }[]
   config?: Record<string, unknown>
-}
-
-interface JobStatusResponse<TResult> {
-  id: string
-  type: string
-  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-  created_at: string
-  started_at: string | null
-  finished_at: string | null
-  result: TResult | null
-  error: string | null
 }
 
 interface ScaleResult {
@@ -44,19 +34,6 @@ interface ScaleResult {
   final_size: [number, number]
   inference_ms: number
   warning?: string | null
-}
-
-async function waitForJob<TResult>(jobId: string, intervalMs = 700): Promise<TResult> {
-  for (;;) {
-    const job = await apiGet<JobStatusResponse<TResult>>(`/api/jobs/${jobId}`)
-    if (job.status === 'succeeded') {
-      if (!job.result) throw new Error('El job terminó sin resultado.')
-      return job.result
-    }
-    if (job.status === 'failed') throw new Error(job.error ?? 'El job falló.')
-    if (job.status === 'cancelled') throw new Error('El job fue cancelado.')
-    await new Promise((resolve) => setTimeout(resolve, intervalMs))
-  }
 }
 
 function probeImageSize(objectUrl: string): Promise<{ width: number; height: number }> {
@@ -88,7 +65,6 @@ interface ScaleState {
   error: string | null
   warning: string | null
   isScaling: boolean
-  isExporting: boolean
 
   sizeInputMode: SizeInputMode
   scaleFactor: ScaleFactor
@@ -102,11 +78,9 @@ interface ScaleState {
   setHeight: (value: string) => void
 
   loadScaleDefaults: () => Promise<void>
-  selectInputImage: () => Promise<void>
-  /** Recibe un input desde otra feature (ej. "Enviar a escalado" de remove-background). */
-  setInputFromExternal: (path: string, previewUrl: string) => Promise<void>
+  /** Aplica una entrada adquirida (diálogo / pegado / arrastrada / transferida) y mide su tamaño. */
+  setInputSource: (source: ImageSource) => Promise<void>
   runScale: () => Promise<void>
-  exportOutput: () => Promise<void>
 }
 
 export const useScaleStore = create<ScaleState>((set, get) => ({
@@ -123,7 +97,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
   error: null,
   warning: null,
   isScaling: false,
-  isExporting: false,
 
   sizeInputMode: 'factor',
   scaleFactor: 2,
@@ -155,16 +128,13 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     }
   },
 
-  selectInputImage: async () => {
+  setInputSource: async (source) => {
     set({ error: null, warning: null })
     try {
-      const path = await window.designfabric.openImageDialog()
-      if (!path) return
-      const preview = await window.designfabric.getImagePreview(path)
-      const size = await probeImageSize(preview)
+      const size = await probeImageSize(source.previewUrl)
       set({
-        inputPath: path,
-        inputPreview: preview,
+        inputPath: source.path,
+        inputPreview: source.previewUrl,
         inputWidth: size.width,
         inputHeight: size.height,
         outputPath: null,
@@ -173,26 +143,7 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
         warning: null
       })
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'No se pudo abrir el PNG.' })
-    }
-  },
-
-  setInputFromExternal: async (path, previewUrl) => {
-    set({ error: null, warning: null })
-    try {
-      const size = await probeImageSize(previewUrl)
-      set({
-        inputPath: path,
-        inputPreview: previewUrl,
-        inputWidth: size.width,
-        inputHeight: size.height,
-        outputPath: null,
-        outputPreview: null,
-        durationSeconds: null,
-        warning: null
-      })
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'No se pudo cargar la imagen recibida.' })
+      set({ error: err instanceof Error ? err.message : 'No se pudo cargar la imagen.' })
     }
   },
 
@@ -260,20 +211,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
       set({ error: err instanceof Error ? err.message : 'Error al escalar la imagen.' })
     } finally {
       set({ isScaling: false })
-    }
-  },
-
-  exportOutput: async () => {
-    const { outputPreview, isExporting } = get()
-    if (!outputPreview || isExporting) return
-
-    set({ isExporting: true, error: null })
-    try {
-      await window.designfabric.exportImage(outputPreview, 'escalado.png')
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'No se pudo exportar la imagen.' })
-    } finally {
-      set({ isExporting: false })
     }
   }
 }))

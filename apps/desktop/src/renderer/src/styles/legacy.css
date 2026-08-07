@@ -653,6 +653,26 @@ input {
   overflow: hidden;
 }
 
+/* Zona de entrada: envuelve el visor para captar drag & drop y resaltar al arrastrar. */
+.image-input-zone__viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.image-input-zone__viewport--dragover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border: 2px dashed var(--ring, color-mix(in srgb, var(--text-primary) 45%, transparent));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--ring, #4a90d9) 12%, transparent);
+}
+
 .image-viewer__meta {
   display: flex;
   flex-direction: column;

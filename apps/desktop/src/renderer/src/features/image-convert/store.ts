@@ -14,6 +14,8 @@
 import { create } from 'zustand'
 
 import { apiDelete, apiGet, apiPost, getBackendBaseUrl } from '../../core/api/httpClient'
+import { waitForJob, type JobStatusResponse } from '../../core/api/waitForJob'
+import type { ImageSource } from '../../core/imaging/imageSource'
 
 export type ConvertMode = 'single' | 'batch'
 export type TargetFormat = 'JPEG' | 'JPG' | 'PNG' | 'WEBP'
@@ -45,19 +47,9 @@ function stripExtension(name: string): string {
   return dot > 0 ? name.slice(0, dot) : name
 }
 
-function suggestedName(inputPath: string, format: TargetFormat): string {
+/** Nombre sugerido al exportar una conversión individual (usado por el panel). */
+export function suggestedName(inputPath: string, format: TargetFormat): string {
   return `${stripExtension(basename(inputPath))}.${EXTENSION_BY_FORMAT[format]}`
-}
-
-interface JobStatusResponse<TResult> {
-  id: string
-  type: string
-  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-  created_at: string
-  started_at: string | null
-  finished_at: string | null
-  result: TResult | null
-  error: string | null
 }
 
 interface ConvertResult {
@@ -80,19 +72,6 @@ export interface ConvertBatchResult {
   items: ConvertBatchItemResult[]
 }
 
-async function waitForJob<TResult>(jobId: string, intervalMs = 500): Promise<TResult> {
-  for (;;) {
-    const job = await apiGet<JobStatusResponse<TResult>>(`/api/jobs/${jobId}`)
-    if (job.status === 'succeeded') {
-      if (!job.result) throw new Error('El job terminó sin resultado.')
-      return job.result
-    }
-    if (job.status === 'failed') throw new Error(job.error ?? 'El job falló.')
-    if (job.status === 'cancelled') throw new Error('El job fue cancelado.')
-    await new Promise((resolve) => setTimeout(resolve, intervalMs))
-  }
-}
-
 interface ConvertState {
   mode: ConvertMode
   targetFormat: TargetFormat
@@ -105,7 +84,6 @@ interface ConvertState {
   outputPath: string | null
   outputPreview: string | null
   isConverting: boolean
-  isExporting: boolean
 
   // Modo lote
   images: string[]
@@ -122,9 +100,8 @@ interface ConvertState {
   setWebpLossless: (value: boolean) => void
   setError: (error: string | null) => void
 
-  selectInputImage: () => Promise<void>
+  setInputSource: (source: ImageSource) => void
   runConvert: () => Promise<void>
-  exportOutput: () => Promise<void>
 
   selectImages: () => Promise<void>
   removeImage: (path: string) => void
@@ -146,7 +123,6 @@ export const useImageConvertStore = create<ConvertState>((set, get) => ({
   outputPath: null,
   outputPreview: null,
   isConverting: false,
-  isExporting: false,
 
   images: [],
   jobId: null,
@@ -162,16 +138,14 @@ export const useImageConvertStore = create<ConvertState>((set, get) => ({
   setWebpLossless: (webpLossless) => set({ webpLossless }),
   setError: (error) => set({ error }),
 
-  selectInputImage: async () => {
-    set({ error: null })
-    try {
-      const path = await window.designfabric.openImageDialog()
-      if (!path) return
-      const preview = await window.designfabric.getImagePreview(path)
-      set({ inputPath: path, inputPreview: preview, outputPath: null, outputPreview: null })
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'No se pudo abrir la imagen.' })
-    }
+  setInputSource: (source) => {
+    set({
+      inputPath: source.path,
+      inputPreview: source.previewUrl,
+      outputPath: null,
+      outputPreview: null,
+      error: null
+    })
   },
 
   runConvert: async () => {
@@ -197,20 +171,6 @@ export const useImageConvertStore = create<ConvertState>((set, get) => ({
       set({ error: err instanceof Error ? err.message : 'Error al convertir la imagen.' })
     } finally {
       set({ isConverting: false })
-    }
-  },
-
-  exportOutput: async () => {
-    const { outputPreview, inputPath, targetFormat, isExporting } = get()
-    if (!outputPreview || !inputPath || isExporting) return
-
-    set({ isExporting: true, error: null })
-    try {
-      await window.designfabric.exportImage(outputPreview, suggestedName(inputPath, targetFormat))
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'No se pudo exportar la imagen.' })
-    } finally {
-      set({ isExporting: false })
     }
   },
 

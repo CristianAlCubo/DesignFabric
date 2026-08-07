@@ -8,11 +8,13 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { AppButton } from '../../core/components/AppButton'
 import { ProgressBar } from '../../core/components/ProgressBar'
-import { TransparentImage } from '../../core/components/TransparentImage'
+import { ImageInputZone } from '../../core/imaging/ImageInputZone'
+import { ImageResultView } from '../../core/imaging/ImageResultView'
 import { useJobProgress } from '../../core/hooks/useJobProgress'
 import {
   basename,
   formatSupportsQuality,
+  suggestedName,
   TARGET_FORMATS,
   useImageConvertStore,
   type ConvertMode,
@@ -97,12 +99,12 @@ function SingleMode() {
   const inputPreview = useImageConvertStore((state) => state.inputPreview)
   const outputPath = useImageConvertStore((state) => state.outputPath)
   const outputPreview = useImageConvertStore((state) => state.outputPreview)
+  const targetFormat = useImageConvertStore((state) => state.targetFormat)
   const isConverting = useImageConvertStore((state) => state.isConverting)
-  const isExporting = useImageConvertStore((state) => state.isExporting)
 
-  const selectInputImage = useImageConvertStore((state) => state.selectInputImage)
+  const setInputSource = useImageConvertStore((state) => state.setInputSource)
+  const setError = useImageConvertStore((state) => state.setError)
   const runConvert = useImageConvertStore((state) => state.runConvert)
-  const exportOutput = useImageConvertStore((state) => state.exportOutput)
 
   const canConvert = Boolean(inputPath) && !isConverting
 
@@ -110,20 +112,17 @@ function SingleMode() {
     <div className="columns columns--scale">
       <section className="column panel">
         <h2 className="column__title">Imagen de entrada</h2>
-        <AppButton
-          type="button"
-          variant="outline"
-          icon={FileImage}
-          onClick={() => void selectInputImage()}
+        <ImageInputZone
+          path={inputPath}
+          previewUrl={inputPreview}
+          onSource={setInputSource}
+          onError={setError}
           disabled={isConverting}
-        >
-          Seleccionar imagen
-        </AppButton>
-        {inputPath ? <p className="path-hint">{inputPath}</p> : null}
-        <TransparentImage
-          src={inputPreview}
+          tabId="image-convert"
+          selectLabel="Seleccionar imagen"
+          selectIcon={FileImage}
           alt="Imagen de entrada para conversión"
-          emptyLabel="Selecciona una imagen (JPEG, PNG o WEBP)"
+          emptyLabel="Selecciona, pega (Ctrl+V) o arrastra una imagen (JPEG, PNG o WEBP)"
         />
       </section>
 
@@ -143,21 +142,14 @@ function SingleMode() {
 
       <section className="column panel">
         <h2 className="column__title">Resultado</h2>
-        <TransparentImage
+        <ImageResultView
           src={outputPreview}
           alt="Imagen convertida"
           emptyLabel="La imagen convertida aparecerá aquí"
-          actions={
-            <AppButton
-              type="button"
-              variant="outline"
-              icon={Download}
-              onClick={() => void exportOutput()}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exportando…' : 'Exportar'}
-            </AppButton>
-          }
+          exportName={inputPath ? () => suggestedName(inputPath, targetFormat) : undefined}
+          onExportError={setError}
+          sourcePath={outputPath}
+          sendTargets={['remove-background', 'scale', 'halftone']}
         />
         {outputPath ? <p className="path-hint">{outputPath}</p> : null}
       </section>

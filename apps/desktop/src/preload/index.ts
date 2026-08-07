@@ -36,6 +36,17 @@ const api = {
   /** Convierte una imagen local en disco a data URL (el CSP no permite `file://`). */
   getImagePreview: (filePath: string): Promise<string> => ipcRenderer.invoke('image:preview', filePath),
 
+  /**
+   * Materializa bytes (portapapeles / drag & drop) en un archivo temporal y devuelve su
+   * ruta + preview. `null` si los bytes no son una imagen soportada (PNG/JPEG/WEBP).
+   */
+  writeTempImage: (bytes: ArrayBuffer): Promise<{ path: string; previewUrl: string } | null> =>
+    ipcRenderer.invoke('image:writeTemp', bytes),
+
+  /** Borra un temporal creado por `writeTempImage`. No-op para rutas ajenas. */
+  disposeTempImage: (filePath: string): Promise<void> =>
+    ipcRenderer.invoke('image:disposeTemp', filePath),
+
   /** Guarda una imagen servida por el backend en una ruta elegida por el usuario. */
   exportImage: (sourceUrl: string, suggestedName: string): Promise<string | undefined> =>
     ipcRenderer.invoke('image:export', { sourceUrl, suggestedName }),

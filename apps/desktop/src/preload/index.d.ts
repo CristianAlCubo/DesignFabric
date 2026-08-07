@@ -41,6 +41,17 @@ declare global {
       getImagePreview: (filePath: string) => Promise<string>
 
       /**
+       * Materializa bytes (portapapeles / drag & drop) en un archivo temporal y devuelve su
+       * ruta + data URL de preview. `null` si no son una imagen soportada (PNG/JPEG/WEBP).
+       */
+      writeTempImage: (
+        bytes: ArrayBuffer
+      ) => Promise<{ path: string; previewUrl: string } | null>
+
+      /** Borra un temporal creado por `writeTempImage`. No-op para rutas ajenas al registro. */
+      disposeTempImage: (filePath: string) => Promise<void>
+
+      /**
        * Guarda vía diálogo nativo la imagen servida en `sourceUrl` (URL local del backend,
        * ej. `http://127.0.0.1:PORT/output/...`) con `suggestedName` como nombre por defecto.
        * `undefined` si el usuario cancela.

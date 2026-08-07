@@ -13,7 +13,9 @@
  */
 import { create } from 'zustand'
 
-import { apiGet, apiPost, getBackendBaseUrl } from '../../core/api/httpClient'
+import { apiPost, getBackendBaseUrl } from '../../core/api/httpClient'
+import { waitForJob } from '../../core/api/waitForJob'
+import type { ImageSource } from '../../core/imaging/imageSource'
 
 export type HalftoneMethod = 'halftone' | 'diffusion'
 export type DotShape = 'round' | 'line'
@@ -77,13 +79,6 @@ function toPayload(params: HalftoneParams): Record<string, unknown> {
   }
 }
 
-interface JobStatusResponse<TResult> {
-  id: string
-  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-  result: TResult | null
-  error: string | null
-}
-
 interface HalftoneResult {
   output_path: string
   image_url: string
@@ -93,19 +88,6 @@ interface HalftonePreviewResult {
   image_data_url: string
   width: number
   height: number
-}
-
-async function waitForJob<TResult>(jobId: string, intervalMs = 500): Promise<TResult> {
-  for (;;) {
-    const job = await apiGet<JobStatusResponse<TResult>>(`/api/jobs/${jobId}`)
-    if (job.status === 'succeeded') {
-      if (!job.result) throw new Error('El job terminó sin resultado.')
-      return job.result
-    }
-    if (job.status === 'failed') throw new Error(job.error ?? 'El job falló.')
-    if (job.status === 'cancelled') throw new Error('El job fue cancelado.')
-    await new Promise((resolve) => setTimeout(resolve, intervalMs))
-  }
 }
 
 interface HalftoneState {
@@ -126,7 +108,7 @@ interface HalftoneState {
 
   setParam: <K extends keyof HalftoneParams>(key: K, value: HalftoneParams[K]) => void
   resetParam: <K extends keyof HalftoneParams>(key: K) => void
-  selectInputImage: () => Promise<void>
+  setInputSource: (source: ImageSource) => void
   refreshPreview: () => Promise<void>
   saveFullRes: () => Promise<void>
   setError: (error: string | null) => void
@@ -151,21 +133,14 @@ export const useHalftoneStore = create<HalftoneState>((set, get) => ({
     set((state) => ({ params: { ...state.params, [key]: DEFAULT_PARAMS[key] } })),
   setError: (error) => set({ error }),
 
-  selectInputImage: async () => {
-    set({ error: null })
-    try {
-      const path = await window.designfabric.openImageDialog()
-      if (!path) return
-      const preview = await window.designfabric.getImagePreview(path)
-      set({
-        inputPath: path,
-        inputPreview: preview,
-        previewSrc: null,
-        savedPath: null
-      })
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'No se pudo abrir la imagen.' })
-    }
+  setInputSource: (source) => {
+    set({
+      inputPath: source.path,
+      inputPreview: source.previewUrl,
+      previewSrc: null,
+      savedPath: null,
+      error: null
+    })
   },
 
   refreshPreview: async () => {

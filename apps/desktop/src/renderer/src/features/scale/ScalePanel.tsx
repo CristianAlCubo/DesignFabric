@@ -1,12 +1,13 @@
 import { useEffect } from 'react'
-import { Download, FileImage, Scaling } from 'lucide-react'
+import { FileImage, Scaling } from 'lucide-react'
 
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { AppButton } from '../../core/components/AppButton'
-import { TransparentImage } from '../../core/components/TransparentImage'
+import { ImageInputZone } from '../../core/imaging/ImageInputZone'
+import { ImageResultView } from '../../core/imaging/ImageResultView'
 import type { ScaleFactor, SizeInputMode } from './store'
 import { useScaleStore } from './store'
 
@@ -28,16 +29,15 @@ export function ScalePanel() {
   const error = useScaleStore((state) => state.error)
   const warning = useScaleStore((state) => state.warning)
   const isScaling = useScaleStore((state) => state.isScaling)
-  const isExporting = useScaleStore((state) => state.isExporting)
   const sizeInputMode = useScaleStore((state) => state.sizeInputMode)
   const scaleFactor = useScaleStore((state) => state.scaleFactor)
   const width = useScaleStore((state) => state.width)
   const height = useScaleStore((state) => state.height)
 
   const loadScaleDefaults = useScaleStore((state) => state.loadScaleDefaults)
-  const selectInputImage = useScaleStore((state) => state.selectInputImage)
+  const setInputSource = useScaleStore((state) => state.setInputSource)
+  const setError = useScaleStore((state) => state.setError)
   const runScale = useScaleStore((state) => state.runScale)
-  const exportOutput = useScaleStore((state) => state.exportOutput)
   const setSizeInputMode = useScaleStore((state) => state.setSizeInputMode)
   const setScaleFactor = useScaleStore((state) => state.setScaleFactor)
   const setWidth = useScaleStore((state) => state.setWidth)
@@ -57,20 +57,17 @@ export function ScalePanel() {
     <div className="columns columns--scale">
       <section className="column panel">
         <h2 className="column__title">Entrada PNG</h2>
-        <AppButton
-          type="button"
-          variant="outline"
-          icon={FileImage}
-          onClick={() => void selectInputImage()}
+        <ImageInputZone
+          path={inputPath}
+          previewUrl={inputPreview}
+          onSource={setInputSource}
+          onError={setError}
           disabled={isScaling}
-        >
-          Seleccionar PNG
-        </AppButton>
-        {inputPath ? <p className="path-hint">{inputPath}</p> : null}
-        <TransparentImage
-          src={inputPreview}
+          tabId="scale"
+          selectLabel="Seleccionar PNG"
+          selectIcon={FileImage}
           alt="PNG de entrada para escalado"
-          emptyLabel="Selecciona un PNG recortado (por ejemplo, el resultado de eliminación de fondo)"
+          emptyLabel="Selecciona, pega (Ctrl+V) o arrastra un PNG recortado (p. ej. el resultado de eliminación de fondo)"
         />
       </section>
 
@@ -173,22 +170,15 @@ export function ScalePanel() {
 
       <section className="column panel">
         <h2 className="column__title">Resultado</h2>
-        <TransparentImage
+        <ImageResultView
           src={outputPreview}
           alt="PNG escalado"
           emptyLabel="El PNG a alta resolución aparecerá aquí"
           durationSeconds={outputDurationSeconds}
-          actions={
-            <AppButton
-              type="button"
-              variant="outline"
-              icon={Download}
-              onClick={() => void exportOutput()}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exportando…' : 'Exportar'}
-            </AppButton>
-          }
+          exportName="escalado.png"
+          onExportError={setError}
+          sourcePath={outputPath}
+          sendTargets={['halftone', 'image-convert']}
         />
         {outputPath ? <p className="path-hint">{outputPath}</p> : null}
       </section>
