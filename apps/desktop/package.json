@@ -5,12 +5,12 @@
   "description": "App de escritorio Electron de DesignFabric (tabpane unificado de ClearCut + DesignFabric).",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "env -u ELECTRON_RUN_AS_NODE -u ELECTRON_SKIP_BINARY_DOWNLOAD electron-vite dev",
+    "dev": "node scripts/run-clean-env.mjs ELECTRON_RUN_AS_NODE ELECTRON_SKIP_BINARY_DOWNLOAD -- electron-vite dev",
     "build": "electron-vite build",
-    "preview": "env -u ELECTRON_RUN_AS_NODE -u ELECTRON_SKIP_BINARY_DOWNLOAD electron-vite preview",
+    "preview": "node scripts/run-clean-env.mjs ELECTRON_RUN_AS_NODE ELECTRON_SKIP_BINARY_DOWNLOAD -- electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist:linux": "env -u ELECTRON_RUN_AS_NODE electron-builder --linux AppImage --x64 --config electron-builder.yml",
-    "dist:win": "env -u ELECTRON_RUN_AS_NODE electron-builder --win portable --x64 --config electron-builder.yml"
+    "dist:linux": "node scripts/run-clean-env.mjs ELECTRON_RUN_AS_NODE -- electron-builder --linux AppImage --x64 --config electron-builder.yml",
+    "dist:win": "node scripts/run-clean-env.mjs ELECTRON_RUN_AS_NODE -- electron-builder --win portable --x64 --config electron-builder.yml"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
