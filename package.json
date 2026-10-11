@@ -1,7 +1,7 @@
 {
   "name": "designfabric",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Monorepo de DesignFabric: backend Python único (dominio + jobs + API FastAPI) y app de escritorio Electron con las tools de ClearCut y DesignFabric unificadas en un tabpane.",
   "workspaces": [
     "apps/desktop"
