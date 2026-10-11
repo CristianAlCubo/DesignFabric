@@ -15,10 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sección «Utilidades» en el sidebar con la herramienta «Conversión de imágenes»: convierte entre JPEG, JPG, PNG y WEBP con Pillow (job asíncrono con afinidad de CPU), en dos modos independientes dentro de un mismo tab — Individual (con previsualización y exportación vía diálogo nativo) y Lote (varias imágenes a un único formato destino, empaquetadas en un `.zip` descargable, resiliente a fallos parciales con reporte por ítem). Incluye control de calidad para JPEG/WEBP, opción WEBP sin pérdida (lossless), PNG optimizado y aplanado de transparencia sobre blanco al convertir a JPEG.
 - Herramienta «Semitonos» en la sección Retocar: convierte una imagen a su versión con semitonos (halftone) para print-on-demand / serigrafía, integrando el core del Space `halftone-converter` (PIL + numpy) como backend nativo, sin embeber Gradio. Replica las opciones del original con UI propia — recorte de fondo negro (con umbral), niveles (punto negro/blanco, gamma), inversión para prenda oscura, método de trama de puntos (`halftone`) o difusión de error Floyd–Steinberg (`diffusion`), y frecuencia/ángulo/forma (redondo o línea) de la trama. La salida es un PNG RGBA transparente a 4500×5400 @300 que conserva los colores originales en el canal alpha (job asíncrono con afinidad de CPU). Incluye previsualización en vivo a baja resolución (con la frecuencia de trama escalada proporcionalmente para que el punto sea representativo del resultado) que se regenera con cada ajuste, y guardado que genera el render a resolución completa on-demand.
 
+- Semitonos: modos «Rápido» y «Avanzado». El rápido solo pide el color de la prenda y elige el resto a partir de la imagen: niveles por histograma del diseño, trama redonda a 25 LPI y punto mínimo calibrado para que no haya puntos ni huecos menores de 0,25 mm (que en DTF no adhieren). Al pasar a «Avanzado» los controles parten de esos valores y «Restablecer» vuelve a ellos. Nuevo control «Punto mínimo» y avisos de imprimibilidad bajo la previsualización (tamaño de impresión pequeño, trama no imprimible, difusión, diseño sin tonos intermedios), junto con el tamaño real de salida en px y cm.
+- Semitonos: manejo de fondo transparente, negro o blanco (detección automática o manual, con tolerancia): el fondo nunca recibe tinta y la salida se recorta al diseño. Los negros/blancos interiores del diseño se conservan.
+
 ### Changed
 
 - Rediseño del sidebar principal a un árbol anidado (secciones + herramientas indentadas, siempre expandido) que reemplaza el esquema anterior de sidebar + franja de pestañas horizontal oculta hasta entrar a cada sección. Las 4 secciones (Generación, Retocado, Lotes, Utilidades) se reagruparon en 3 por etapa del flujo — **Crear**, **Retocar**, **Lote y Exportación** — resolviendo que el concepto "lote" estuviera repartido entre dos secciones sin relación y eliminando la sección de una sola herramienta. Cada herramienta ahora muestra su propio icono en el árbol.
 - El sidebar es más ancho (15.5rem → 19rem) para que las etiquetas más largas no se corten, la sección que contiene la pestaña activa se resalta (texto e icono en color de acento), y el sidebar ahora es colapsable (botón dedicado en la cabecera de contenido + atajo `Ctrl/Cmd+B`).
+- Semitonos: el checkbox «Invertir para prenda oscura» se reemplaza por un selector de color de prenda. El flag original estaba nombrado al revés: sin invertir ya es lo correcto para prenda oscura.
+
+### Fixed
+
+- Semitonos: un PNG con fondo transparente salía con el fondo opaco (el core ignoraba el alpha de entrada).
+- Semitonos: con imágenes más chicas que 4500×5400 la previsualización mostraba el punto más pequeño que en el export (el DPI se escalaba según la caja máxima y no según el tamaño real de salida).
 
 ## [0.2.0] - 2026-07-20
 

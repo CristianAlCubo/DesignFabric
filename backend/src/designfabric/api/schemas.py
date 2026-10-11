@@ -382,29 +382,38 @@ class ConvertBatchResultSchema(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Halftone (semitonos): nuevo en esta fase. Replica 1:1 las 10 opciones del
-# Space `halftone-converter` (Gradio), con rangos/defaults idénticos. La
-# resolución/DPI de salida son fijos (4500×5400 @300) y no se exponen acá.
+# Halftone (semitonos). Dos modos:
+#  - `quick`: el backend elige niveles, trama y punto mínimo a partir de la imagen;
+#    solo cuentan `garment`, `background` y `background_threshold`.
+#  - `advanced`: se usan los parámetros tal cual (los del Space `halftone-converter`
+#    más `min_dot_tone`). El front los siembra con los resueltos por `quick`.
+# La resolución/DPI de salida son fijos (4500×5400 @300) y no se exponen acá.
 # ---------------------------------------------------------------------------
 
 
 HalftoneMethodLiteral = Literal["halftone", "diffusion"]
 DotShapeLiteral = Literal["round", "line"]
+HalftoneModeLiteral = Literal["quick", "advanced"]
+GarmentLiteral = Literal["light", "dark"]
+HalftoneBackgroundLiteral = Literal["auto", "transparent", "black", "white", "none"]
+DetectedBackgroundLiteral = Literal["transparent", "black", "white", "none"]
 
 
 class HalftoneParams(BaseModel):
-    """Los 10 controles del Gradio original, con sus rangos/pasos/defaults exactos."""
+    """Parámetros de semitonos; los de trama/tono solo aplican en modo `advanced`."""
 
-    crop_black_background: bool = True
-    crop_black_threshold: int = Field(default=25, ge=0, le=255)
+    mode: HalftoneModeLiteral = "quick"
+    garment: GarmentLiteral = "dark"
+    background: HalftoneBackgroundLiteral = "auto"
+    background_threshold: int = Field(default=25, ge=0, le=255)
     black_point: int = Field(default=16, ge=0, le=255)
     white_point: int = Field(default=100, ge=0, le=255)
     gamma: float = Field(default=1.0, ge=0.1, le=3.0)
-    invert_for_dark_shirt: bool = False
     halftone_method: HalftoneMethodLiteral = "halftone"
     screen_frequency: int = Field(default=35, ge=5, le=100)
     screen_angle: float = Field(default=23.5, ge=0.0, le=90.0)
     dot_shape: DotShapeLiteral = "round"
+    min_dot_tone: int = Field(default=0, ge=0, le=100)
 
 
 class HalftoneJobRequest(HalftoneParams):
@@ -427,12 +436,34 @@ class HalftoneResultSchema(BaseModel):
     image_url: str
 
 
+class HalftoneResolvedParams(BaseModel):
+    """Parámetros efectivamente usados (fondo ya detectado). En modo `quick` son los
+    elegidos automáticamente; el front los usa para sembrar el modo avanzado."""
+
+    garment: GarmentLiteral
+    background: DetectedBackgroundLiteral
+    background_threshold: int
+    black_point: int
+    white_point: int
+    gamma: float
+    halftone_method: HalftoneMethodLiteral
+    screen_frequency: int
+    screen_angle: float
+    dot_shape: DotShapeLiteral
+    min_dot_tone: int
+
+
 class HalftonePreviewResponse(BaseModel):
-    """Previsualización devuelta como data URL PNG (mismo patrón que `getImagePreview`)."""
+    """Previsualización (data URL PNG) más diagnóstico de imprimibilidad."""
 
     image_data_url: str
     width: int
     height: int
+    resolved: HalftoneResolvedParams
+    output_width: int
+    output_height: int
+    small_dot_ratio: float
+    warnings: list[str]
 
 
 class JobStatusResponse(BaseModel):

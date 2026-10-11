@@ -72,6 +72,81 @@ def test_halftone_preview_returns_reduced_data_url(client, tmp_path) -> None:
     assert decoded.mode == "RGBA"
 
 
+def _write_transparent_png(path: Path) -> Path:
+    """Sujeto con degradado sobre fondo transparente cuyo RGB es blanco (caso real tras
+    quitar el fondo)."""
+    img = Image.new("RGBA", (120, 120), (255, 255, 255, 0))
+    px = img.load()
+    for y in range(30, 90):
+        for x in range(30, 90):
+            tone = 40 + (x - 30) * 3
+            px[x, y] = (tone, tone, tone, 255)
+    img.save(path)
+    return path
+
+
+def test_halftone_preview_quick_mode_reports_resolved_params(client, tmp_path) -> None:
+    src = _write_transparent_png(tmp_path / "src.png")
+    response = client.post(
+        "/api/utilities/halftone/preview",
+        # En modo rápido los parámetros de trama del payload se ignoran.
+        json={"input_path": str(src), "mode": "quick", "garment": "light", "screen_frequency": 90},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    resolved = body["resolved"]
+    assert resolved["background"] == "transparent"
+    assert resolved["garment"] == "light"
+    assert resolved["screen_frequency"] != 90
+    assert resolved["min_dot_tone"] > 0
+    assert body["output_width"] == 60 and body["output_height"] == 60
+    assert isinstance(body["warnings"], list) and body["warnings"]
+
+
+def test_halftone_preview_advanced_mode_uses_params_as_given(client, tmp_path) -> None:
+    src = _write_png(tmp_path / "src.png")
+    response = client.post(
+        "/api/utilities/halftone/preview",
+        json={
+            "input_path": str(src),
+            "mode": "advanced",
+            "black_point": 30,
+            "white_point": 210,
+            "screen_frequency": 40,
+            "halftone_method": "diffusion",
+        },
+    )
+    assert response.status_code == 200
+    resolved = response.json()["resolved"]
+    assert (resolved["black_point"], resolved["white_point"]) == (30, 210)
+    assert resolved["screen_frequency"] == 40
+    assert any("Difusión" in w for w in response.json()["warnings"])
+
+
+def test_halftone_export_keeps_transparent_background(client, tmp_path) -> None:
+    src = _write_transparent_png(tmp_path / "src.png")
+    response = client.post(
+        "/api/utilities/halftone",
+        json={"input_path": str(src), "mode": "quick", "garment": "dark"},
+    )
+    final = _wait_for_terminal(client, response.json()["job_id"])
+    assert final["status"] == "succeeded"
+
+    out = Image.open(final["result"]["output_path"])
+    # Recortado al sujeto (60×60) y sin tinta fuera de él.
+    assert out.size == (60, 60)
+    assert out.getchannel("A").getextrema()[1] == 255
+
+
+def test_halftone_rejects_unknown_garment(client, tmp_path) -> None:
+    src = _write_png(tmp_path / "src.png")
+    response = client.post(
+        "/api/utilities/halftone",
+        json={"input_path": str(src), "garment": "neon"},
+    )
+    assert response.status_code == 422
+
+
 def test_halftone_rejects_out_of_range_frequency(client, tmp_path) -> None:
     src = _write_png(tmp_path / "src.png")
     response = client.post(
