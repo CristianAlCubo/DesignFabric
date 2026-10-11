@@ -79,7 +79,7 @@ export function RemoveBackgroundPanel() {
           exportName="sin-fondo.png"
           onExportError={setError}
           sourcePath={outputPath}
-          sendTargets={['scale', 'halftone', 'image-convert']}
+          sendTargets={['scale', 'halftone', 'image-convert', 'mockups']}
         />
       </section>
     </div>

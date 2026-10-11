@@ -25,6 +25,7 @@ class JobType(str, Enum):
     MULTI_EXPORT = "multi_export"
     CONVERT = "convert"
     HALFTONE = "halftone"
+    MOCKUP = "mockup"
 
 
 class JobStatus(str, Enum):

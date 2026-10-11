@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "tee-model-woman",
+  "name": "Camiseta – modelo mujer",
+  "base_size": [
+    1145,
+    1374
+  ],
+  "print_area": {
+    "corners": [
+      [
+        367.56451612903226,
+        342.6290322580645
+      ],
+      [
+        767.4354838709678,
+        342.6290322580645
+      ],
+      [
+        767.4354838709678,
+        875.7903225806451
+      ],
+      [
+        367.56451612903226,
+        875.7903225806451
+      ]
+    ]
+  },
+  "px_per_cm": 16.661290322580644,
+  "max_print_cm": [
+    24.0,
+    32.0
+  ],
+  "default_anchor": "top-center",
+  "displacement_strength_px": 5.0,
+  "shading_strength": 0.55,
+  "highlight_strength": 0.3,
+  "garment_colors": {
+    "blanco": "#FFFFFF",
+    "negro": "#1A1A1A",
+    "gris": "#9A9A9A",
+    "azul marino": "#1F2A44",
+    "rojo": "#B3202A",
+    "verde": "#2F5D3A",
+    "arena": "#D8C8A8"
+  },
+  "dark_garment_colors": [
+    "negro",
+    "azul marino",
+    "verde"
+  ]
+}

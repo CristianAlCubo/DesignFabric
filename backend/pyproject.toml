@@ -10,6 +10,7 @@ dependencies = [
     "pillow>=12.3.0",
     "pydantic-settings>=2.6.0",
     "rich>=15.0.0",
+    "typer>=0.12.0",
     "uvicorn[standard]>=0.32.0",
     "websockets>=13.1",
     # ClearCut (remove background / scale)
@@ -47,6 +48,7 @@ dev = [
 [project.scripts]
 clearcut = "designfabric.cli.main:clearcut_cli"
 designfabric = "designfabric.cli.main:designfabric_cli"
+designfabric-mockup = "designfabric.cli.mockup:mockup_cli"
 
 [build-system]
 requires = ["hatchling"]

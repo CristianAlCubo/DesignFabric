@@ -6,6 +6,8 @@ prefijo `DESIGNFABRIC_` (ej. `DESIGNFABRIC_OUTPUT_DIR=/otra/ruta`).
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from designfabric.core.generation.constants import OLLAMA_MODEL_DEFAULT
@@ -17,6 +19,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DESIGNFABRIC_")
 
     output_dir: str = "output"
+    mockup_templates_dir: str = str(
+        Path(__file__).resolve().parents[3] / "data" / "mockup_templates"
+    )
     ollama_host: str = "http://localhost:11434"
     ollama_model_default: str = OLLAMA_MODEL_DEFAULT
     api_port: int = 8756

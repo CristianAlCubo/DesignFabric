@@ -6,6 +6,8 @@
 import "./remove-background";
 import "./scale";
 import "./halftone";
+import "./mockups";
+import "./mockup-templates";
 import "./clearcut-batch";
 import "./multi-export";
 import "./image-convert";

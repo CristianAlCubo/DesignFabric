@@ -19,6 +19,7 @@ from designfabric.api.routers import (
     clearcut_batch,
     convert,
     halftone,
+    mockups,
     multi_export,
     remove_background,
     scale,
@@ -80,6 +81,13 @@ _cpu_modules: tuple[FeatureModule, ...] = (
         (JobType.HALFTONE,),
         "cpu",
         halftone.build_handlers,
+    ),
+    FeatureModule(
+        "mockups",
+        mockups.router,
+        (JobType.MOCKUP,),
+        "cpu",
+        mockups.build_handlers,
     ),
 )
 

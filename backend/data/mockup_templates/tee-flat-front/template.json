@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "tee-flat-front",
+  "name": "Camiseta lisa – frente",
+  "base_size": [
+    1600,
+    1800
+  ],
+  "print_area": {
+    "corners": [
+      [
+        511.53846153846155,
+        380.0
+      ],
+      [
+        1088.4615384615386,
+        380.0
+      ],
+      [
+        1088.4615384615386,
+        1149.230769230769
+      ],
+      [
+        511.53846153846155,
+        1149.230769230769
+      ]
+    ]
+  },
+  "px_per_cm": 19.23076923076923,
+  "max_print_cm": [
+    30.0,
+    40.0
+  ],
+  "default_anchor": "top-center",
+  "displacement_strength_px": 4.0,
+  "shading_strength": 0.5,
+  "highlight_strength": 0.25,
+  "garment_colors": {
+    "blanco": "#FFFFFF",
+    "negro": "#1A1A1A",
+    "gris": "#9A9A9A",
+    "azul marino": "#1F2A44",
+    "rojo": "#B3202A",
+    "verde": "#2F5D3A",
+    "arena": "#D8C8A8"
+  },
+  "dark_garment_colors": [
+    "negro",
+    "azul marino",
+    "verde"
+  ]
+}

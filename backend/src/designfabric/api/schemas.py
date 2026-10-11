@@ -14,7 +14,7 @@ todos los tipos de job del sistema unificado.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -466,6 +466,111 @@ class HalftonePreviewResponse(BaseModel):
     warnings: list[str]
 
 
+# ---------------------------------------------------------------------------
+# Mockups deterministas de prendas y administración de plantillas.
+# ---------------------------------------------------------------------------
+
+
+_MockupFiniteFloat = Annotated[float, Field(allow_inf_nan=False)]
+_MockupPositiveFloat = Annotated[float, Field(gt=0, allow_inf_nan=False)]
+
+
+class MockupParams(BaseModel):
+    """Parámetros compartidos por preview y exportación de mockups."""
+
+    design_path: str
+    template_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{1,63}$")
+    garment_color: str = Field(min_length=1)
+    print_width_cm: float = Field(gt=0, allow_inf_nan=False)
+    offset_cm: tuple[_MockupFiniteFloat, _MockupFiniteFloat] = (0.0, 0.0)
+
+
+class MockupJobRequest(MockupParams):
+    """Payload para exportar un mockup full-res como job CPU."""
+
+
+class MockupPreviewRequest(MockupParams):
+    """Payload para previsualizar un mockup en el mismo motor de render."""
+
+    max_side: int = Field(default=1080, ge=1, le=1280)
+
+
+class MockupPreviewResponse(BaseModel):
+    """Imagen de preview PNG codificada como data URL y avisos del render."""
+
+    image_data_url: str
+    width: int
+    height: int
+    warnings: list[str]
+
+
+class MockupResultSchema(BaseModel):
+    """Resultado de exportar un PNG de mockup."""
+
+    output_path: str
+    image_url: str
+
+
+class MockupTemplateSummary(BaseModel):
+    """Información pública y dimensiones de una plantilla disponible."""
+
+    id: str
+    name: str
+    thumbnail_url: str
+    garment_colors: dict[str, str]
+    max_print_cm: tuple[float, float]
+    px_per_cm: float
+    base_size: tuple[int, int]
+
+
+class MockupTemplateListResponse(BaseModel):
+    """Listado de plantillas de mockup instaladas."""
+
+    templates: list[MockupTemplateSummary]
+
+
+MockupCorners = tuple[
+    tuple[_MockupFiniteFloat, _MockupFiniteFloat],
+    tuple[_MockupFiniteFloat, _MockupFiniteFloat],
+    tuple[_MockupFiniteFloat, _MockupFiniteFloat],
+    tuple[_MockupFiniteFloat, _MockupFiniteFloat],
+]
+
+
+class MockupTemplatePrepareRequest(BaseModel):
+    """Solicita una propuesta revisable de mapas a partir de una fotografía."""
+
+    photo_path: str
+    corners: MockupCorners | None = None
+
+
+class MockupTemplatePrepareResponse(BaseModel):
+    """Mapas propuestos codificados como PNG en data URLs."""
+
+    base_size: tuple[int, int]
+    mask_data_url: str
+    shading_data_url: str
+    displacement_data_url: str
+    suggested_corners: MockupCorners
+
+
+class MockupTemplateUpdateRequest(BaseModel):
+    """Guarda una plantilla revisada por una persona."""
+
+    photo_path: str
+    name: str = Field(min_length=1)
+    corners: MockupCorners
+    px_per_cm: float = Field(gt=0, allow_inf_nan=False)
+    max_print_cm: tuple[_MockupPositiveFloat, _MockupPositiveFloat]
+    default_anchor: str = "top-center"
+    displacement_strength_px: float = Field(default=6.0, ge=0, allow_inf_nan=False)
+    shading_strength: float = Field(default=0.5, ge=0, le=1, allow_inf_nan=False)
+    highlight_strength: float = Field(default=0.3, ge=0, le=1, allow_inf_nan=False)
+    garment_colors: dict[str, str] = Field(default_factory=dict)
+    dark_garment_colors: list[str] = Field(default_factory=list)
+    mask_data_url: str | None = None
+
+
 class JobStatusResponse(BaseModel):
     """Estado y, si terminó, resultado de un job."""
 
@@ -485,6 +590,7 @@ class JobStatusResponse(BaseModel):
         | ConvertResultSchema
         | ConvertBatchResultSchema
         | HalftoneResultSchema
+        | MockupResultSchema
         | None
     ) = None
     error: str | None = None

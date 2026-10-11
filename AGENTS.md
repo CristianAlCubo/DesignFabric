@@ -86,6 +86,29 @@ switches:
   singleton that each feature module registers a `TabDescriptor` into on import (see
   `features/index.ts`), so `App.tsx` never needs to know the feature list up front.
 
+### Mockups deterministas de prendas
+
+Las herramientas «Mockups» y «Plantillas de mockup» viven en `features/mockups/` y
+`features/mockup-templates/`. El render de producción es exclusivamente CPU (numpy, OpenCV y
+Pillow), sin IA, GPU ni aleatoriedad; tanto `POST /api/mockups/preview` como el job de
+`POST /api/mockups` usan el mismo `render_mockup`. El preview reduce primero plantilla y diseño
+con Lanczos y limita `max_side` a 1280; los resultados son PNG RGB a 300 DPI.
+
+El formato de plantilla v1 es una carpeta dentro de `DESIGNFABRIC_MOCKUP_TEMPLATES_DIR` (por
+defecto `backend/data/mockup_templates/`): `template.json`, `base.png` RGB, `garment_mask.png` L,
+`shading.png` L, `displacement.png` L y `occlusion.png` L opcional. Todas las imágenes tienen el
+tamaño congelado `base_size` del JSON. `print_area.corners` guarda cuatro puntos TL, TR, BR y BL
+en píxeles de la foto base; también se congelan `px_per_cm`, límites imprimibles, anclaje, fuerzas,
+colores y colores oscuros. `core/imaging/mockup/template.py` valida el contrato al cargarlo y
+`core/imaging/mockup/prepare.py` crea propuestas editables fuera del render.
+
+La API expone `GET /api/mockups/templates` y `GET /api/mockups/templates/{id}/thumbnail`, el
+preview síncrono `POST /api/mockups/preview`, el job CPU `POST /api/mockups`, y los endpoints
+internos de preparación/guardado `POST /api/mockups/templates/prepare` y
+`PUT /api/mockups/templates/{id}`. Los payloads usan snake_case; el job termina en
+`GET /api/jobs/{job_id}` con `output_path` e `image_url` bajo `/output/mockups/`. El contrato del
+motor vive en `core/imaging/mockup/` y la integración HTTP en `api/routers/mockups.py`.
+
 ### Async job system: GPU vs CPU worker pools
 
 All heavy work (background removal, upscaling, AI generation) runs as an async job, not inline in

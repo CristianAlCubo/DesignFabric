@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "tee-model-man",
+  "name": "Camiseta – modelo hombre",
+  "base_size": [
+    1312,
+    1199
+  ],
+  "print_area": {
+    "corners": [
+      [
+        449.5,
+        238.75
+      ],
+      [
+        848.5,
+        238.75
+      ],
+      [
+        848.5,
+        751.75
+      ],
+      [
+        449.5,
+        751.75
+      ]
+    ]
+  },
+  "px_per_cm": 14.25,
+  "max_print_cm": [
+    28.0,
+    36.0
+  ],
+  "default_anchor": "top-center",
+  "displacement_strength_px": 5.0,
+  "shading_strength": 0.55,
+  "highlight_strength": 0.3,
+  "garment_colors": {
+    "blanco": "#FFFFFF",
+    "negro": "#1A1A1A",
+    "gris": "#9A9A9A",
+    "azul marino": "#1F2A44",
+    "rojo": "#B3202A",
+    "verde": "#2F5D3A",
+    "arena": "#D8C8A8"
+  },
+  "dark_garment_colors": [
+    "negro",
+    "azul marino",
+    "verde"
+  ]
+}

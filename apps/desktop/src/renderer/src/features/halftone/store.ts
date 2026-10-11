@@ -179,6 +179,8 @@ interface HalftoneState {
   // Guardado full-res (render + diálogo de guardado, en un solo paso).
   isSaving: boolean
   savedPath: string | null
+  outputPath: string | null
+  outputUrl: string | null
 
   error: string | null
 
@@ -214,6 +216,8 @@ export const useHalftoneStore = create<HalftoneState>((set, get) => ({
 
   isSaving: false,
   savedPath: null,
+  outputPath: null,
+  outputUrl: null,
 
   error: null,
 
@@ -225,16 +229,35 @@ export const useHalftoneStore = create<HalftoneState>((set, get) => ({
       // Solo si el rápido cambió desde la última vez, para no pisar ajustes manuales
       // al ir y volver entre modos.
       lastSeed = seed
-      set({ mode, advanced: { ...quickResolved }, advancedBaseline: { ...quickResolved } })
+      set({
+        mode,
+        advanced: { ...quickResolved },
+        advancedBaseline: { ...quickResolved },
+        outputPath: null,
+        outputUrl: null
+      })
     } else {
-      set({ mode })
+      set({ mode, outputPath: null, outputUrl: null })
     }
   },
-  setCommon: (key, value) => set((state) => ({ common: { ...state.common, [key]: value } })),
+  setCommon: (key, value) =>
+    set((state) => ({
+      common: { ...state.common, [key]: value },
+      outputPath: null,
+      outputUrl: null
+    })),
   setAdvanced: (key, value) =>
-    set((state) => ({ advanced: { ...state.advanced, [key]: value } })),
+    set((state) => ({
+      advanced: { ...state.advanced, [key]: value },
+      outputPath: null,
+      outputUrl: null
+    })),
   resetAdvanced: (key) =>
-    set((state) => ({ advanced: { ...state.advanced, [key]: state.advancedBaseline[key] } })),
+    set((state) => ({
+      advanced: { ...state.advanced, [key]: state.advancedBaseline[key] },
+      outputPath: null,
+      outputUrl: null
+    })),
   setError: (error) => set({ error }),
 
   setInputSource: (source) => {
@@ -245,6 +268,8 @@ export const useHalftoneStore = create<HalftoneState>((set, get) => ({
       analysis: null,
       quickResolved: null,
       savedPath: null,
+      outputPath: null,
+      outputUrl: null,
       error: null
     })
   },
@@ -299,11 +324,16 @@ export const useHalftoneStore = create<HalftoneState>((set, get) => ({
       )
       const result = await waitForJob<HalftoneResult>(jobId)
       const baseUrl = await getBackendBaseUrl()
+      const imageUrl = `${baseUrl}${result.image_url}`
       const saved = await window.designfabric.exportImage(
-        `${baseUrl}${result.image_url}`,
+        imageUrl,
         suggestedName(inputPath)
       )
-      if (saved) set({ savedPath: saved })
+      set({
+        outputPath: result.output_path,
+        outputUrl: imageUrl,
+        ...(saved ? { savedPath: saved } : {})
+      })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'No se pudo generar y guardar el halftone.' })
     } finally {

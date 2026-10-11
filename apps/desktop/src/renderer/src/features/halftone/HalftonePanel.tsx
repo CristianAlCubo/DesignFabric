@@ -25,7 +25,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { AppButton } from '../../core/components/AppButton'
 import { ImageInputZone } from '../../core/imaging/ImageInputZone'
-import { ImageViewer } from '../../core/imaging/ImageViewer'
+import { ImageResultView } from '../../core/imaging/ImageResultView'
 import {
   DEFAULT_COMMON,
   useHalftoneStore,
@@ -484,6 +484,8 @@ export function HalftonePanel() {
   const isPreviewing = useHalftoneStore((state) => state.isPreviewing)
   const isSaving = useHalftoneStore((state) => state.isSaving)
   const savedPath = useHalftoneStore((state) => state.savedPath)
+  const outputPath = useHalftoneStore((state) => state.outputPath)
+  const outputUrl = useHalftoneStore((state) => state.outputUrl)
   const error = useHalftoneStore((state) => state.error)
 
   const setInputSource = useHalftoneStore((state) => state.setInputSource)
@@ -539,10 +541,12 @@ export function HalftonePanel() {
               <Loader2 className="ml-2 inline size-4 animate-spin align-[-2px]" />
             ) : null}
           </h2>
-          <ImageViewer
-            src={previewSrc}
+          <ImageResultView
+            src={outputUrl ?? previewSrc}
             alt="Previsualización del halftone"
             emptyLabel="La previsualización aparecerá aquí"
+            sourcePath={outputPath}
+            sendTargets={['mockups']}
           />
 
           {analysis && analysis.warnings.length > 0 ? (
