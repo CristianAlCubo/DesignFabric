@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -24,11 +23,17 @@ import cv2
 import numpy as np
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from make_default_mockups import GARMENT_COLORS  # noqa: E402
+from designfabric.core.imaging.mockup.prepare import save_template
 
-from designfabric.core.imaging.mockup.prepare import save_template  # noqa: E402
-
+GARMENT_COLORS = {
+    "blanco": "#FFFFFF",
+    "negro": "#1A1A1A",
+    "gris": "#9A9A9A",
+    "azul marino": "#1F2A44",
+    "rojo": "#B3202A",
+    "verde": "#2F5D3A",
+    "arena": "#D8C8A8",
+}
 OUT_DIR = Path(__file__).resolve().parents[1] / "data" / "mockup_templates"
 IMAGE_MODEL = "openai/gpt-image-2.5-sunburst"
 PROMPT = (
@@ -140,7 +145,10 @@ def shirt_mask(rgb: np.ndarray, spec: ModelSpec) -> np.ndarray:
         m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15)))
         m[sat > 45] = 0
 
-    return cv2.GaussianBlur(m, (0, 0), 1.0)
+    # Cubre el margen blanco de 1–2 px que deja la segmentación; si quedara fuera,
+    # se vería como un hilo claro al teñir.
+    m = cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+    return cv2.GaussianBlur(m, (0, 0), 1.6)
 
 
 def build(spec: ModelSpec, photo: Image.Image) -> None:

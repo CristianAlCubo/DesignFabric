@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from designfabric.core.imaging.background_removal_strategies import RemovalModelPaths
 from designfabric.core.imaging.mockup.prepare import prepare_template, save_template
@@ -122,3 +122,21 @@ def test_rechaza_mascara_de_tamano_incorrecto() -> None:
 
     with pytest.raises(ValueError, match="debe medir"):
         prepare_template(_foto_sintetica(), wrong_size, model_paths=RemovalModelPaths())
+
+
+def test_conserva_borde_suave_y_el_contorno_no_oscurece_el_sombreado() -> None:
+    """Regresión: la máscara se binarizaba (bordes dentados) y el sombreado del
+    contorno mezclaba la piel/fondo vecinos, dibujando un perfil oscuro al teñir."""
+    photo = np.full((120, 120, 3), 60, np.uint8)  # «piel» oscura alrededor
+    photo[30:90, 30:90] = 235  # tela blanca
+    mask = np.zeros((120, 120), np.uint8)
+    mask[30:90, 30:90] = 255
+    mask = np.asarray(Image.fromarray(mask).filter(ImageFilter.GaussianBlur(1.5)))
+
+    prepared = prepare_template(Image.fromarray(photo), mask)
+
+    out_mask = np.asarray(prepared.garment_mask)
+    assert ((out_mask > 0) & (out_mask < 255)).any()
+    shading = np.asarray(prepared.shading).astype(int)
+    rim = (out_mask >= 128) & (out_mask < 250)
+    assert abs(int(np.median(shading[rim])) - 128) <= 4

@@ -16,7 +16,7 @@ TEMPLATE_DIRS = sorted(p for p in BUNDLED.iterdir() if (p / "template.json").is_
 
 
 def test_bundled_templates_exist() -> None:
-    assert {p.name for p in TEMPLATE_DIRS} >= {"tee-flat-front", "tee-flat-back"}
+    assert {p.name for p in TEMPLATE_DIRS} >= {"tee-model-man", "tee-model-woman"}
 
 
 @pytest.mark.parametrize("template_dir", TEMPLATE_DIRS, ids=lambda p: p.name)

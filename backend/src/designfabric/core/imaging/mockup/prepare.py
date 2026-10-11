@@ -182,7 +182,9 @@ def _normalize_mask(mask: Image.Image | np.ndarray, size: tuple[int, int]) -> np
             mask_array = np.clip(mask_array, 0, 255).astype(np.uint8)
     if mask_array.shape != (size[1], size[0]):
         raise ValueError(f"La máscara debe medir {size[0]}×{size[1]} píxeles")
-    return np.where(mask_array > 0, 255, 0).astype(np.uint8)
+    # Se conserva el borde suave (antialias): binarizarlo deja escalones visibles y
+    # tiñe el anillo de piel/fondo que rodea la prenda.
+    return mask_array.astype(np.uint8)
 
 
 def _largest_component(mask: np.ndarray) -> np.ndarray:
@@ -196,8 +198,15 @@ def _largest_component(mask: np.ndarray) -> np.ndarray:
 
 def _derive_maps(gray: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     luminance = gray.astype(np.float32)
-    active = mask > 0
-    median = float(np.median(luminance[active]))
+    active = mask >= 128
+    if not np.any(active):
+        active = mask > 0
+    # Los píxeles del contorno mezclan tela con piel/fondo: los mapas se calculan
+    # solo con el interior y se extienden hacia el borde (convolución normalizada).
+    interior = cv2.erode(active.astype(np.uint8), np.ones((7, 7), np.uint8)) > 0
+    if not np.any(interior):
+        interior = active
+    median = float(np.median(luminance[interior]))
     if not math.isfinite(median) or median <= 0:
         median = 0.0
 
@@ -205,20 +214,38 @@ def _derive_maps(gray: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, np.nda
     side = min(width, height)
     shading_sigma = max(0.8, side * 0.002)
     shading = luminance * (128.0 / median) if median > 0 else np.full_like(luminance, 128.0)
-    shading[~active] = 128.0
-    shading = _gaussian_blur(shading, shading_sigma)
+    shading = _fill_from_interior(shading, interior, shading_sigma, max(4.0, side * 0.004))
     shading_median = float(np.median(shading[active]))
     if shading_median > 0:
         shading[active] *= 128.0 / shading_median
-    shading[~active] = 128.0
+    shading[mask == 0] = 128.0
 
     displacement_sigma = max(1.0, side * 0.01)
-    displacement = _gaussian_blur(luminance, displacement_sigma)
+    displacement = _fill_from_interior(luminance, interior, displacement_sigma, displacement_sigma)
     displacement[active] += 128.0 - float(np.mean(displacement[active]))
     displacement[~active] = 128.0
     for _ in range(2):
         displacement[active] += 128.0 - float(np.mean(displacement[active]))
     return _to_uint8(shading), _to_uint8(displacement)
+
+
+def _fill_from_interior(
+    values: np.ndarray, interior: np.ndarray, sigma: float, reach_sigma: float
+) -> np.ndarray:
+    """Suaviza `values` usando solo `interior` y extrapola hacia el contorno.
+
+    Dentro del interior equivale a un blur de `sigma`; fuera, cada píxel toma la
+    media ponderada del interior cercano (alcance ~3·`reach_sigma`).
+    """
+    weight = interior.astype(np.float32)
+    smooth = _gaussian_blur(values * weight, sigma) / np.maximum(
+        _gaussian_blur(weight, sigma), 1e-6
+    )
+    near = _gaussian_blur(values * weight, reach_sigma) / np.maximum(
+        _gaussian_blur(weight, reach_sigma), 1e-6
+    )
+    covered = _gaussian_blur(weight, sigma) > 0.5
+    return np.where(interior | covered, smooth, near).astype(np.float32)
 
 
 def _gaussian_blur(image: np.ndarray, sigma: float) -> np.ndarray:

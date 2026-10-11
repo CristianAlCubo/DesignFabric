@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Herramientas «Mockups» y «Plantillas de mockup»: prepara y guarda plantillas de prendas revisables (foto base, máscara, sombreado, desplazamiento y geometría de impresión) y compón diseños sobre ellas con color, tamaño y desplazamiento configurables. El preview y la exportación comparten un render determinista en CPU; la exportación se procesa como job CPU y genera PNG @300 DPI.
-- Cuatro plantillas de mockup incluidas con la app (`backend/data/mockup_templates/`): camiseta lisa frente y espalda, dibujadas por código, y camiseta con modelo hombre y mujer, a partir de fotos generadas con IA. Cada una trae 7 colores de prenda y escala en cm calibrada. Se regeneran con `backend/scripts/make_default_mockups.py` y `make_model_mockups.py`.
+- Dos plantillas de mockup incluidas con la app (`backend/data/mockup_templates/`): camiseta con modelo hombre y mujer, a partir de fotos generadas con IA. Cada una trae 7 colores de prenda y escala en cm calibrada. Se regeneran con `backend/scripts/make_model_mockups.py`.
+- Mockups: bordes de la prenda suaves y sin perfil oscuro ni halo al teñir (la preparación conserva el antialias de la máscara y calcula el sombreado solo con el interior de la prenda).
 
 ## [0.3.0] - 2026-10-10
 
