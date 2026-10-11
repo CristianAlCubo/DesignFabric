@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-10
+
 ### Added
 
 - Sistema unificado de entrada/salida de imágenes en las pantallas de Retocar/Utilidades: pegar del portapapeles (Ctrl+V) y arrastrar-y-soltar una imagen sobre la zona de entrada de cualquier pantalla (eliminación de fondo, escalado, semitonos, conversión individual), además del diálogo nativo. El contenido pegado/soltado se valida por *magic bytes* (PNG/JPEG/WEBP) — si no es una imagen soportada, no pasa nada — y se materializa en un archivo temporal cuyo ciclo de vida está acotado: cada input mantiene como máximo un temporal (el anterior se descarta al pegar/soltar/elegir otro) y todos se eliminan al cerrar la app, con barrido de arranque como red de seguridad.
